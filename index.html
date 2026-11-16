@@ -233,40 +233,73 @@ function resizeCanvas() {
 /* ============ ОТРИСОВКА СПРАЙТОВ ============ */
 function drawHero(x, y, isWalking, direction, walkTimer) {
   ctx.save();
-  // Точка опоры - центр ног
   ctx.translate(x, y);
 
-  // Наклон при ходьбе (South Park style)
   let tilt = 0;
   let bounce = 0;
   if (isWalking) {
     tilt = Math.sin(walkTimer) * 0.15; 
-    bounce = Math.abs(Math.sin(walkTimer * 2)) * 2; // подпрыгивание
+    bounce = Math.abs(Math.sin(walkTimer * 2)) * 2; 
   }
   
   ctx.rotate(tilt * direction);
   ctx.translate(0, -bounce);
 
-  // Отражаем, если идёт влево
   if (direction < 0) ctx.scale(-1, 1);
 
-  // Размер спрайта на экране (масштабируем твою картинку)
-  const spriteW = 32;
-  const spriteH = 48;
-
   if (imagesLoaded && imgHero.complete && imgHero.naturalWidth > 0) {
-    // Если есть картинка, рисуем её
-    // mix-blend-mode поможет убрать белый/серый фон, если он есть
-    ctx.globalCompositeOperation = 'source-over'; 
-    // Отрисовка: x = -spriteW/2 (чтобы центр был по центру), y = -spriteH (чтобы ноги были на земле)
-    ctx.drawImage(imgHero, -spriteW / 2, -spriteH, spriteW, spriteH);
+    ctx.save();
+    ctx.filter = 'multiply'; 
+    
+    // --- ИСПРАВЛЕНИЕ ПРОПОРЦИЙ ---
+    // Задаем желаемую высоту персонажа на экране (например, 45 пикселей)
+    const targetHeight = 45; 
+    // Вычисляем ширину пропорционально
+    const aspect = imgHero.naturalWidth / imgHero.naturalHeight;
+    const targetWidth = targetHeight * aspect;
+
+    // Рисуем: по центру X, и так, чтобы ноги были на земле (по оси Y)
+    ctx.drawImage(imgHero, -targetWidth / 2, -targetHeight, targetWidth, targetHeight);
+    // -----------------------------
+    
+    ctx.restore();
   } else {
-    // Заглушка, если картинки нет
+    // Заглушка
     ctx.fillStyle = '#1a2230';
     ctx.fillRect(-8, -32, 16, 32);
     ctx.fillStyle = '#ff2222';
     ctx.fillRect(-6, -28, 4, 4);
     ctx.fillRect(2, -28, 4, 4);
+  }
+  ctx.restore();
+}
+
+function drawCharon(x, y, isWalking, walkTimer) {
+  ctx.save();
+  ctx.translate(x, y);
+
+  let tilt = Math.sin(walkTimer * 0.5) * 0.05;
+  ctx.rotate(tilt);
+
+  if (imagesLoaded && imgCharon.complete && imgCharon.naturalWidth > 0) {
+    ctx.save();
+    ctx.filter = 'multiply';
+    
+    // --- ИСПРАВЛЕНИЕ ПРОПОРЦИЙ ---
+    // Харон чуть выше героя, ставим высоту 55 пикселей
+    const targetHeight = 55;
+    const aspect = imgCharon.naturalWidth / imgCharon.naturalHeight;
+    const targetWidth = targetHeight * aspect;
+
+    ctx.drawImage(imgCharon, -targetWidth / 2, -targetHeight, targetWidth, targetHeight);
+    // -----------------------------
+    
+    ctx.restore();
+  } else {
+    ctx.fillStyle = '#0d0d0d';
+    ctx.fillRect(-10, -40, 20, 40);
+    ctx.fillStyle = '#e0e0e0';
+    ctx.fillRect(-8, -30, 16, 10);
   }
   ctx.restore();
 }
