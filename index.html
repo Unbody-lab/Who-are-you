@@ -234,37 +234,22 @@ function resizeCanvas() {
 function drawHero(x, y, isWalking, direction, walkTimer) {
   ctx.save();
   ctx.translate(x, y);
-
-  let tilt = 0;
-  let bounce = 0;
-  if (isWalking) {
-    tilt = Math.sin(walkTimer) * 0.15; 
-    bounce = Math.abs(Math.sin(walkTimer * 2)) * 2; 
-  }
-  
+  let tilt = isWalking ? Math.sin(walkTimer) * 0.15 : 0;
+  let bounce = isWalking ? Math.abs(Math.sin(walkTimer * 2)) * 2 : 0;
   ctx.rotate(tilt * direction);
   ctx.translate(0, -bounce);
-
   if (direction < 0) ctx.scale(-1, 1);
 
   if (imagesLoaded && imgHero.complete && imgHero.naturalWidth > 0) {
     ctx.save();
     ctx.filter = 'multiply'; 
-    
-    // --- ИСПРАВЛЕНИЕ ПРОПОРЦИЙ ---
-    // Задаем желаемую высоту персонажа на экране (например, 45 пикселей)
-    const targetHeight = 45; 
-    // Вычисляем ширину пропорционально
-    const aspect = imgHero.naturalWidth / imgHero.naturalHeight;
-    const targetWidth = targetHeight * aspect;
-
-    // Рисуем: по центру X, и так, чтобы ноги были на земле (по оси Y)
-    ctx.drawImage(imgHero, -targetWidth / 2, -targetHeight, targetWidth, targetHeight);
-    // -----------------------------
-    
+    // Задаем конкретную ширину и высоту, игнорируя пропорции картинки
+    const targetW = 40; // Ширина героя
+    const targetH = 60; // Высота героя
+    ctx.drawImage(imgHero, -targetW / 2, -targetH, targetW, targetH);
     ctx.restore();
   } else {
-    // Заглушка
+    // Заглушка (красные глаза), пока картинка не загрузится
     ctx.fillStyle = '#1a2230';
     ctx.fillRect(-8, -32, 16, 32);
     ctx.fillStyle = '#ff2222';
@@ -277,23 +262,16 @@ function drawHero(x, y, isWalking, direction, walkTimer) {
 function drawCharon(x, y, isWalking, walkTimer) {
   ctx.save();
   ctx.translate(x, y);
-
   let tilt = Math.sin(walkTimer * 0.5) * 0.05;
   ctx.rotate(tilt);
 
   if (imagesLoaded && imgCharon.complete && imgCharon.naturalWidth > 0) {
     ctx.save();
     ctx.filter = 'multiply';
-    
-    // --- ИСПРАВЛЕНИЕ ПРОПОРЦИЙ ---
-    // Харон чуть выше героя, ставим высоту 55 пикселей
-    const targetHeight = 55;
-    const aspect = imgCharon.naturalWidth / imgCharon.naturalHeight;
-    const targetWidth = targetHeight * aspect;
-
-    ctx.drawImage(imgCharon, -targetWidth / 2, -targetHeight, targetWidth, targetHeight);
-    // -----------------------------
-    
+    // Задаем жесткую ширину и высоту для Харона, чтобы он не был тощим
+    const targetW = 45; // Ширина (сделали шире)
+    const targetH = 65; // Высота
+    ctx.drawImage(imgCharon, -targetW / 2, -targetH, targetW, targetH);
     ctx.restore();
   } else {
     ctx.fillStyle = '#0d0d0d';
@@ -303,30 +281,7 @@ function drawCharon(x, y, isWalking, walkTimer) {
   }
   ctx.restore();
 }
-
-function drawCharon(x, y, isWalking, walkTimer) {
-  ctx.save();
-  ctx.translate(x, y);
-
-  // Харон стоит, но немного покачивается
-  let tilt = Math.sin(walkTimer * 0.5) * 0.05;
-  ctx.rotate(tilt);
-
-  const spriteW = 40;
-  const spriteH = 60;
-
-  if (imagesLoaded && imgCharon.complete && imgCharon.naturalWidth > 0) {
-    ctx.globalCompositeOperation = 'source-over';
-    ctx.drawImage(imgCharon, -spriteW / 2, -spriteH, spriteW, spriteH);
-  } else {
-    ctx.fillStyle = '#0d0d0d';
-    ctx.fillRect(-10, -40, 20, 40);
-    ctx.fillStyle = '#e0e0e0';
-    ctx.fillRect(-8, -30, 16, 10); // борода
-  }
-  ctx.restore();
-}
-
+ 
 /* ============ ОТРИСОВКА МИРА ============ */
 function drawWorld() {
   ctx.fillStyle = '#0a1218';
