@@ -93,7 +93,7 @@
   
   <div id="uiOverlay">
     <div id="topBar">
-      <div id="locName">Пролог</div>
+      <div id="locName">Круг 1 · Лимб</div>
       <div id="locGoal">Сумрачный лес</div>
     </div>
     
@@ -188,7 +188,7 @@ const ctx = gameCanvas.getContext('2d');
 
 let currentZone = 'outside'; 
 
-/* Локация стала заметно больше: 6000 x 2000 */
+/* Локация заметно больше: 6000 x 2000 */
 const WORLD = {
   outside: { width: 6000, height: 2000, minY: 820, maxY: 1900 },
   inside: { width: 1200, height: 800, minY: 500, maxY: 750 }
@@ -327,16 +327,16 @@ function drawCharon(x, y) {
 /* ============ ДЕРЕВЬЯ ============ */
 function drawTree(tx, ty, scale = 1, seed = 0) {
   /* Дерево: ствол + ветки + крона из нескольких окружностей.
-     Цвета светлее, чтобы локация не была кромешно тёмной. */
+     Цвета листьев теперь ТЁМНЫЕ, почти чёрные, как в Сумрачном лесу. */
   const trunkW = 22 * scale;
   const trunkH = 150 * scale;
 
-  /* Ствол */
-  ctx.fillStyle = '#2a1e18';
+  /* Ствол (тёмный серо-коричневый, почти чёрный) */
+  ctx.fillStyle = '#1a1410';
   ctx.fillRect(tx - trunkW / 2, ty - trunkH, trunkW, trunkH);
 
   /* Ветки */
-  ctx.strokeStyle = '#2a1e18';
+  ctx.strokeStyle = '#1a1410';
   ctx.lineWidth = 6 * scale;
   ctx.beginPath();
   ctx.moveTo(tx, ty - trunkH * 0.7);
@@ -345,9 +345,9 @@ function drawTree(tx, ty, scale = 1, seed = 0) {
   ctx.lineTo(tx + 35 * scale, ty - trunkH * 1.05);
   ctx.stroke();
 
-  /* Крона — несколько окружностей, разные оттенки */
+  /* Крона — очень тёмные, хвойно-пепельные оттенки */
   const crownY = ty - trunkH - 10 * scale;
-  const colors = ['#26301f', '#2e3a25', '#1f2819'];
+  const colors = ['#0d120c', '#111610', '#080c08'];
   const blobs = [
     { dx: 0, dy: 0, r: 55 * scale },
     { dx: -40 * scale, dy: 10 * scale, r: 42 * scale },
@@ -363,13 +363,13 @@ function drawTree(tx, ty, scale = 1, seed = 0) {
   });
 }
  
-/* ============ ОТРИСОВКА МИРА (СВЕТЛЕЕ) ============ */
+/* ============ ОТРИСОВКА МИРА (СУМРАЧНЫЙ, ХОЛОДНЫЙ) ============ */
 function drawWorld() {
-  /* Небо: уже не чёрное, а тёмно-серо-коричневое */
+  /* Небо: холодное, серо-стальное, без коричневого */
   const skyGrad = ctx.createLinearGradient(0, 0, 0, gameCanvas.height);
-  skyGrad.addColorStop(0, '#12161a'); 
-  skyGrad.addColorStop(0.5, '#1a1c1e'); 
-  skyGrad.addColorStop(1, '#201a18');
+  skyGrad.addColorStop(0, '#0e1114'); 
+  skyGrad.addColorStop(0.5, '#14181b'); 
+  skyGrad.addColorStop(1, '#1a1e21');
   ctx.fillStyle = skyGrad;
   ctx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
 
@@ -377,7 +377,7 @@ function drawWorld() {
   ctx.translate(-Math.floor(cameraX), -Math.floor(cameraY));
 
   if (currentZone === 'outside') {
-    /* Деревья по всей локации — больше и светлее */
+    /* Деревья — теперь с тёмной кроной */
     const treeRows = [
       { y: 800, count: 22, scale: 1.0, seed: 0 },
       { y: 700, count: 18, scale: 1.2, seed: 1 },
@@ -390,12 +390,12 @@ function drawWorld() {
       }
     });
 
-    /* Земля — пепельно-коричневая, не чёрная */
-    ctx.fillStyle = '#2a201a';
+    /* Земля — холодный пепельно-серый */
+    ctx.fillStyle = '#1e1e1e';
     ctx.fillRect(0, WORLD.outside.minY, WORLD.outside.width, WORLD.outside.height);
 
-    /* Тропинка — светлая полоса из левого-нижнего к КПП */
-    ctx.fillStyle = '#3a2e24';
+    /* Тропинка — бледно-серый след, а не песок */
+    ctx.fillStyle = '#2a2a2a';
     ctx.beginPath();
     ctx.moveTo(300, 1950);
     ctx.quadraticCurveTo(1600, 1500, 2900, 1200);
@@ -405,8 +405,8 @@ function drawWorld() {
     ctx.quadraticCurveTo(1650, 1600, 420, 1980);
     ctx.fill();
 
-    /* Ржавые пятна на земле — мягче */
-    ctx.fillStyle = '#3a2320';
+    /* Пятна на земле — тёмно-серые */
+    ctx.fillStyle = '#2c2c2c';
     ctx.beginPath();
     ctx.moveTo(600, 1850);
     ctx.quadraticCurveTo(1800, 1400, 2600, 1250);
@@ -416,23 +416,24 @@ function drawWorld() {
     ctx.quadraticCurveTo(1850, 1500, 700, 1900);
     ctx.fill();
 
-    /* Будка КПП (силуэт, но светлее) */
-    ctx.fillStyle = '#2a1e1a';
+    /* Будка КПП (тёмный силуэт) */
+    ctx.fillStyle = '#1e1e1e';
     ctx.fillRect(2900, 700, 150, 250);
-    ctx.fillStyle = '#1a1412';
-    ctx.fillRect(2880, 680, 190, 20); // Крыша
-    ctx.fillStyle = '#6a5a3a'; // Тёплый тусклый свет в окне
+    ctx.fillStyle = '#141414';
+    ctx.fillRect(2880, 680, 190, 20); 
+    /* Тусклый свет в окне — бледно-жёлтый, единственный тёплый акцент */
+    ctx.fillStyle = '#5a5030'; 
     ctx.fillRect(2930, 750, 90, 70); 
-    ctx.fillStyle = '#1a1412';
-    ctx.fillRect(2910, 850, 50, 100); // Дверь
-    ctx.fillStyle = '#555';
-    ctx.fillRect(2940, 900, 6, 6); // Ручка
+    ctx.fillStyle = '#141414';
+    ctx.fillRect(2910, 850, 50, 100); 
+    ctx.fillStyle = '#444';
+    ctx.fillRect(2940, 900, 6, 6); 
 
     /* Шлагбаум */
-    ctx.fillStyle = '#2a2422';
+    ctx.fillStyle = '#1e1e1e';
     ctx.fillRect(3080, 780, 15, 170);
     for (let i = 0; i < 8; i++) {
-      ctx.fillStyle = i % 2 === 0 ? '#7a3a2a' : '#7a7a7a';
+      ctx.fillStyle = i % 2 === 0 ? '#552222' : '#555';
       if (state.flags.barrierOpen) {
         ctx.fillRect(3085, 780 - i * 15, 12, 15);
       } else {
@@ -442,66 +443,66 @@ function drawWorld() {
 
     /* Ключ-карта */
     if (!state.items.includes('keycard')) {
-      ctx.fillStyle = '#6aba7a';
+      ctx.fillStyle = '#4a7a5a';
       ctx.fillRect(2400, 1000, 20, 12);
-      ctx.shadowColor = '#6aba7a'; ctx.shadowBlur = 10;
+      ctx.shadowColor = '#4a7a5a'; ctx.shadowBlur = 10;
       ctx.strokeRect(2400, 1000, 20, 12);
       ctx.shadowBlur = 0;
     }
     
-    /* Записка — теперь в самом низу тропинки */
+    /* Записка — в самом низу тропинки */
     if (!state.items.includes('note')) {
-      ctx.fillStyle = '#e0e6e2';
+      ctx.fillStyle = '#c0c8c4';
       ctx.fillRect(560, 1850, 15, 20);
-      ctx.shadowColor = '#fff'; ctx.shadowBlur = 10;
+      ctx.shadowColor = '#c0c8c4'; ctx.shadowBlur = 10;
       ctx.strokeRect(560, 1850, 15, 20);
       ctx.shadowBlur = 0;
     }
 
-    /* Лёгкий туман поверх земли (менее плотный) */
-    const fog = ctx.createLinearGradient(0, 800, 0, 1500);
-    fog.addColorStop(0, 'rgba(40, 30, 30, 0)');
-    fog.addColorStop(1, 'rgba(40, 30, 30, 0.25)');
+    /* Туман — серый, холодный, стелется низко */
+    const fog = ctx.createLinearGradient(0, 900, 0, 1600);
+    fog.addColorStop(0, 'rgba(60, 65, 70, 0)');
+    fog.addColorStop(1, 'rgba(60, 65, 70, 0.2)');
     ctx.fillStyle = fog;
-    ctx.fillRect(cameraX, 800, gameCanvas.width, 700);
+    ctx.fillRect(cameraX, 900, gameCanvas.width, 700);
 
     drawCharon(3300, 850);
     drawHero(heroX, heroY, isWalking, heroDirection, walkTimer);
     
   } else {
     /* ---- ВНУТРИ КПП ---- */
-    ctx.fillStyle = '#1a1412';
+    ctx.fillStyle = '#141414';
     ctx.fillRect(0, 0, WORLD.inside.width, WORLD.inside.height);
     
-    ctx.fillStyle = '#2a221e';
+    ctx.fillStyle = '#1e1e1e';
     ctx.fillRect(0, WORLD.inside.minY, WORLD.inside.width, WORLD.inside.height);
     
     /* Стол */
-    ctx.fillStyle = '#3a2a22';
+    ctx.fillStyle = '#2a2a2a';
     ctx.fillRect(400, 480, 200, 40);
-    ctx.fillStyle = '#1a1412';
+    ctx.fillStyle = '#141414';
     ctx.fillRect(420, 520, 10, 80);
     ctx.fillRect(570, 520, 10, 80);
     
     /* Гораций за столом */
     ctx.save();
     ctx.translate(500, 520);
-    ctx.fillStyle = '#2a221e'; 
+    ctx.fillStyle = '#1e1e1e'; 
     ctx.fillRect(-30, -80, 60, 80);
-    ctx.fillStyle = '#3a2a22';
+    ctx.fillStyle = '#2a2a2a';
     ctx.beginPath(); ctx.arc(0, -100, 30, 0, Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#1a1412';
+    ctx.fillStyle = '#141414';
     ctx.fillRect(-36, -140, 72, 30);
     ctx.restore();
 
-    /* Свет от лампы над столом — мягче */
+    /* Свет от лампы — тусклый */
     const lampLight = ctx.createRadialGradient(500, 400, 10, 500, 400, 300);
-    lampLight.addColorStop(0, 'rgba(140, 100, 70, 0.25)');
+    lampLight.addColorStop(0, 'rgba(100, 90, 60, 0.2)');
     lampLight.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = lampLight;
     ctx.fillRect(0, 0, WORLD.inside.width, WORLD.inside.height);
 
-    ctx.fillStyle = '#1a1412';
+    ctx.fillStyle = '#141414';
     ctx.fillRect(0, 500, 40, 200);
 
     drawHero(heroX, heroY, isWalking, heroDirection, walkTimer);
@@ -509,7 +510,7 @@ function drawWorld() {
 
   ctx.restore();
   
-  /* Виньетка — заметно слабее, чтобы локация не тонула во тьме */
+  /* Виньетка — слабая, чтобы лес не тонул во тьме, но давил */
   const vignette = ctx.createRadialGradient(
     gameCanvas.width/2, gameCanvas.height/2, 300,
     gameCanvas.width/2, gameCanvas.height/2, 900
