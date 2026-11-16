@@ -43,7 +43,7 @@
   #gameCanvas {
     display: block; width: 100vw; height: 100vh;
     image-rendering: pixelated; image-rendering: crisp-edges;
-    background: #0a1218;
+    background: #1a2b22; /* Сделали фон светлее */
   }
 
   #uiOverlay {
@@ -52,39 +52,31 @@
   }
 
   #textPanel {
-    pointer-events: auto; min-height: 100px; background: rgba(5,7,10,0.85);
-    border: 2px solid #2a3548; padding: 20px 30px; font-size: 28px; line-height: 1.3;
-    color: #b8bec8; margin-top: auto; max-width: 1000px; align-self: center; width: 100%;
+    pointer-events: none; min-height: 80px; background: rgba(5,7,10,0.85);
+    border: 2px solid #4a6a5a; padding: 20px 30px; font-size: 28px; line-height: 1.3;
+    color: #d0d8d4; margin-top: auto; max-width: 800px; align-self: center; width: 100%;
+    border-radius: 6px; transition: opacity 0.5s;
+    opacity: 0; /* Изначально скрыто */
   }
-  #textPanel .speaker { color: #5a7a6a; font-style: italic; }
+  #textPanel.show { opacity: 1; }
+  #textPanel .speaker { color: #8ab89a; font-style: italic; }
 
   #inventory { position: absolute; top: 20px; right: 20px; display: flex; flex-direction: column; gap: 8px; pointer-events: auto; }
   .item-icon {
-    width: 48px; height: 48px; background: #1a2333; border: 2px solid #2a3548;
+    width: 48px; height: 48px; background: #2a3b33; border: 2px solid #4a6a5a;
     border-radius: 4px; display: flex; align-items: center; justify-content: center;
     cursor: pointer; font-size: 24px; transition: all 0.2s;
   }
-  .item-icon:hover { border-color: #5a7a6a; box-shadow: 0 0 12px rgba(90,122,106,0.5); }
+  .item-icon:hover { border-color: #8ab89a; box-shadow: 0 0 12px rgba(138,184,154,0.5); }
 
   #locTitle {
     position: absolute; top: 20px; left: 20px; font-size: 20px; letter-spacing: 2px;
-    text-transform: uppercase; color: #4a5568;
+    text-transform: uppercase; color: #6a8a7a;
   }
   #controls {
-    position: absolute; top: 50px; left: 20px; font-size: 18px; color: #3a4558; line-height: 1.5;
+    position: absolute; top: 50px; left: 20px; font-size: 18px; color: #5a7a6a; line-height: 1.5;
   }
-  #controls b { color: #5a7a6a; }
-
-  #modal {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.85);
-    display: none; align-items: center; justify-content: center; z-index: 100; padding: 40px;
-  }
-  #modal.open { display: flex; }
-  #modalContent {
-    background: #12181f; border: 2px solid #2a3548; padding: 40px;
-    max-width: 600px; font-size: 26px; line-height: 1.4; color: #d0d4da; position: relative;
-  }
-  #modalClose { position: absolute; top: 12px; right: 16px; cursor: pointer; color: #6b7f9e; font-size: 32px; }
+  #controls b { color: #8ab89a; }
 </style>
 </head>
 <body>
@@ -101,26 +93,20 @@
   <div id="uiOverlay">
     <div>
       <div id="locTitle">Пролог · Сумрачный лес — КПП</div>
-      <div id="controls"><b>ПКМ</b> — идти · <b>ЛКМ по объекту</b> — подойти и осмотреть</div>
+      <div id="controls"><b>WASD</b> — идти · <b>ЛКМ по объекту</b> — осмотреть</div>
     </div>
     <div id="inventory"></div>
     <div id="textPanel"><span id="textContent"></span></div>
-  </div>
-
-  <div id="modal">
-    <div id="modalContent">
-      <div id="modalClose">×</div>
-      <div id="modalText"></div>
-    </div>
   </div>
 </div>
 
 <script>
 /* ============ СОСТОЯНИЕ ============ */
 const state = {
-  seen: {}, items: [], flags: {}, cutsceneDone: false, hero: { x: 200 },
+  seen: {}, items: [], flags: {}, cutsceneDone: false,
+  hero: { x: 200, y: 200 } // Добавили ось Y (глубину)
 };
-const SAVE_KEY = 'kto_ty_pixel_v2';
+const SAVE_KEY = 'kto_ty_pixel_v3';
 function save() { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }
 function load() {
   const raw = localStorage.getItem(SAVE_KEY);
@@ -129,16 +115,32 @@ function load() {
 
 /* ============ ТЕКСТ ============ */
 let typeTimer = null;
+let hidePanelTimer = null;
+
 function say(text, speaker) {
+  const panel = document.getElementById('textPanel');
   const el = document.getElementById('textContent');
   const prefix = speaker ? `<span class="speaker">${speaker}:</span> ` : '';
+  
   el.innerHTML = ''; let i = 0;
   clearInterval(typeTimer);
+  clearTimeout(hidePanelTimer);
+  
+  panel.classList.add('show');
+
   typeTimer = setInterval(() => {
-    if (i >= text.length) { clearInterval(typeTimer); return; }
+    if (i >= text.length) { 
+      clearInterval(typeTimer); 
+      // Скрываем панель через 5 секунд после окончания печати
+      hidePanelTimer = setTimeout(() => {
+        panel.classList.remove('show');
+      }, 5000);
+      return; 
+    }
     el.innerHTML = prefix + text.slice(0, i + 1); i++;
   }, 25);
 }
+
 function typeInto(el, text, speed = 40, cb) {
   clearInterval(typeTimer); el.innerHTML = ''; let i = 0;
   typeTimer = setInterval(() => {
@@ -186,46 +188,45 @@ csNext.addEventListener('click', () => {
 const gameCanvas = document.getElementById('gameCanvas');
 const ctx = gameCanvas.getContext('2d');
 const SCENE_WIDTH = 1600;
-const FLOOR_Y = 260;
+const SCENE_HEIGHT = 600; // Мир стал глубже (камера сверху)
 
-let heroX = 200;
-let targetX = null;
-let heroDirection = 1;
-let walkTimer = 0;
+// Позиция героя в мире
+let heroX = 300;
+let heroY = 400; 
+let heroSpeed = 150; // Скорость ходьбы
 let isWalking = false;
+let heroDirection = 1; // 1 вправо, -1 влево
+let walkTimer = 0;
+
+// Камера
 let cameraX = 0;
-let pendingClick = null;
+let cameraY = 0;
 let lastTime = performance.now();
 
-/* ============ ЗАГРУЗКА И ПОДГОТОВКА СПРАЙТОВ ============ */
+// Управление
+const keys = { w: false, a: false, s: false, d: false };
+
+/* ============ ЗАГРУЗКА СПРАЙТОВ ============ */
 const imgHero = new Image();
 const imgCharon = new Image();
-imgHero.src = 'hero.png';   // Не забудь, что файлы должны называться .png
+imgHero.src = 'hero.png'; 
 imgCharon.src = 'charon.png';
 
 let imagesLoaded = false;
 let loadCount = 0;
 
-// Умная очистка фона (стирает белое только по краям, не трогая глаза)
 function processImage(img) {
   const tempCanvas = document.createElement('canvas');
   tempCanvas.width = img.width;
   tempCanvas.height = img.height;
   const tempCtx = tempCanvas.getContext('2d');
   tempCtx.drawImage(img, 0, 0);
-
   const imgData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
   const data = imgData.data;
-
-  // Проходим по пикселям, но проверяем, что они находятся у краев (фон)
   for (let y = 0; y < tempCanvas.height; y++) {
     for (let x = 0; x < tempCanvas.width; x++) {
       const i = (y * tempCanvas.width + x) * 4;
-      const r = data[i], g = data[i+1], b = data[i+2];
-      
-      // Если пиксель белый
-      if (r > 220 && g > 220 && b > 220) {
-        // Проверяем: если это край (отступ 15 пикселей), стираем
+      if (data[i] > 220 && data[i+1] > 220 && data[i+2] > 220) {
         if (x < 15 || x > tempCanvas.width - 15 || y < 15 || y > tempCanvas.height - 15) {
           data[i+3] = 0; 
         }
@@ -236,41 +237,30 @@ function processImage(img) {
   return tempCanvas;
 }
 
-function checkLoaded() {
-  loadCount++;
-  if (loadCount >= 2) imagesLoaded = true;
-}
-imgHero.onload = checkLoaded;
-imgCharon.onload = checkLoaded;
-imgHero.onerror = () => { console.error('Не найден hero.png'); checkLoaded(); };
-imgCharon.onerror = () => { console.error('Не найден charon.png'); checkLoaded(); };
+function checkLoaded() { loadCount++; if (loadCount >= 2) imagesLoaded = true; }
+imgHero.onload = checkLoaded; imgCharon.onload = checkLoaded;
+imgHero.onerror = () => { console.error('Нет hero.png'); checkLoaded(); };
+imgCharon.onerror = () => { console.error('Нет charon.png'); checkLoaded(); };
 
 let heroSprite = null;
 let charonSprite = null;
 
 function initGame() {
   load();
-  heroX = state.hero?.x ?? 200;
-  cameraX = heroX - gameCanvas.width / 2;
+  heroX = state.hero?.x ?? 300;
+  heroY = state.hero?.y ?? 400;
   
-  // Настройка разрешения Canvas под окно
-  gameCanvas.width = 480;
-  gameCanvas.height = 270;
+  gameCanvas.width = 640; // Увеличили разрешение для камеры сверху
+  gameCanvas.height = 360;
   
-  window.addEventListener('resize', () => {
-    // Если нужно, можно добавить логику ресайза
-  });
-
   renderInventory();
-  say("Сумрачный лес. Деревья стоят так плотно, что не видно неба. Перед тобой — КПП и шлагбаум. За ним — дорога вниз.");
+  say("Сумрачный лес. Деревья стоят плотно. Перед тобой — КПП и шлагбаум. Используй WASD для движения.");
   requestAnimationFrame(tick);
 }
 
 /* ============ ОТРИСОВКА ПЕРСОНАЖЕЙ ============ */
 function drawHero(x, y, isWalking, direction, walkTimer) {
-  if (imagesLoaded && imgHero.complete && !heroSprite) {
-    heroSprite = processImage(imgHero);
-  }
+  if (imagesLoaded && imgHero.complete && !heroSprite) heroSprite = processImage(imgHero);
 
   ctx.save();
   ctx.translate(x, y);
@@ -283,9 +273,8 @@ function drawHero(x, y, isWalking, direction, walkTimer) {
   if (direction < 0) ctx.scale(-1, 1);
 
   if (heroSprite) {
-    // УВЕЛИЧИЛИ РАЗМЕР (было 32x48, стало 64x96)
-    const w = 64; 
-    const h = 96;
+    const w = 60; // Сделали чуть крупнее
+    const h = 90;
     ctx.drawImage(heroSprite, -w / 2, -h, w, h);
   } else {
     ctx.fillStyle = '#ff2222';
@@ -295,9 +284,7 @@ function drawHero(x, y, isWalking, direction, walkTimer) {
 }
 
 function drawCharon(x, y, isWalking, walkTimer) {
-  if (imagesLoaded && imgCharon.complete && !charonSprite) {
-    charonSprite = processImage(imgCharon);
-  }
+  if (imagesLoaded && imgCharon.complete && !charonSprite) charonSprite = processImage(imgCharon);
 
   ctx.save();
   ctx.translate(x, y);
@@ -306,9 +293,8 @@ function drawCharon(x, y, isWalking, walkTimer) {
   ctx.rotate(tilt);
 
   if (charonSprite) {
-    // УВЕЛИЧИЛИ РАЗМЕР (было 36x54, стало 72x108)
-    const w = 72; 
-    const h = 108;
+    const w = 65; 
+    const h = 100;
     ctx.drawImage(charonSprite, -w / 2, -h, w, h);
   } else {
     ctx.fillStyle = '#ffffff';
@@ -319,126 +305,147 @@ function drawCharon(x, y, isWalking, walkTimer) {
  
 /* ============ ОТРИСОВКА МИРА ============ */
 function drawWorld() {
-  ctx.fillStyle = '#0a1218';
+  // Светлый фон неба/леса
+  const skyGrad = ctx.createLinearGradient(0, 0, 0, SCENE_HEIGHT);
+  skyGrad.addColorStop(0, '#14201a');
+  skyGrad.addColorStop(1, '#2a4034');
+  ctx.fillStyle = skyGrad;
   ctx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
 
   ctx.save();
-  ctx.translate(-Math.floor(cameraX), 0);
+  ctx.translate(-Math.floor(cameraX), -Math.floor(cameraY));
 
-  // Небо
-  const skyGrad = ctx.createLinearGradient(0, 0, 0, FLOOR_Y);
-  skyGrad.addColorStop(0, '#05080a');
-  skyGrad.addColorStop(1, '#0a1a12');
-  ctx.fillStyle = skyGrad;
-  ctx.fillRect(0, 0, SCENE_WIDTH, FLOOR_Y);
-
-  // Деревья
-  ctx.fillStyle = '#14201a';
-  for (let i = 0; i < 20; i++) {
-    const tx = i * 100 + Math.sin(i) * 20;
-    ctx.fillRect(tx, 80, 20, FLOOR_Y - 80);
-    ctx.beginPath(); ctx.arc(tx + 10, 80, 40, 0, Math.PI * 2); ctx.fill();
+  // Деревья (теперь по всей площади)
+  ctx.fillStyle = '#1f3028';
+  for (let i = 0; i < 15; i++) {
+    for (let j = 0; j < 3; j++) {
+      const tx = i * 120 + Math.sin(i*3) * 30;
+      const ty = j * 200 + Math.cos(i) * 20;
+      ctx.fillRect(tx, ty, 25, 150); // Ствол
+      ctx.beginPath(); ctx.arc(tx + 12, ty, 50, 0, Math.PI * 2); ctx.fill(); // Крона
+    }
   }
 
-  // Земля
-  ctx.fillStyle = '#0a0f0d';
-  ctx.fillRect(0, FLOOR_Y, SCENE_WIDTH, 20);
-
-  // КПП
-  ctx.fillStyle = '#0f1a16';
-  ctx.fillRect(500, FLOOR_Y - 120, 100, 120);
-  ctx.fillStyle = '#1f3028';
-  ctx.fillRect(490, FLOOR_Y - 130, 120, 10);
+  // Земля (низ экрана)
   ctx.fillStyle = '#2a3c34';
-  ctx.fillRect(520, FLOOR_Y - 100, 60, 40);
+  ctx.fillRect(0, 500, SCENE_WIDTH, 100);
 
-  // Шлагбаум
-  ctx.fillStyle = '#1a2620';
-  ctx.fillRect(620, FLOOR_Y - 80, 10, 80);
+  // КПП (Сдвинули по Y)
+  ctx.fillStyle = '#3a5a4a';
+  ctx.fillRect(600, 380, 120, 140);
+  ctx.fillStyle = '#4a7a5a';
+  ctx.fillRect(590, 370, 140, 10);
+  ctx.fillStyle = '#6a9a7a';
+  ctx.fillRect(620, 410, 80, 50);
+
+  // Шлагбаум (Сдвинули по Y)
+  ctx.fillStyle = '#2a4a3a';
+  ctx.fillRect(740, 450, 12, 90);
   for (let i = 0; i < 6; i++) {
-    ctx.fillStyle = i % 2 === 0 ? '#4a2020' : '#c8c8c8';
+    ctx.fillStyle = i % 2 === 0 ? '#8a2020' : '#e0e0e0';
     if (state.flags.barrierOpen) {
-      ctx.fillRect(625, FLOOR_Y - 80 - i * 10, 8, 10);
+      ctx.fillRect(745, 450 - i * 12, 10, 12);
     } else {
-      ctx.fillRect(630 + i * 20, FLOOR_Y - 70, 20, 8);
+      ctx.fillRect(750 + i * 25, 470, 25, 10);
     }
   }
 
   // Ключ-карта
   if (!state.items.includes('keycard')) {
-    ctx.fillStyle = '#2a4a3a';
-    ctx.fillRect(800, FLOOR_Y - 4, 12, 8);
-    ctx.strokeStyle = '#4a7a5a'; ctx.lineWidth = 1;
-    ctx.strokeRect(800, FLOOR_Y - 4, 12, 8);
+    ctx.fillStyle = '#6aba7a';
+    ctx.fillRect(950, 510, 16, 10);
+    ctx.strokeStyle = '#a0e0a0'; ctx.lineWidth = 2;
+    ctx.strokeRect(950, 510, 16, 10);
   }
 
   // Персонажи
-  drawCharon(720, FLOOR_Y);
-  drawHero(heroX, FLOOR_Y, isWalking, heroDirection, walkTimer);
+  drawCharon(820, 490);
+  drawHero(heroX, heroY, isWalking, heroDirection, walkTimer);
 
   ctx.restore();
 }
 
-/* ============ ИГРОВОЙ ЦИКЛ ============ */
+/* ============ ЛОГИКА И ЦИКЛ ============ */
 function tick(now) {
   const dt = Math.min(0.05, (now - lastTime) / 1000);
   lastTime = now;
 
-  if (targetX !== null) {
-    const diff = targetX - heroX;
-    const dist = Math.abs(diff);
-    if (dist < 2) {
-      heroX = targetX; targetX = null; isWalking = false;
-      if (pendingClick) { const cb = pendingClick; pendingClick = null; cb(); }
-    } else {
-      const speed = 120; 
-      const step = Math.min(dist, speed * dt);
-      const dir = Math.sign(diff);
-      heroDirection = dir;
-      heroX += step * dir;
-      isWalking = true;
-      walkTimer += dt * 12;
-    }
+  // Движение на WASD
+  let dx = 0;
+  let dy = 0;
+  if (keys.a) { dx -= 1; heroDirection = -1; }
+  if (keys.d) { dx += 1; heroDirection = 1; }
+  if (keys.w) { dy -= 1; }
+  if (keys.s) { dy += 1; }
+
+  if (dx !== 0 || dy !== 0) {
+    // Нормализация диагонали, чтобы не было быстрее
+    const length = Math.sqrt(dx*dx + dy*dy);
+    dx /= length;
+    dy /= length;
+
+    heroX += dx * heroSpeed * dt;
+    heroY += dy * heroSpeed * dt;
+    isWalking = true;
+    walkTimer += dt * 12;
   } else {
     isWalking = false;
   }
 
-  const targetCam = heroX - gameCanvas.width / 2;
-  cameraX += (targetCam - cameraX) * Math.min(1, dt * 4);
+  // Ограничение мира (чтобы не уйти за края)
+  heroX = Math.max(50, Math.min(SCENE_WIDTH - 50, heroX));
+  heroY = Math.max(200, Math.min(550, heroY)); // Ограничиваем глубину (верх/низ)
+
+  // Камера следует за героем
+  const targetCamX = heroX - gameCanvas.width / 2;
+  const targetCamY = heroY - gameCanvas.height / 2;
+  
+  cameraX += (targetCamX - cameraX) * Math.min(1, dt * 5);
+  cameraY += (targetCamY - cameraY) * Math.min(1, dt * 5);
+  
+  // Ограничение камеры
   cameraX = Math.max(0, Math.min(SCENE_WIDTH - gameCanvas.width, cameraX));
+  cameraY = Math.max(0, Math.min(SCENE_HEIGHT - gameCanvas.height, cameraY));
 
   drawWorld();
   requestAnimationFrame(tick);
 }
 
-/* ============ УПРАВЛЕНИЕ ============ */
-gameCanvas.addEventListener('contextmenu', (e) => {
-  e.preventDefault();
-  const rect = gameCanvas.getBoundingClientRect();
-  const clickX = (e.clientX - rect.left) * (gameCanvas.width / rect.width) + cameraX;
-  targetX = clickX;
-  pendingClick = null;
+/* ============ ВВОД КЛАВИАТУРЫ ============ */
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'w' || e.key === 'W' || e.key === 'ц' || e.key === 'Ц') keys.w = true;
+  if (e.key === 'a' || e.key === 'A' || e.key === 'ф' || e.key === 'Ф') keys.a = true;
+  if (e.key === 's' || e.key === 'S' || e.key === 'ы' || e.key === 'Ы') keys.s = true;
+  if (e.key === 'd' || e.key === 'D' || e.key === 'в' || e.key === 'В') keys.d = true;
 });
 
+window.addEventListener('keyup', (e) => {
+  if (e.key === 'w' || e.key === 'W' || e.key === 'ц' || e.key === 'Ц') keys.w = false;
+  if (e.key === 'a' || e.key === 'A' || e.key === 'ф' || e.key === 'Ф') keys.a = false;
+  if (e.key === 's' || e.key === 'S' || e.key === 'ы' || e.key === 'Ы') keys.s = false;
+  if (e.key === 'd' || e.key === 'D' || e.key === 'в' || e.key === 'В') keys.d = false;
+});
+
+/* ============ КЛИКИ (ВЗАИМОДЕЙСТВИЕ) ============ */
 gameCanvas.addEventListener('click', (e) => {
   const rect = gameCanvas.getBoundingClientRect();
   const clickX = (e.clientX - rect.left) * (gameCanvas.width / rect.width) + cameraX;
-  const clickY = (e.clientY - rect.top) * (gameCanvas.height / rect.height);
+  const clickY = (e.clientY - rect.top) * (gameCanvas.height / rect.height) + cameraY;
 
+  // Объекты с новыми координатами (x, y, ширина, высота)
   const objects = [
-    { id: 'horace', x: 500, y: FLOOR_Y - 130, w: 100, h: 130 },
-    { id: 'charon', x: 700, y: FLOOR_Y - 60, w: 40, h: 60 },
-    { id: 'keycard', x: 800, y: FLOOR_Y - 12, w: 12, h: 8, condition: !state.items.includes('keycard') },
-    { id: 'barrier', x: 620, y: FLOOR_Y - 80, w: 130, h: 80 },
-    { id: 'booth', x: 500, y: FLOOR_Y - 130, w: 100, h: 130 },
+    { id: 'horace', x: 600, y: 380, w: 120, h: 140 },
+    { id: 'charon', x: 800, y: 400, w: 60, h: 100 },
+    { id: 'keycard', x: 950, y: 500, w: 20, h: 20, condition: !state.items.includes('keycard') },
+    { id: 'barrier', x: 740, y: 450, w: 150, h: 90 },
+    { id: 'booth', x: 600, y: 380, w: 120, h: 140 },
   ];
 
   for (let obj of objects) {
     if (obj.condition === false) continue;
+    // Проверяем клик по объекту
     if (clickX >= obj.x && clickX <= obj.x + obj.w && clickY >= obj.y && clickY <= obj.y + obj.h) {
-      const approachX = obj.x + obj.w / 2 - 20;
-      targetX = approachX;
-      pendingClick = () => interact(obj.id);
+      interact(obj.id);
       return;
     }
   }
