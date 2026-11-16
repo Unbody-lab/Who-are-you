@@ -8,109 +8,83 @@
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
-    background: #05070a;
-    color: #c8ccd4;
-    font-family: 'VT323', monospace;
-    overflow: hidden;
-    height: 100vh;
-    user-select: none;
+    background: #05070a; color: #c8ccd4; font-family: 'VT323', monospace;
+    overflow: hidden; height: 100vh; user-select: none;
   }
 
   /* ===== КАТСЦЕНА ===== */
   #cutscene {
-    position: fixed; inset: 0; z-index: 300;
-    background: #000;
+    position: fixed; inset: 0; z-index: 300; background: #000;
     display: flex; align-items: center; justify-content: center;
     transition: opacity 1.5s;
   }
   #cutscene.hidden { opacity: 0; pointer-events: none; }
   #csBg { position: absolute; inset: 0; transition: background 1.2s; background: #0a0a0a; }
   #csText {
-    position: absolute; bottom: 0; left: 0; right: 0;
-    min-height: 200px;
+    position: absolute; bottom: 0; left: 0; right: 0; min-height: 200px;
     background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.92) 35%);
     padding: 50px 80px; font-size: 32px; line-height: 1.4;
     color: #d8dce4; display: flex; align-items: flex-end; z-index: 2;
   }
   #csText span { max-width: 900px; }
   #csNext {
-    position: absolute; bottom: 30px; right: 60px;
-    color: #6b7f9e; font-size: 24px; font-style: italic;
-    cursor: pointer; z-index: 3; animation: blink 1.8s infinite;
+    position: absolute; bottom: 30px; right: 60px; color: #6b7f9e; font-size: 24px;
+    font-style: italic; cursor: pointer; z-index: 3; animation: blink 1.8s infinite;
   }
   @keyframes blink { 0%,100%{opacity:0.3;} 50%{opacity:1;} }
 
   /* ===== ИГРА ===== */
-  #game { position: fixed; inset: 0; opacity: 1; transition: opacity 1.5s; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #000; }
+  #game {
+    position: fixed; inset: 0; opacity: 1; transition: opacity 1.5s;
+    overflow: hidden; display: flex; align-items: center; justify-content: center; background: #000;
+  }
   #game.hidden { opacity: 0; pointer-events: none; }
 
-  /* Холст, растянутый на весь экран с чёткими пикселями */
   canvas {
-    display: block;
-    width: 100vw;
-    height: 100vh;
-    image-rendering: pixelated;
-    image-rendering: crisp-edges;
+    display: block; width: 100vw; height: 100vh;
+    image-rendering: pixelated; image-rendering: crisp-edges;
     background: #0a1218;
   }
 
-  /* UI поверх холста */
   #uiOverlay {
-    position: absolute; inset: 0;
-    pointer-events: none;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    padding: 20px;
+    position: absolute; inset: 0; pointer-events: none;
+    display: flex; flex-direction: column; justify-content: space-between; padding: 20px;
   }
 
   #textPanel {
-    pointer-events: auto;
-    min-height: 100px;
-    background: rgba(5,7,10,0.85);
-    border: 2px solid #2a3548;
-    padding: 20px 30px; font-size: 28px; line-height: 1.3;
-    color: #b8bec8; margin-top: auto;
-    max-width: 1000px;
-    align-self: center;
-    width: 100%;
+    pointer-events: auto; min-height: 100px; background: rgba(5,7,10,0.85);
+    border: 2px solid #2a3548; padding: 20px 30px; font-size: 28px; line-height: 1.3;
+    color: #b8bec8; margin-top: auto; max-width: 1000px; align-self: center; width: 100%;
   }
   #textPanel .speaker { color: #5a7a6a; font-style: italic; }
 
   #inventory { position: absolute; top: 20px; right: 20px; display: flex; flex-direction: column; gap: 8px; pointer-events: auto; }
   .item-icon {
-    width: 48px; height: 48px;
-    background: #1a2333; border: 2px solid #2a3548;
+    width: 48px; height: 48px; background: #1a2333; border: 2px solid #2a3548;
     border-radius: 4px; display: flex; align-items: center; justify-content: center;
     cursor: pointer; font-size: 24px; transition: all 0.2s;
   }
   .item-icon:hover { border-color: #5a7a6a; box-shadow: 0 0 12px rgba(90,122,106,0.5); }
 
   #locTitle {
-    position: absolute; top: 20px; left: 20px;
-    font-size: 20px; letter-spacing: 2px; text-transform: uppercase;
-    color: #4a5568; font-family: 'VT323', monospace;
+    position: absolute; top: 20px; left: 20px; font-size: 20px; letter-spacing: 2px;
+    text-transform: uppercase; color: #4a5568;
   }
   #controls {
-    position: absolute; top: 50px; left: 20px;
-    font-size: 18px; color: #3a4558; line-height: 1.5;
+    position: absolute; top: 50px; left: 20px; font-size: 18px; color: #3a4558; line-height: 1.5;
   }
   #controls b { color: #5a7a6a; }
 
-  /* Модалка */
   #modal {
     position: fixed; inset: 0; background: rgba(0,0,0,0.85);
-    display: none; align-items: center; justify-content: center;
-    z-index: 100; padding: 40px;
+    display: none; align-items: center; justify-content: center; z-index: 100; padding: 40px;
   }
   #modal.open { display: flex; }
   #modalContent {
     background: #12181f; border: 2px solid #2a3548; padding: 40px;
-    max-width: 600px; font-size: 26px; line-height: 1.4; color: #d0d4da;
-    position: relative;
+    max-width: 600px; font-size: 26px; line-height: 1.4; color: #d0d4da; position: relative;
   }
   #modalClose { position: absolute; top: 12px; right: 16px; cursor: pointer; color: #6b7f9e; font-size: 32px; }
-  #modalClose:hover { color: #b8bec8; }
 </style>
 </head>
 <body>
@@ -144,17 +118,16 @@
 <script>
 /* ============ СОСТОЯНИЕ ============ */
 const state = {
-  seen: {}, items: [], flags: {}, cutsceneDone: false,
-  hero: { x: 200 },
+  seen: {}, items: [], flags: {}, cutsceneDone: false, hero: { x: 200 },
 };
-const SAVE_KEY = 'kto_ty_pixel_v1';
+const SAVE_KEY = 'kto_ty_pixel_v2';
 function save() { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }
 function load() {
   const raw = localStorage.getItem(SAVE_KEY);
   if (raw) { try { Object.assign(state, JSON.parse(raw)); } catch(e) {} }
 }
 
-/* ============ ЗВУК/ТЕКСТ ============ */
+/* ============ ТЕКСТ ============ */
 let typeTimer = null;
 function say(text, speaker) {
   const el = document.getElementById('textContent');
@@ -212,205 +185,174 @@ csNext.addEventListener('click', () => {
 /* ============ ИГРА / CANVAS ============ */
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
-const SCENE_WIDTH = 1600; // виртуальная ширина мира
-const FLOOR_Y = 260;      // уровень земли (в пикселях сцены)
+const SCENE_WIDTH = 1600;
+const FLOOR_Y = 260;
 
 let heroX = 200;
 let targetX = null;
-let heroDirection = 1; // 1 = вправо, -1 = влево
+let heroDirection = 1;
 let walkTimer = 0;
 let isWalking = false;
 let cameraX = 0;
 let pendingClick = null;
 let lastTime = performance.now();
 
+// ЗАГРУЗКА КАРТИНОК (Твои спрайты)
+const imgHero = new Image();
+imgHero.src = 'hero.png'; // Имя твоего файла с героем
+const imgCharon = new Image();
+imgCharon.src = 'charon.png'; // Имя твоего файла с Хароном
+
+// Флаг: если картинки не загрузятся (нет файлов), мы нарисуем заглушки
+let imagesLoaded = false;
+let loadCount = 0;
+function checkLoaded() {
+  loadCount++;
+  if (loadCount >= 2) imagesLoaded = true;
+}
+imgHero.onload = checkLoaded;
+imgHero.onerror = checkLoaded;
+imgCharon.onload = checkLoaded;
+imgCharon.onerror = checkLoaded;
+
 function initGame() {
   load();
   heroX = state.hero?.x ?? 200;
   cameraX = heroX - canvas.width / 2;
-  
-  // Настройка разрешения Canvas под окно (масштабирование с чёткими пикселями)
   resizeCanvas();
   window.addEventListener('resize', resizeCanvas);
-
   renderInventory();
   say("Сумрачный лес. Деревья стоят так плотно, что не видно неба. Перед тобой — КПП и шлагбаум. За ним — дорога вниз.");
   requestAnimationFrame(tick);
 }
 
 function resizeCanvas() {
-  // Внутреннее разрешение фиксировано для пиксель-арта (например, 480x270)
-  canvas.width = 480;
-  canvas.height = 270;
-  // CSS растягивает его на весь экран через width:100vw
+  canvas.width = 480; canvas.height = 270;
 }
 
-/* ============ СПРАЙТЫ (16x32 пикселей, нарисованы кодом) ============ */
-// Спрайт героя (тёмный плащ, красные глаза)
-const HERO_PIXELS = [
-  "....####....",
-  "...######...",
-  "...##oo##...",
-  "...##oo##...",
-  "....####....",
-  "...######...",
-  "..########..",
-  "..########..",
-  "..##....##..",
-  "..##....##..",
-  "...##..##...",
-  "...##..##...",
-  "....####....",
-];
-
-// Спрайт Харона (белая борода, весло)
-const CHARON_PIXELS = [
-  "....####....",
-  "...######...",
-  "...##oo##...",
-  "...##oo##...",
-  "...######...",
-  "..##wwww##..",
-  "..##wwww##..",
-  "..########..",
-  "..##....##..",
-  "..##....##..",
-  "...##..##...",
-  "...##..##...",
-  "....####....",
-];
-
-function drawSprite(pixels, x, y, scale = 2, colors) {
-  for (let row = 0; row < pixels.length; row++) {
-    for (let col = 0; col < pixels[row].length; col++) {
-      const char = pixels[row][col];
-      if (char === '.') continue;
-      ctx.fillStyle = colors[char] || '#fff';
-      ctx.fillRect(x + col * scale, y + row * scale, scale, scale);
-    }
-  }
-}
-
-// Рисуем героя с анимацией ходьбы
+/* ============ ОТРИСОВКА СПРАЙТОВ ============ */
 function drawHero(x, y, isWalking, direction, walkTimer) {
   ctx.save();
-  ctx.translate(x + 8, y + 16);
-  if (direction < 0) ctx.scale(-1, 1);
-  
-  // Наклон тела при ходьбе (South Park style)
+  // Точка опоры - центр ног
+  ctx.translate(x, y);
+
+  // Наклон при ходьбе (South Park style)
   let tilt = 0;
+  let bounce = 0;
   if (isWalking) {
-    tilt = Math.sin(walkTimer) * 0.15; // наклон вперёд-назад
+    tilt = Math.sin(walkTimer) * 0.15; 
+    bounce = Math.abs(Math.sin(walkTimer * 2)) * 2; // подпрыгивание
   }
-  ctx.rotate(tilt);
-
-  const heroColors = {
-    '#': '#1a2230', // тёмный плащ
-    'o': '#ff2222', // красные глаза
-  };
-
-  drawSprite(HERO_PIXELS, -8, -16, 2, heroColors);
   
-  // Ноги (анимация)
-  if (isWalking) {
+  ctx.rotate(tilt * direction);
+  ctx.translate(0, -bounce);
+
+  // Отражаем, если идёт влево
+  if (direction < 0) ctx.scale(-1, 1);
+
+  // Размер спрайта на экране (масштабируем твою картинку)
+  const spriteW = 32;
+  const spriteH = 48;
+
+  if (imagesLoaded && imgHero.complete && imgHero.naturalWidth > 0) {
+    // Если есть картинка, рисуем её
+    // mix-blend-mode поможет убрать белый/серый фон, если он есть
+    ctx.globalCompositeOperation = 'source-over'; 
+    // Отрисовка: x = -spriteW/2 (чтобы центр был по центру), y = -spriteH (чтобы ноги были на земле)
+    ctx.drawImage(imgHero, -spriteW / 2, -spriteH, spriteW, spriteH);
+  } else {
+    // Заглушка, если картинки нет
     ctx.fillStyle = '#1a2230';
-    const legOffset = Math.sin(walkTimer * 2) * 2;
-    ctx.fillRect(-6, 10, 4, 6 + legOffset);
-    ctx.fillRect(2, 10, 4, 6 - legOffset);
+    ctx.fillRect(-8, -32, 16, 32);
+    ctx.fillStyle = '#ff2222';
+    ctx.fillRect(-6, -28, 4, 4);
+    ctx.fillRect(2, -28, 4, 4);
   }
-  
   ctx.restore();
 }
 
-// Рисуем Харона
 function drawCharon(x, y, isWalking, walkTimer) {
-  const charonColors = {
-    '#': '#0d0d0d', // чёрная мантия
-    'o': '#5a7a6a', // глаза
-    'w': '#e0e0e0', // белая борода
-  };
-  
   ctx.save();
-  ctx.translate(x + 8, y + 16);
-  
-  let tilt = 0;
-  if (isWalking) {
-    tilt = Math.sin(walkTimer) * 0.1;
-  }
+  ctx.translate(x, y);
+
+  // Харон стоит, но немного покачивается
+  let tilt = Math.sin(walkTimer * 0.5) * 0.05;
   ctx.rotate(tilt);
 
-  drawSprite(CHARON_PIXELS, -8, -16, 2, charonColors);
-  
-  // Весло
-  ctx.fillStyle = '#5a3a1a';
-  ctx.fillRect(10, -20, 4, 50);
-  
+  const spriteW = 40;
+  const spriteH = 60;
+
+  if (imagesLoaded && imgCharon.complete && imgCharon.naturalWidth > 0) {
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.drawImage(imgCharon, -spriteW / 2, -spriteH, spriteW, spriteH);
+  } else {
+    ctx.fillStyle = '#0d0d0d';
+    ctx.fillRect(-10, -40, 20, 40);
+    ctx.fillStyle = '#e0e0e0';
+    ctx.fillRect(-8, -30, 16, 10); // борода
+  }
   ctx.restore();
 }
 
 /* ============ ОТРИСОВКА МИРА ============ */
 function drawWorld() {
-  // Очистка
   ctx.fillStyle = '#0a1218';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   ctx.save();
-  ctx.translate(-cameraX, 0);
+  ctx.translate(-Math.floor(cameraX), 0);
 
-  // 1. Небо / фон (градиент)
+  // Небо
   const skyGrad = ctx.createLinearGradient(0, 0, 0, FLOOR_Y);
   skyGrad.addColorStop(0, '#05080a');
   skyGrad.addColorStop(1, '#0a1a12');
   ctx.fillStyle = skyGrad;
   ctx.fillRect(0, 0, SCENE_WIDTH, FLOOR_Y);
 
-  // 2. Деревья (силуэты)
+  // Деревья
   ctx.fillStyle = '#14201a';
   for (let i = 0; i < 20; i++) {
     const tx = i * 100 + Math.sin(i) * 20;
-    ctx.fillRect(tx, 80, 20, FLOOR_Y - 80); // стволы
-    // крона
-    ctx.beginPath();
-    ctx.arc(tx + 10, 80, 40, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.fillRect(tx, 80, 20, FLOOR_Y - 80);
+    ctx.beginPath(); ctx.arc(tx + 10, 80, 40, 0, Math.PI * 2); ctx.fill();
   }
 
-  // 3. Земля
+  // Земля
   ctx.fillStyle = '#0a0f0d';
   ctx.fillRect(0, FLOOR_Y, SCENE_WIDTH, 20);
 
-  // 4. КПП (Будка)
+  // КПП
   ctx.fillStyle = '#0f1a16';
-  ctx.fillRect(500, FLOOR_Y - 120, 100, 120); // стены
+  ctx.fillRect(500, FLOOR_Y - 120, 100, 120);
   ctx.fillStyle = '#1f3028';
-  ctx.fillRect(490, FLOOR_Y - 130, 120, 10); // крыша
+  ctx.fillRect(490, FLOOR_Y - 130, 120, 10);
   ctx.fillStyle = '#2a3c34';
-  ctx.fillRect(520, FLOOR_Y - 100, 60, 40); // окошко
+  ctx.fillRect(520, FLOOR_Y - 100, 60, 40);
 
-  // 5. Шлагбаум
+  // Шлагбаум
   ctx.fillStyle = '#1a2620';
-  ctx.fillRect(620, FLOOR_Y - 80, 10, 80); // база
-  // Полосатый шлагбаум
+  ctx.fillRect(620, FLOOR_Y - 80, 10, 80);
   for (let i = 0; i < 6; i++) {
     ctx.fillStyle = i % 2 === 0 ? '#4a2020' : '#c8c8c8';
-    ctx.fillRect(630 + i * 20, FLOOR_Y - 70, 20, 8);
+    // Если шлагбаум открыт, поднимаем его (рисуем повернутым)
+    if (state.flags.barrierOpen) {
+      ctx.fillRect(625, FLOOR_Y - 80 - i * 10, 8, 10);
+    } else {
+      ctx.fillRect(630 + i * 20, FLOOR_Y - 70, 20, 8);
+    }
   }
 
-  // 6. Ключ-карта
+  // Ключ-карта
   if (!state.items.includes('keycard')) {
     ctx.fillStyle = '#2a4a3a';
     ctx.fillRect(800, FLOOR_Y - 4, 12, 8);
-    ctx.strokeStyle = '#4a7a5a';
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = '#4a7a5a'; ctx.lineWidth = 1;
     ctx.strokeRect(800, FLOOR_Y - 4, 12, 8);
   }
 
-  // 7. Харон
-  // Оставляем его стоять у шлагбаума, а не ходить (он NPC)
-  drawCharon(720, FLOOR_Y - 32);
-
-  // 8. Герой (отрисовка с камерой)
-  drawHero(heroX, FLOOR_Y - 32, isWalking, heroDirection, walkTimer);
+  // Персонажи
+  drawCharon(720, FLOOR_Y);
+  drawHero(heroX, FLOOR_Y, isWalking, heroDirection, walkTimer);
 
   ctx.restore();
 }
@@ -420,7 +362,6 @@ function tick(now) {
   const dt = Math.min(0.05, (now - lastTime) / 1000);
   lastTime = now;
 
-  // Логика движения (герой идёт в таргет)
   if (targetX !== null) {
     const diff = targetX - heroX;
     const dist = Math.abs(diff);
@@ -428,62 +369,52 @@ function tick(now) {
       heroX = targetX; targetX = null; isWalking = false;
       if (pendingClick) { const cb = pendingClick; pendingClick = null; cb(); }
     } else {
-      const speed = 120; // пикселей в секунду
+      const speed = 120; 
       const step = Math.min(dist, speed * dt);
       const dir = Math.sign(diff);
       heroDirection = dir;
       heroX += step * dir;
       isWalking = true;
-      walkTimer += dt * 8;
+      walkTimer += dt * 12;
     }
   } else {
     isWalking = false;
   }
 
-  // Камера плавно следует за героем (держит его в центре)
   const targetCam = heroX - canvas.width / 2;
   cameraX += (targetCam - cameraX) * Math.min(1, dt * 4);
   cameraX = Math.max(0, Math.min(SCENE_WIDTH - canvas.width, cameraX));
 
-  // Отрисовка
   drawWorld();
-
   requestAnimationFrame(tick);
 }
 
 /* ============ УПРАВЛЕНИЕ ============ */
 canvas.addEventListener('contextmenu', (e) => {
   e.preventDefault();
-  // Перевод координат клика в мировые координаты
   const rect = canvas.getBoundingClientRect();
   const clickX = (e.clientX - rect.left) * (canvas.width / rect.width) + cameraX;
-  
   targetX = clickX;
   pendingClick = null;
 });
 
-// Клики по хотспотам (ЛКМ)
-// В пиксельной игре хотспоты лучше делать невидимыми DOM-элементами или проверять коллизии в canvas.
-// Для простоты сделаем проверку попадания в bounding box при клике.
 canvas.addEventListener('click', (e) => {
   const rect = canvas.getBoundingClientRect();
   const clickX = (e.clientX - rect.left) * (canvas.width / rect.width) + cameraX;
   const clickY = (e.clientY - rect.top) * (canvas.height / rect.height);
 
-  // Проверяем объекты
   const objects = [
     { id: 'horace', x: 500, y: FLOOR_Y - 130, w: 100, h: 130 },
-    { id: 'charon', x: 720, y: FLOOR_Y - 64, w: 20, h: 64 },
+    { id: 'charon', x: 700, y: FLOOR_Y - 60, w: 40, h: 60 },
     { id: 'keycard', x: 800, y: FLOOR_Y - 12, w: 12, h: 8, condition: !state.items.includes('keycard') },
     { id: 'barrier', x: 620, y: FLOOR_Y - 80, w: 130, h: 80 },
-    { id: 'booth', x: 500, y: FLOOR_Y - 130, w: 100, h: 130 }, // будка и Гораций вместе
+    { id: 'booth', x: 500, y: FLOOR_Y - 130, w: 100, h: 130 },
   ];
 
   for (let obj of objects) {
     if (obj.condition === false) continue;
     if (clickX >= obj.x && clickX <= obj.x + obj.w && clickY >= obj.y && clickY <= obj.y + obj.h) {
-      // Идём к объекту
-      const approachX = obj.x + obj.w / 2 - 15;
+      const approachX = obj.x + obj.w / 2 - 20;
       targetX = approachX;
       pendingClick = () => interact(obj.id);
       return;
@@ -495,7 +426,6 @@ function interact(id) {
   const obj = gameObjects[id];
   if (!obj) return;
   if (obj.onClick) { obj.onClick(); return; }
-  
   const first = !state.seen[id];
   let text;
   if (typeof obj.text === 'function') text = obj.text();
@@ -505,13 +435,12 @@ function interact(id) {
   say(text);
 }
 
-/* ============ ИГРОВЫЕ ОБЪЕКТЫ ============ */
 const gameObjects = {
-  forest: { text: "Сумрачный лес. Стволы уходят вверх и теряются в сером. Где-то там — небо, но его не видно." },
+  forest: { text: "Сумрачный лес. Стволы уходят вверх и теряются в сером." },
   booth: { text: "Будка КПП. Внутри сидит человек в форме. На табличке: «Гораций. Смена — вечная»." },
   horace: {
     onClick: () => {
-      if (state.flags.barrierOpen) { say("— Проходи, — говорит Гораций. — Не задерживайся.", "Гораций"); return; }
+      if (state.flags.barrierOpen) { say("— Проходи, — говорит Гораций.", "Гораций"); return; }
       if (state.flags.horaceTalked && state.items.includes('keycard')) {
         if (!state.flags.stampGiven) {
           state.flags.stampGiven = true; state.flags.barrierOpen = true; save();
@@ -519,9 +448,9 @@ const gameObjects = {
         }
         return;
       }
-      if (state.flags.horaceTalked) { say("— Пропуск нужен. Без печати не подниму.", "Гораций"); return; }
+      if (state.flags.horaceTalked) { say("— Пропуск нужен.", "Гораций"); return; }
       state.flags.horaceTalked = true; save();
-      say("«Ещё один. Пропуск есть?» Ты мотаешь головой. «Тогда стой. Правила есть правила».", "Гораций");
+      say("«Ещё один. Пропуск есть?» Ты мотаешь головой. «Тогда стой».", "Гораций");
     }
   },
   charon: {
@@ -530,24 +459,23 @@ const gameObjects = {
         state.flags.charonTalked = true; save();
         say("«Ещё одна заблудшая душа. Привет. Я — Харон. Но сегодня шлагбаум закрыт — не моя воля».", "Харон");
       } else if (!state.items.includes('keycard')) {
-        say("— Ключ-карта? Лежит где-то у дороги. Подбери — может, Гораций смилостивится.", "Харон");
+        say("— Ключ-карта? Лежит где-то у дороги.", "Харон");
       } else if (!state.flags.barrierOpen) {
-        say("— Карта у тебя. Покажи Горацию — и он поставит печать.", "Харон");
+        say("— Карта у тебя. Покажи Горацию.", "Харон");
       } else {
-        say("— Шлагбаум поднят. Иди. Я буду ждать внизу, у реки.", "Харон");
+        say("— Шлагбаум поднят. Иди. Я буду ждать внизу.", "Харон");
       }
     }
   },
   keycard: {
     onClick: () => {
       if (state.items.includes('keycard')) { say("Ключ-карта уже у тебя."); return; }
-      state.items.push('keycard'); save();
-      renderInventory();
+      state.items.push('keycard'); save(); renderInventory();
       say("Ты подобрал ключ-карту. Она холодная.");
     }
   },
   barrier: {
-    text: () => state.flags.barrierOpen ? "Шлагбаум поднят." : "Шлагбаум опущен. Правила — у Горация."
+    text: () => state.flags.barrierOpen ? "Шлагбаум поднят." : "Шлагбаум опущен."
   }
 };
 
