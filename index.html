@@ -40,7 +40,7 @@
   }
   #game.hidden { opacity: 0; pointer-events: none; }
 
-  canvas {
+  #gameCanvas {
     display: block; width: 100vw; height: 100vh;
     image-rendering: pixelated; image-rendering: crisp-edges;
     background: #0a1218;
@@ -183,8 +183,8 @@ csNext.addEventListener('click', () => {
 });
 
 /* ============ ИГРА / CANVAS ============ */
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
+const gameCanvas = document.getElementById('gameCanvas');
+const ctx = gameCanvas.getContext('2d');
 const SCENE_WIDTH = 1600;
 const FLOOR_Y = 260;
 
@@ -197,38 +197,36 @@ let cameraX = 0;
 let pendingClick = null;
 let lastTime = performance.now();
 
-// ЗАГРУЗКА КАРТИНОК (Твои спрайты)
 /* ============ ЗАГРУЗКА И ПОДГОТОВКА СПРАЙТОВ ============ */
 const imgHero = new Image();
 const imgCharon = new Image();
-imgHero.src = 'hero.jpg';   // ВАЖНО: если файл на GitHub называется иначе (например, png), поменяй здесь
+imgHero.src = 'hero.jpg';   // Убедись, что на GitHub файл называется точно так же
 imgCharon.src = 'charon.jpg';
 
 let imagesLoaded = false;
 let loadCount = 0;
 
-// Функция, которая берет картинку и делает белый фон прозрачным
+// Функция, которая берет картинку и делает белый/серый фон прозрачным
 function processImage(img) {
-  const canvas = document.createElement('canvas');
-  canvas.width = img.width;
-  canvas.height = img.height;
-  const ctx = canvas.getContext('2d');
-  ctx.drawImage(img, 0, 0);
+  const tempCanvas = document.createElement('canvas');
+  tempCanvas.width = img.width;
+  tempCanvas.height = img.height;
+  const tempCtx = tempCanvas.getContext('2d');
+  tempCtx.drawImage(img, 0, 0);
 
-  const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const imgData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
   const data = imgData.data;
 
   for (let i = 0; i < data.length; i += 4) {
-    // Если пиксель белый или очень светлый — делаем его прозрачным
-    if (data[i] > 230 && data[i+1] > 230 && data[i+2] > 230) {
+    // Если пиксель светлый (белый или серый на фоне), делаем его прозрачным
+    if (data[i] > 200 && data[i+1] > 200 && data[i+2] > 200) {
       data[i+3] = 0; 
     }
   }
-  ctx.putImageData(imgData, 0, 0);
-  return canvas;
+  tempCtx.putImageData(imgData, 0, 0);
+  return tempCanvas;
 }
 
-// Ждем загрузки обеих картинок
 function checkLoaded() {
   loadCount++;
   if (loadCount >= 2) imagesLoaded = true;
@@ -239,14 +237,29 @@ imgCharon.onload = checkLoaded;
 imgHero.onerror = () => { console.error('Ошибка: не найден файл hero.jpg'); checkLoaded(); };
 imgCharon.onerror = () => { console.error('Ошибка: не найден файл charon.jpg'); checkLoaded(); };
 
-
-/* ============ ОТРИСОВКА ПЕРСОНАЖЕЙ ============ */
-// Переменные для хранения обработанных картинок
 let heroSprite = null;
 let charonSprite = null;
 
+function initGame() {
+  load();
+  heroX = state.hero?.x ?? 200;
+  cameraX = heroX - gameCanvas.width / 2;
+  
+  // Настройка разрешения Canvas под окно
+  gameCanvas.width = 480;
+  gameCanvas.height = 270;
+  
+  window.addEventListener('resize', () => {
+    // Если нужно, можно добавить логику ресайза
+  });
+
+  renderInventory();
+  say("Сумрачный лес. Деревья стоят так плотно, что не видно неба. Перед тобой — КПП и шлагбаум. За ним — дорога вниз.");
+  requestAnimationFrame(tick);
+}
+
+/* ============ ОТРИСОВКА ПЕРСОНАЖЕЙ ============ */
 function drawHero(x, y, isWalking, direction, walkTimer) {
-  // Если картинка загрузилась, но еще не обработана — обрабатываем
   if (imagesLoaded && imgHero.complete && !heroSprite) {
     heroSprite = processImage(imgHero);
   }
@@ -262,10 +275,9 @@ function drawHero(x, y, isWalking, direction, walkTimer) {
   if (direction < 0) ctx.scale(-1, 1);
 
   if (heroSprite) {
-    // Задаем размер: ширина 30, высота 45 (внутри игры)
-    const w = 30; 
-    const h = 45;
-    // Отрисовываем так, чтобы ноги касались земли (по оси Y)
+    // Фиксированный размер, чтобы не было артефактов
+    const w = 32; 
+    const h = 48;
     ctx.drawImage(heroSprite, -w / 2, -h, w, h);
   } else {
     // Временный кружок, пока грузится
@@ -287,9 +299,9 @@ function drawCharon(x, y, isWalking, walkTimer) {
   ctx.rotate(tilt);
 
   if (charonSprite) {
-    // Размер Харона: чуть крупнее (ширина 35, высота 55)
-    const w = 35; 
-    const h = 55;
+    // Размер Харона
+    const w = 36; 
+    const h = 54;
     ctx.drawImage(charonSprite, -w / 2, -h, w, h);
   } else {
     // Временный кружок
@@ -302,7 +314,7 @@ function drawCharon(x, y, isWalking, walkTimer) {
 /* ============ ОТРИСОВКА МИРА ============ */
 function drawWorld() {
   ctx.fillStyle = '#0a1218';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
 
   ctx.save();
   ctx.translate(-Math.floor(cameraX), 0);
@@ -339,7 +351,6 @@ function drawWorld() {
   ctx.fillRect(620, FLOOR_Y - 80, 10, 80);
   for (let i = 0; i < 6; i++) {
     ctx.fillStyle = i % 2 === 0 ? '#4a2020' : '#c8c8c8';
-    // Если шлагбаум открыт, поднимаем его (рисуем повернутым)
     if (state.flags.barrierOpen) {
       ctx.fillRect(625, FLOOR_Y - 80 - i * 10, 8, 10);
     } else {
@@ -386,27 +397,27 @@ function tick(now) {
     isWalking = false;
   }
 
-  const targetCam = heroX - canvas.width / 2;
+  const targetCam = heroX - gameCanvas.width / 2;
   cameraX += (targetCam - cameraX) * Math.min(1, dt * 4);
-  cameraX = Math.max(0, Math.min(SCENE_WIDTH - canvas.width, cameraX));
+  cameraX = Math.max(0, Math.min(SCENE_WIDTH - gameCanvas.width, cameraX));
 
   drawWorld();
   requestAnimationFrame(tick);
 }
 
 /* ============ УПРАВЛЕНИЕ ============ */
-canvas.addEventListener('contextmenu', (e) => {
+gameCanvas.addEventListener('contextmenu', (e) => {
   e.preventDefault();
-  const rect = canvas.getBoundingClientRect();
-  const clickX = (e.clientX - rect.left) * (canvas.width / rect.width) + cameraX;
+  const rect = gameCanvas.getBoundingClientRect();
+  const clickX = (e.clientX - rect.left) * (gameCanvas.width / rect.width) + cameraX;
   targetX = clickX;
   pendingClick = null;
 });
 
-canvas.addEventListener('click', (e) => {
-  const rect = canvas.getBoundingClientRect();
-  const clickX = (e.clientX - rect.left) * (canvas.width / rect.width) + cameraX;
-  const clickY = (e.clientY - rect.top) * (canvas.height / rect.height);
+gameCanvas.addEventListener('click', (e) => {
+  const rect = gameCanvas.getBoundingClientRect();
+  const clickX = (e.clientX - rect.left) * (gameCanvas.width / rect.width) + cameraX;
+  const clickY = (e.clientY - rect.top) * (gameCanvas.height / rect.height);
 
   const objects = [
     { id: 'horace', x: 500, y: FLOOR_Y - 130, w: 100, h: 130 },
