@@ -198,148 +198,103 @@ let pendingClick = null;
 let lastTime = performance.now();
 
 // ЗАГРУЗКА КАРТИНОК (Твои спрайты)
+/* ============ ЗАГРУЗКА И ПОДГОТОВКА СПРАЙТОВ ============ */
 const imgHero = new Image();
-imgHero.src = 'hero.png'; // Имя твоего файла с героем
 const imgCharon = new Image();
-imgCharon.src = 'charon.png'; // Имя твоего файла с Хароном
+imgHero.src = 'hero.jpg';   // ВАЖНО: если файл на GitHub называется иначе (например, png), поменяй здесь
+imgCharon.src = 'charon.jpg';
 
-// Флаг: если картинки не загрузятся (нет файлов), мы нарисуем заглушки
 let imagesLoaded = false;
 let loadCount = 0;
+
+// Функция, которая берет картинку и делает белый фон прозрачным
+function processImage(img) {
+  const canvas = document.createElement('canvas');
+  canvas.width = img.width;
+  canvas.height = img.height;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(img, 0, 0);
+
+  const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const data = imgData.data;
+
+  for (let i = 0; i < data.length; i += 4) {
+    // Если пиксель белый или очень светлый — делаем его прозрачным
+    if (data[i] > 230 && data[i+1] > 230 && data[i+2] > 230) {
+      data[i+3] = 0; 
+    }
+  }
+  ctx.putImageData(imgData, 0, 0);
+  return canvas;
+}
+
+// Ждем загрузки обеих картинок
 function checkLoaded() {
   loadCount++;
   if (loadCount >= 2) imagesLoaded = true;
 }
+
 imgHero.onload = checkLoaded;
-imgHero.onerror = checkLoaded;
 imgCharon.onload = checkLoaded;
-imgCharon.onerror = checkLoaded;
-
-function initGame() {
-  load();
-  heroX = state.hero?.x ?? 200;
-  cameraX = heroX - canvas.width / 2;
-  resizeCanvas();
-  window.addEventListener('resize', resizeCanvas);
-  renderInventory();
-  say("Сумрачный лес. Деревья стоят так плотно, что не видно неба. Перед тобой — КПП и шлагбаум. За ним — дорога вниз.");
-  requestAnimationFrame(tick);
-}
-
-function resizeCanvas() {
-  canvas.width = 480; canvas.height = 270;
-}
-
-/* ============ ОТРИСОВКА СПРАЙТОВ ============ */
-/* ====== ОЧИСТКА БЕЛОГО ФОНА У КАРТИНОК ====== */
-function makeWhiteTransparent(img) {
-  // Создаем невидимый холст
-  const tempCanvas = document.createElement('canvas');
-  tempCanvas.width = img.naturalWidth;
-  tempCanvas.height = img.naturalHeight;
-  const tempCtx = tempCanvas.getContext('2d');
-  
-  // Рисуем на нем картинку
-  tempCtx.drawImage(img, 0, 0);
-  
-  // Получаем данные пикселей
-  const imgData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
-  const data = imgData.data;
-
-  // Проходим по каждому пикселю
-  for (let i = 0; i < data.length; i += 4) {
-    const r = data[i];
-    const g = data[i + 1];
-    const b = data[i + 2];
-    
-    // Если пиксель почти белый (или светло-серый), делаем его прозрачным
-    if (r > 200 && g > 200 && b > 200) {
-      data[i + 3] = 0; // Alpha = 0
-    }
-  }
-  
-  // Возвращаем очищенные данные обратно
-  tempCtx.putImageData(imgData, 0, 0);
-  return tempCanvas;
-}
-
-// Храним очищенные версии картинок
-let cleanHeroImg = null;
-let cleanCharonImg = null;
-
-// Когда картинки загрузятся, очищаем им фон
-imgHero.onload = () => {
-  cleanHeroImg = makeWhiteTransparent(imgHero);
-  checkLoaded();
-};
-imgCharon.onload = () => {
-  cleanCharonImg = makeWhiteTransparent(imgCharon);
-  checkLoaded();
-};
-imgHero.onerror = checkLoaded;
-imgCharon.onerror = checkLoaded;
+imgHero.onerror = () => { console.error('Ошибка: не найден файл hero.jpg'); checkLoaded(); };
+imgCharon.onerror = () => { console.error('Ошибка: не найден файл charon.jpg'); checkLoaded(); };
 
 
-/* ====== ОТРИСОВКА ГЕРОЯ ====== */
-/* ====== ОТРИСОВКА ГЕРОЯ ====== */
+/* ============ ОТРИСОВКА ПЕРСОНАЖЕЙ ============ */
+// Переменные для хранения обработанных картинок
+let heroSprite = null;
+let charonSprite = null;
+
 function drawHero(x, y, isWalking, direction, walkTimer) {
+  // Если картинка загрузилась, но еще не обработана — обрабатываем
+  if (imagesLoaded && imgHero.complete && !heroSprite) {
+    heroSprite = processImage(imgHero);
+  }
+
   ctx.save();
   ctx.translate(x, y);
-
+  
   let tilt = isWalking ? Math.sin(walkTimer) * 0.15 : 0;
   let bounce = isWalking ? Math.abs(Math.sin(walkTimer * 2)) * 2 : 0;
-  
   ctx.rotate(tilt * direction);
   ctx.translate(0, -bounce);
 
   if (direction < 0) ctx.scale(-1, 1);
 
-  // Включаем сглаживание для спрайтов, чтобы артефакты не бросались в глаза
-  ctx.imageSmoothingEnabled = true;
-
-  if (imagesLoaded && imgHero.complete) {
-    // Задаем фиксированный размер в пикселях (ширина 32, высота 48)
-    const w = 32; 
-    const h = 48;
-
-    // Рисуем картинку. Используем глобальный композитный режим, чтобы белый просто исчез
-    ctx.globalCompositeOperation = 'source-over';
-    
-    ctx.drawImage(imgHero, -w / 2, -h, w, h);
+  if (heroSprite) {
+    // Задаем размер: ширина 30, высота 45 (внутри игры)
+    const w = 30; 
+    const h = 45;
+    // Отрисовываем так, чтобы ноги касались земли (по оси Y)
+    ctx.drawImage(heroSprite, -w / 2, -h, w, h);
   } else {
-    // Заглушка
-    ctx.fillStyle = '#1a2230';
-    ctx.fillRect(-8, -32, 16, 32);
+    // Временный кружок, пока грузится
     ctx.fillStyle = '#ff2222';
-    ctx.fillRect(-6, -28, 4, 4);
-    ctx.fillRect(2, -28, 4, 4);
+    ctx.beginPath(); ctx.arc(0, -20, 10, 0, Math.PI*2); ctx.fill();
   }
   ctx.restore();
 }
 
-/* ====== ОТРИСОВКА ХАРОНА ====== */
 function drawCharon(x, y, isWalking, walkTimer) {
+  if (imagesLoaded && imgCharon.complete && !charonSprite) {
+    charonSprite = processImage(imgCharon);
+  }
+
   ctx.save();
   ctx.translate(x, y);
-
+  
   let tilt = Math.sin(walkTimer * 0.5) * 0.05;
   ctx.rotate(tilt);
 
-  ctx.imageSmoothingEnabled = true;
-
-  if (imagesLoaded && imgCharon.complete) {
-    // Харон чуть выше (ширина 36, высота 54)
-    const w = 36; 
-    const h = 54;
-
-    ctx.globalCompositeOperation = 'source-over';
-    ctx.drawImage(imgCharon, -w / 2, -h, w, h);
+  if (charonSprite) {
+    // Размер Харона: чуть крупнее (ширина 35, высота 55)
+    const w = 35; 
+    const h = 55;
+    ctx.drawImage(charonSprite, -w / 2, -h, w, h);
   } else {
-    // Заглушка
-    ctx.fillStyle = '#0d0d0d';
-    ctx.fillRect(-10, -40, 20, 40);
-    ctx.fillStyle = '#e0e0e0';
-    ctx.fillRect(-8, -30, 16, 10);
+    // Временный кружок
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath(); ctx.arc(0, -20, 10, 0, Math.PI*2); ctx.fill();
   }
   ctx.restore();
 }
