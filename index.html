@@ -265,7 +265,7 @@ function drawHero(x, y, isWalking, direction, walkTimer) {
   if (direction < 0) ctx.scale(-1, 1);
 
   if (heroSprite) {
-    const w = 100; // Сделали крупным
+    const w = 130; // Сделали крупным
     const h = 150;
     ctx.drawImage(heroSprite, -w / 2, -h, w, h);
   } else {
@@ -285,7 +285,7 @@ function drawCharon(x, y, isWalking, walkTimer) {
   ctx.rotate(tilt);
 
   if (charonSprite) {
-    const w = 110; 
+    const w = 140; 
     const h = 160;
     ctx.drawImage(charonSprite, -w / 2, -h, w, h);
   } else {
