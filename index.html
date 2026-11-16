@@ -200,13 +200,13 @@ let lastTime = performance.now();
 /* ============ ЗАГРУЗКА И ПОДГОТОВКА СПРАЙТОВ ============ */
 const imgHero = new Image();
 const imgCharon = new Image();
-imgHero.src = 'hero.png';   // Убедись, что на GitHub файл называется точно так же
+imgHero.src = 'hero.png';   // Не забудь, что файлы должны называться .png
 imgCharon.src = 'charon.png';
 
 let imagesLoaded = false;
 let loadCount = 0;
 
-// Функция, которая берет картинку и делает белый/серый фон прозрачным
+// Умная очистка фона (стирает белое только по краям, не трогая глаза)
 function processImage(img) {
   const tempCanvas = document.createElement('canvas');
   tempCanvas.width = img.width;
@@ -217,10 +217,19 @@ function processImage(img) {
   const imgData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
   const data = imgData.data;
 
-  for (let i = 0; i < data.length; i += 4) {
-    // Если пиксель светлый (белый или серый на фоне), делаем его прозрачным
-    if (data[i] > 200 && data[i+1] > 200 && data[i+2] > 200) {
-      data[i+3] = 0; 
+  // Проходим по пикселям, но проверяем, что они находятся у краев (фон)
+  for (let y = 0; y < tempCanvas.height; y++) {
+    for (let x = 0; x < tempCanvas.width; x++) {
+      const i = (y * tempCanvas.width + x) * 4;
+      const r = data[i], g = data[i+1], b = data[i+2];
+      
+      // Если пиксель белый
+      if (r > 220 && g > 220 && b > 220) {
+        // Проверяем: если это край (отступ 15 пикселей), стираем
+        if (x < 15 || x > tempCanvas.width - 15 || y < 15 || y > tempCanvas.height - 15) {
+          data[i+3] = 0; 
+        }
+      }
     }
   }
   tempCtx.putImageData(imgData, 0, 0);
@@ -231,11 +240,10 @@ function checkLoaded() {
   loadCount++;
   if (loadCount >= 2) imagesLoaded = true;
 }
-
 imgHero.onload = checkLoaded;
 imgCharon.onload = checkLoaded;
-imgHero.onerror = () => { console.error('Ошибка: не найден файл hero.jpg'); checkLoaded(); };
-imgCharon.onerror = () => { console.error('Ошибка: не найден файл charon.jpg'); checkLoaded(); };
+imgHero.onerror = () => { console.error('Не найден hero.png'); checkLoaded(); };
+imgCharon.onerror = () => { console.error('Не найден charon.png'); checkLoaded(); };
 
 let heroSprite = null;
 let charonSprite = null;
@@ -275,12 +283,11 @@ function drawHero(x, y, isWalking, direction, walkTimer) {
   if (direction < 0) ctx.scale(-1, 1);
 
   if (heroSprite) {
-    // Фиксированный размер, чтобы не было артефактов
-    const w = 32; 
-    const h = 48;
+    // УВЕЛИЧИЛИ РАЗМЕР (было 32x48, стало 64x96)
+    const w = 64; 
+    const h = 96;
     ctx.drawImage(heroSprite, -w / 2, -h, w, h);
   } else {
-    // Временный кружок, пока грузится
     ctx.fillStyle = '#ff2222';
     ctx.beginPath(); ctx.arc(0, -20, 10, 0, Math.PI*2); ctx.fill();
   }
@@ -299,12 +306,11 @@ function drawCharon(x, y, isWalking, walkTimer) {
   ctx.rotate(tilt);
 
   if (charonSprite) {
-    // Размер Харона
-    const w = 36; 
-    const h = 54;
+    // УВЕЛИЧИЛИ РАЗМЕР (было 36x54, стало 72x108)
+    const w = 72; 
+    const h = 108;
     ctx.drawImage(charonSprite, -w / 2, -h, w, h);
   } else {
-    // Временный кружок
     ctx.fillStyle = '#ffffff';
     ctx.beginPath(); ctx.arc(0, -20, 10, 0, Math.PI*2); ctx.fill();
   }
