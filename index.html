@@ -292,8 +292,8 @@ function drawHero(x, y, isWalking, direction, walkTimer) {
   if (direction < 0) ctx.scale(-1, 1);
 
   if (heroSprite) {
-    const w = 160; 
-    const h = 180; 
+    const w = 180; 
+    const h = 140; 
     /* Убрано свечение вокруг персонажа — только спрайт */
     ctx.drawImage(heroSprite, -w / 2, -h, w, h);
   } else {
