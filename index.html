@@ -231,25 +231,77 @@ function resizeCanvas() {
 }
 
 /* ============ ОТРИСОВКА СПРАЙТОВ ============ */
+/* ====== ОЧИСТКА БЕЛОГО ФОНА У КАРТИНОК ====== */
+function makeWhiteTransparent(img) {
+  // Создаем невидимый холст
+  const tempCanvas = document.createElement('canvas');
+  tempCanvas.width = img.naturalWidth;
+  tempCanvas.height = img.naturalHeight;
+  const tempCtx = tempCanvas.getContext('2d');
+  
+  // Рисуем на нем картинку
+  tempCtx.drawImage(img, 0, 0);
+  
+  // Получаем данные пикселей
+  const imgData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+  const data = imgData.data;
+
+  // Проходим по каждому пикселю
+  for (let i = 0; i < data.length; i += 4) {
+    const r = data[i];
+    const g = data[i + 1];
+    const b = data[i + 2];
+    
+    // Если пиксель почти белый (или светло-серый), делаем его прозрачным
+    if (r > 200 && g > 200 && b > 200) {
+      data[i + 3] = 0; // Alpha = 0
+    }
+  }
+  
+  // Возвращаем очищенные данные обратно
+  tempCtx.putImageData(imgData, 0, 0);
+  return tempCanvas;
+}
+
+// Храним очищенные версии картинок
+let cleanHeroImg = null;
+let cleanCharonImg = null;
+
+// Когда картинки загрузятся, очищаем им фон
+imgHero.onload = () => {
+  cleanHeroImg = makeWhiteTransparent(imgHero);
+  checkLoaded();
+};
+imgCharon.onload = () => {
+  cleanCharonImg = makeWhiteTransparent(imgCharon);
+  checkLoaded();
+};
+imgHero.onerror = checkLoaded;
+imgCharon.onerror = checkLoaded;
+
+
+/* ====== ОТРИСОВКА ГЕРОЯ ====== */
 function drawHero(x, y, isWalking, direction, walkTimer) {
   ctx.save();
   ctx.translate(x, y);
+
   let tilt = isWalking ? Math.sin(walkTimer) * 0.15 : 0;
   let bounce = isWalking ? Math.abs(Math.sin(walkTimer * 2)) * 2 : 0;
+  
   ctx.rotate(tilt * direction);
   ctx.translate(0, -bounce);
+
   if (direction < 0) ctx.scale(-1, 1);
 
-  if (imagesLoaded && imgHero.complete && imgHero.naturalWidth > 0) {
-    ctx.save();
-    ctx.filter = 'multiply'; 
-    // Задаем конкретную ширину и высоту, игнорируя пропорции картинки
-    const targetW = 40; // Ширина героя
-    const targetH = 60; // Высота героя
-    ctx.drawImage(imgHero, -targetW / 2, -targetH, targetW, targetH);
-    ctx.restore();
+  if (imagesLoaded && cleanHeroImg) {
+    // Берем оригинальный размер картинки и делим на 2.5, чтобы персонаж был в масштабе игры
+    const scale = 2.5; 
+    const w = cleanHeroImg.width / scale;
+    const h = cleanHeroImg.height / scale;
+
+    ctx.drawImage(cleanHeroImg, -w / 2, -h, w, h);
   } else {
-    // Заглушка (красные глаза), пока картинка не загрузится
+    // Заглушка
     ctx.fillStyle = '#1a2230';
     ctx.fillRect(-8, -32, 16, 32);
     ctx.fillStyle = '#ff2222';
@@ -259,21 +311,23 @@ function drawHero(x, y, isWalking, direction, walkTimer) {
   ctx.restore();
 }
 
+/* ====== ОТРИСОВКА ХАРОНА ====== */
 function drawCharon(x, y, isWalking, walkTimer) {
   ctx.save();
   ctx.translate(x, y);
+
   let tilt = Math.sin(walkTimer * 0.5) * 0.05;
   ctx.rotate(tilt);
 
-  if (imagesLoaded && imgCharon.complete && imgCharon.naturalWidth > 0) {
-    ctx.save();
-    ctx.filter = 'multiply';
-    // Задаем жесткую ширину и высоту для Харона, чтобы он не был тощим
-    const targetW = 45; // Ширина (сделали шире)
-    const targetH = 65; // Высота
-    ctx.drawImage(imgCharon, -targetW / 2, -targetH, targetW, targetH);
-    ctx.restore();
+  if (imagesLoaded && cleanCharonImg) {
+    // Харон чуть крупнее, поэтому делим на 2.2
+    const scale = 2.2;
+    const w = cleanCharonImg.width / scale;
+    const h = cleanCharonImg.height / scale;
+
+    ctx.drawImage(cleanCharonImg, -w / 2, -h, w, h);
   } else {
+    // Заглушка
     ctx.fillStyle = '#0d0d0d';
     ctx.fillRect(-10, -40, 20, 40);
     ctx.fillStyle = '#e0e0e0';
