@@ -281,6 +281,7 @@ imgCharon.onerror = checkLoaded;
 
 
 /* ====== ОТРИСОВКА ГЕРОЯ ====== */
+/* ====== ОТРИСОВКА ГЕРОЯ ====== */
 function drawHero(x, y, isWalking, direction, walkTimer) {
   ctx.save();
   ctx.translate(x, y);
@@ -293,13 +294,18 @@ function drawHero(x, y, isWalking, direction, walkTimer) {
 
   if (direction < 0) ctx.scale(-1, 1);
 
-  if (imagesLoaded && cleanHeroImg) {
-    // Берем оригинальный размер картинки и делим на 2.5, чтобы персонаж был в масштабе игры
-    const scale = 2.5; 
-    const w = cleanHeroImg.width / scale;
-    const h = cleanHeroImg.height / scale;
+  // Включаем сглаживание для спрайтов, чтобы артефакты не бросались в глаза
+  ctx.imageSmoothingEnabled = true;
 
-    ctx.drawImage(cleanHeroImg, -w / 2, -h, w, h);
+  if (imagesLoaded && imgHero.complete) {
+    // Задаем фиксированный размер в пикселях (ширина 32, высота 48)
+    const w = 32; 
+    const h = 48;
+
+    // Рисуем картинку. Используем глобальный композитный режим, чтобы белый просто исчез
+    ctx.globalCompositeOperation = 'source-over';
+    
+    ctx.drawImage(imgHero, -w / 2, -h, w, h);
   } else {
     // Заглушка
     ctx.fillStyle = '#1a2230';
@@ -319,13 +325,15 @@ function drawCharon(x, y, isWalking, walkTimer) {
   let tilt = Math.sin(walkTimer * 0.5) * 0.05;
   ctx.rotate(tilt);
 
-  if (imagesLoaded && cleanCharonImg) {
-    // Харон чуть крупнее, поэтому делим на 2.2
-    const scale = 2.2;
-    const w = cleanCharonImg.width / scale;
-    const h = cleanCharonImg.height / scale;
+  ctx.imageSmoothingEnabled = true;
 
-    ctx.drawImage(cleanCharonImg, -w / 2, -h, w, h);
+  if (imagesLoaded && imgCharon.complete) {
+    // Харон чуть выше (ширина 36, высота 54)
+    const w = 36; 
+    const h = 54;
+
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.drawImage(imgCharon, -w / 2, -h, w, h);
   } else {
     // Заглушка
     ctx.fillStyle = '#0d0d0d';
