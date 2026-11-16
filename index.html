@@ -196,7 +196,7 @@ const WORLD = {
 
 let heroX = 500;
 let heroY = 800; 
-let heroSpeed = 250; 
+let heroSpeed = 180; // Снизили скорость, так как персонаж стал больше
 let isWalking = false;
 let heroDirection = 1;
 let walkTimer = 0;
@@ -216,7 +216,6 @@ let imagesLoaded = false;
 let loadCount = 0;
 
 function processImage(img) {
-  // Удаляем белый/серый фон по краям
   const tempCanvas = document.createElement('canvas');
   tempCanvas.width = img.width;
   tempCanvas.height = img.height;
@@ -228,7 +227,6 @@ function processImage(img) {
     for (let x = 0; x < tempCanvas.width; x++) {
       const i = (y * tempCanvas.width + x) * 4;
       if (data[i] > 200 && data[i+1] > 200 && data[i+2] > 200) {
-        // Если пиксель белый/светло-серый и находится близко к краям — делаем прозрачным
         if (x < 20 || x > tempCanvas.width - 20 || y < 20 || y > tempCanvas.height - 20) {
           data[i+3] = 0; 
         }
@@ -260,24 +258,26 @@ function initGame() {
   requestAnimationFrame(tick);
 }
 
-/* ============ ОТРИСОВКА ПЕРСОНАЖЕЙ ============ */
+/* ============ ОТРИСОВКА ПЕРСОНАЖЕЙ (УВЕЛИЧЕНЫ) ============ */
 function drawHero(x, y, isWalking, direction, walkTimer) {
   if (imagesLoaded && imgHero.complete && !heroSprite) heroSprite = processImage(imgHero);
 
   ctx.save();
   ctx.translate(x, y);
+  
   let tilt = isWalking ? Math.sin(walkTimer) * 0.15 : 0;
-  let bounce = isWalking ? Math.abs(Math.sin(walkTimer * 2)) * 2 : 0;
+  let bounce = isWalking ? Math.abs(Math.sin(walkTimer * 2)) * 3 : 0; // Увеличили подпрыгивание
   ctx.rotate(tilt * direction);
   ctx.translate(0, -bounce);
 
   if (direction < 0) ctx.scale(-1, 1);
 
   if (heroSprite) {
-    const w = 80; const h = 90; // Чуть уменьшили для масштаба
+    const w = 160; // УВЕЛИЧИЛИ С 80 ДО 160
+    const h = 180; // УВЕЛИЧИЛИ С 90 ДО 180
     ctx.drawImage(heroSprite, -w / 2, -h, w, h);
   } else {
-    ctx.fillStyle = '#ff2222'; ctx.beginPath(); ctx.arc(0, -20, 10, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#ff2222'; ctx.beginPath(); ctx.arc(0, -20, 20, 0, Math.PI*2); ctx.fill();
   }
   ctx.restore();
 }
@@ -287,11 +287,13 @@ function drawCharon(x, y) {
 
   ctx.save();
   ctx.translate(x, y);
+  
   if (charonSprite) {
-    const w = 80; const h = 100;
+    const w = 160; // УВЕЛИЧИЛИ С 80 ДО 160
+    const h = 200; // УВЕЛИЧИЛИ С 100 ДО 200
     ctx.drawImage(charonSprite, -w / 2, -h, w, h);
   } else {
-    ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(0, -20, 10, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(0, -20, 20, 0, Math.PI*2); ctx.fill();
   }
   ctx.restore();
 }
@@ -311,7 +313,6 @@ function drawWorld() {
     ctx.fillStyle = skyGrad;
     ctx.fillRect(0, 0, WORLD.outside.width, WORLD.outside.minY);
 
-    // Лес (деревья)
     for (let i = 0; i < 50; i++) {
       const tx = i * 80 + Math.sin(i) * 30;
       ctx.fillStyle = '#14201a';
@@ -319,11 +320,9 @@ function drawWorld() {
       ctx.beginPath(); ctx.arc(tx + 10, 300, 60, 0, Math.PI * 2); ctx.fill();
     }
 
-    // Земля
     ctx.fillStyle = '#2a3c34';
     ctx.fillRect(0, WORLD.outside.minY, WORLD.outside.width, WORLD.outside.height);
 
-    // Тропинки (светлые пятна)
     ctx.fillStyle = '#3a4d42';
     ctx.beginPath();
     ctx.moveTo(200, 1400);
@@ -334,33 +333,28 @@ function drawWorld() {
     ctx.quadraticCurveTo(800, 1000, 300, 1400);
     ctx.fill();
 
-    // КПП (Будка)
     ctx.fillStyle = '#3a5a4a';
-    ctx.fillRect(1300, 550, 150, 250); // Сама будка
+    ctx.fillRect(1300, 550, 150, 250);
     ctx.fillStyle = '#4a7a5a';
-    ctx.fillRect(1280, 530, 190, 20); // Крыша
+    ctx.fillRect(1280, 530, 190, 20);
     ctx.fillStyle = '#6a9a7a';
-    ctx.fillRect(1330, 600, 90, 70); // Окно
-    // Дверь
+    ctx.fillRect(1330, 600, 90, 70);
     ctx.fillStyle = '#2a3b33';
     ctx.fillRect(1310, 700, 50, 100);
-    // Ручка двери
     ctx.fillStyle = '#d0d8d4';
     ctx.fillRect(1340, 750, 6, 6);
 
-    // Шлагбаум
     ctx.fillStyle = '#2a4a3a';
     ctx.fillRect(1480, 630, 15, 170);
     for (let i = 0; i < 8; i++) {
       ctx.fillStyle = i % 2 === 0 ? '#8a2020' : '#e0e0e0';
       if (state.flags.barrierOpen) {
-        ctx.fillRect(1485, 630 - i * 15, 12, 15); // Поднят
+        ctx.fillRect(1485, 630 - i * 15, 12, 15);
       } else {
-        ctx.fillRect(1500 + i * 30, 670, 30, 12); // Опущен
+        ctx.fillRect(1500 + i * 30, 670, 30, 12);
       }
     }
 
-    // Ключ-карта
     if (!state.items.includes('keycard')) {
       ctx.fillStyle = '#6aba7a';
       ctx.fillRect(1000, 850, 20, 12);
@@ -368,7 +362,6 @@ function drawWorld() {
       ctx.strokeRect(1000, 850, 20, 12);
     }
     
-    // Записка (ещё правее)
     if (!state.items.includes('note')) {
       ctx.fillStyle = '#d0d8d4';
       ctx.fillRect(1500, 1100, 15, 20);
@@ -376,38 +369,34 @@ function drawWorld() {
       ctx.strokeRect(1500, 1100, 15, 20);
     }
 
-    drawCharon(1700, 700); // Харон у шлагбаума
+    drawCharon(1700, 700);
     drawHero(heroX, heroY, isWalking, heroDirection, walkTimer);
     
   } else {
     // ---- ВНУТРИ КПП ----
-    ctx.fillStyle = '#1a2520'; // Стены
+    ctx.fillStyle = '#1a2520';
     ctx.fillRect(0, 0, WORLD.inside.width, WORLD.inside.height);
     
-    // Пол
     ctx.fillStyle = '#2a3c34';
     ctx.fillRect(0, WORLD.inside.minY, WORLD.inside.width, WORLD.inside.height);
     
-    // Стол
     ctx.fillStyle = '#4a3a2a';
     ctx.fillRect(400, 480, 200, 40);
     ctx.fillStyle = '#2a2a1a';
     ctx.fillRect(420, 520, 10, 80);
     ctx.fillRect(570, 520, 10, 80);
     
-    // Гораций за столом
+    // Гораций за столом (увеличен)
     ctx.save();
     ctx.translate(500, 520);
-    ctx.fillStyle = '#2a4a3a'; // Форма
-    ctx.fillRect(-15, -40, 30, 40);
-    ctx.fillStyle = '#c0a080'; // Голова
-    ctx.beginPath(); ctx.arc(0, -50, 15, 0, Math.PI*2); ctx.fill();
-    // Фуражка
+    ctx.fillStyle = '#2a4a3a';
+    ctx.fillRect(-30, -80, 60, 80);
+    ctx.fillStyle = '#c0a080';
+    ctx.beginPath(); ctx.arc(0, -100, 30, 0, Math.PI*2); ctx.fill();
     ctx.fillStyle = '#1a2a20';
-    ctx.fillRect(-18, -70, 36, 15);
+    ctx.fillRect(-36, -140, 72, 30);
     ctx.restore();
 
-    // Задний выход (для возврата)
     ctx.fillStyle = '#0a0f0d';
     ctx.fillRect(0, 500, 40, 200);
 
@@ -449,7 +438,6 @@ function tick(now) {
   cameraY += (targetCamY - cameraY) * Math.min(1, dt * 5);
   
   cameraX = Math.max(0, Math.min(zone.width - gameCanvas.width, cameraX));
-  // Не даём камере уехать в небо
   cameraY = Math.max(0, Math.min(zone.height - gameCanvas.height + 200, cameraY));
 
   if (state.hero) { state.hero.x = heroX; state.hero.y = heroY; }
@@ -479,38 +467,30 @@ gameCanvas.addEventListener('click', (e) => {
   const clickY = (e.clientY - rect.top) * (gameCanvas.height / rect.height) + cameraY;
 
   if (currentZone === 'outside') {
-    // Клик по двери КПП
     if (clickX >= 1310 && clickX <= 1360 && clickY >= 700 && clickY <= 800) {
-      enterBooth();
-      return;
+      enterBooth(); return;
     }
-    // Клик по Горацию (окно)
     if (clickX >= 1330 && clickX <= 1420 && clickY >= 600 && clickY <= 670) {
-      interact('horace_outside');
-      return;
+      interact('horace_outside'); return;
     }
-    // Клик по Харону
-    if (clickX >= 1660 && clickX <= 1740 && clickY >= 600 && clickY <= 700) {
+    if (clickX >= 1620 && clickX <= 1780 && clickY >= 500 && clickY <= 700) {
       interact('charon'); return;
     }
-    // Клик по ключ-карте
     if (!state.items.includes('keycard') && clickX >= 1000 && clickX <= 1020 && clickY >= 850 && clickY <= 862) {
       interact('keycard'); return;
     }
-    // Клик по записке
     if (!state.items.includes('note') && clickX >= 1500 && clickX <= 1515 && clickY >= 1100 && clickY <= 1120) {
       interact('note'); return;
     }
-    // Клик по шлагбауму
     if (clickX >= 1480 && clickX <= 1700 && clickY >= 630 && clickY <= 680) {
       interact('barrier'); return;
     }
   } else {
-    // Внутри КПП
     if (clickX >= 0 && clickX <= 50 && clickY >= 500 && clickY <= 700) {
       exitBooth(); return;
     }
-    if (clickX >= 400 && clickX <= 600 && clickY >= 450 && clickY <= 550) {
+    // Клик по Горацию (теперь он больше, зона клика шире)
+    if (clickX >= 440 && clickX <= 560 && clickY >= 380 && clickY <= 550) {
       interact('horace_inside'); return;
     }
   }
@@ -535,7 +515,7 @@ function exitBooth() {
   fade.classList.add('active');
   setTimeout(() => {
     currentZone = 'outside';
-    heroX = 1310; heroY = 830; // Выходим прямо к двери
+    heroX = 1310; heroY = 830;
     document.getElementById('locName').innerText = 'Пролог · Сумрачный лес';
     fade.classList.remove('active');
   }, 800);
