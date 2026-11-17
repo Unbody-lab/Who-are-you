@@ -78,16 +78,9 @@
     pointer-events: none; transition: opacity 0.8s; z-index: 200;
   }
   #fadeOverlay.active { opacity: 1; }
-
-  /* Скрытые аудио-элементы */
-  audio { display: none; }
 </style>
 </head>
 <body>
-
-<!-- АУДИО -->
-<audio id="bgmIntro" loop src="intro.mp3"></audio>
-<audio id="bgmForest" loop src="forest.mp3"></audio>
 
 <div id="cutscene">
   <div id="csBg"></div>
@@ -110,7 +103,36 @@
   <div id="fadeOverlay"></div>
 </div>
 
+<!-- АУДИО ТЕГИ -->
+<audio id="bgmIntro" src="intro.mp3" loop></audio>
+<audio id="bgmForest" src="forest_ambient.mp3" loop></audio>
+
 <script>
+/* ============ АУДИО МЕНЕДЖЕР ============ */
+const audioIntro = document.getElementById('bgmIntro');
+const audioForest = document.getElementById('bgmForest');
+
+// Громкость по умолчанию (можно настроить)
+audioIntro.volume = 0.6;
+audioForest.volume = 0.4;
+
+let isAudioStarted = false;
+
+function playIntroMusic() {
+  if (isAudioStarted) return;
+  isAudioStarted = true;
+  audioIntro.play().catch(e => console.log("Браузер заблокировал аудио до клика"));
+}
+
+function playForestMusic() {
+  if (!audioIntro.paused) audioIntro.pause();
+  audioForest.currentTime = 0;
+  audioForest.play().catch(e => console.log("Ошибка воспроизведения леса"));
+}
+
+// Запускаем интро-музыку при первом клике по катсцене
+document.getElementById('cutscene').addEventListener('click', playIntroMusic, { once: true });
+
 /* ============ СОСТОЯНИЕ ============ */
 const state = {
   seen: {}, items: [], flags: {}, cutsceneDone: false,
@@ -121,31 +143,6 @@ function save() { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }
 function load() {
   const raw = localStorage.getItem(SAVE_KEY);
   if (raw) { try { Object.assign(state, JSON.parse(raw)); } catch(e) {} }
-}
-
-/* ============ АУДИО СИСТЕМА ============ */
-const audioIntro = document.getElementById('bgmIntro');
-const audioForest = document.getElementById('bgmForest');
-let audioStarted = false;
-
-function playAudio(track) {
-  // Браузеры блокируют автовоспроизведение до первого клика пользователя
-  const playPromise = track.play();
-  if (playPromise !== undefined) {
-    playPromise.catch(e => { console.log("Аудио ждёт клика пользователя"); });
-  }
-}
-
-function switchMusic(trackName) {
-  if (trackName === 'intro') {
-    audioForest.pause();
-    if (!audioIntro.paused) return;
-    playAudio(audioIntro);
-  } else if (trackName === 'forest') {
-    audioIntro.pause();
-    if (!audioForest.paused) return;
-    playAudio(audioForest);
-  }
 }
 
 /* ============ ТЕКСТ ============ */
@@ -204,18 +201,14 @@ function renderCsSlide() {
   csNext.style.display = 'none';
   typeInto(csTextContent, slide.text, 40, () => { csNext.style.display = 'block'; });
 }
-csNext.addEventListener('click', () => {
-  // Запускаем музыку интро при первом клике
-  if (!audioStarted) {
-    audioStarted = true;
-    switchMusic('intro');
-  }
-  
+csNext.addEventListener('click', (e) => {
+  e.stopPropagation(); // Чтобы не дублировать клик
   if (csIndex < cutscene.length - 1) { csIndex++; renderCsSlide(); }
   else {
     document.getElementById('cutscene').classList.add('hidden');
     document.getElementById('game').classList.remove('hidden');
     state.cutsceneDone = true; save();
+    playForestMusic(); // Включаем музыку леса
     initGame();
   }
 });
@@ -243,16 +236,18 @@ let cameraY = 0;
 let lastTime = performance.now();
 const keys = { w: false, a: false, s: false, d: false };
 
-/* ============ СПРАЙТЫ ============ */
+/* ============ ЗАГРУЗКА АССЕТОВ ============ */
 const imgHero = new Image();
 const imgCharon = new Image();
-const imgTree = new Image(); // Загрузка дерева
+const imgTree = new Image(); // Ассет дерева
+
 imgHero.src = 'hero.png'; 
 imgCharon.src = 'charon.png';
-imgTree.src = 'tree.png'; 
+imgTree.src = 'tree.png'; // Загружаем дерево
 
-let imagesLoaded = 0;
-let totalImages = 3;
+let imagesLoaded = false;
+let loadCount = 0;
+const totalImages = 3;
 
 function processImage(img) {
   const tempCanvas = document.createElement('canvas');
@@ -276,16 +271,16 @@ function processImage(img) {
   return tempCanvas;
 }
 
-function checkLoaded() { imagesLoaded++; }
-imgHero.onload = checkLoaded; imgCharon.onload = checkLoaded; imgTree.onload = checkLoaded;
+function checkLoaded() { loadCount++; if (loadCount >= totalImages) imagesLoaded = true; }
+imgHero.onload = checkLoaded; 
+imgCharon.onload = checkLoaded;
+imgTree.onload = checkLoaded;
 imgHero.onerror = () => { console.error('Нет hero.png'); checkLoaded(); };
 imgCharon.onerror = () => { console.error('Нет charon.png'); checkLoaded(); };
 imgTree.onerror = () => { console.error('Нет tree.png'); checkLoaded(); };
 
 let heroSprite = null;
 let charonSprite = null;
-let treeSprite = null;
-
 let eyePulse = 0;
 
 function initGame() {
@@ -295,9 +290,6 @@ function initGame() {
   
   gameCanvas.width = 1280; 
   gameCanvas.height = 720;
-  
-  // Включаем музыку леса
-  switchMusic('forest');
   
   renderInventory();
   say("Тьма отступила: лес стал различим. Деревья здесь мёртвые, но воздух уже не такой тяжёлый. Впереди — КПП, единственный островок неясного света. Записка где-то в самом низу тропинки.");
@@ -321,7 +313,7 @@ function drawGlowingEyes(x, y, direction) {
 }
 
 function drawHero(x, y, isWalking, direction, walkTimer) {
-  if (imgHero.complete && !heroSprite) heroSprite = processImage(imgHero);
+  if (imagesLoaded && imgHero.complete && !heroSprite) heroSprite = processImage(imgHero);
 
   ctx.save();
   ctx.translate(x, y);
@@ -346,7 +338,7 @@ function drawHero(x, y, isWalking, direction, walkTimer) {
 }
 
 function drawCharon(x, y) {
-  if (imgCharon.complete && !charonSprite) charonSprite = processImage(imgCharon);
+  if (imagesLoaded && imgCharon.complete && !charonSprite) charonSprite = processImage(imgCharon);
 
   ctx.save();
   ctx.translate(x, y);
@@ -364,44 +356,30 @@ function drawCharon(x, y) {
 }
  
 /* ============ ДЕРЕВЬЯ (АССЕТЫ) ============ */
-function drawTree(tx, ty, scale = 1) {
-  if (imgTree.complete && !treeSprite) treeSprite = processImage(imgTree);
-
-  if (treeSprite) {
-    // Если картинка загружена, рисуем её
-    const w = 120 * scale; 
-    const h = 200 * scale;
-    // Отрисовка с привязкой к низу ствола (чтобы ноги/корни были на земле)
-    ctx.drawImage(treeSprite, tx - w / 2, ty - h, w, h);
+function drawTreeAsset(tx, ty, scale = 1, seed = 0) {
+  if (imgTree.complete && imgTree.naturalWidth > 0) {
+    // Рисуем ассет дерева. Предполагаем, что точка привязки — низ по центру (корни).
+    const w = imgTree.width * scale;
+    const h = imgTree.height * scale;
+    
+    ctx.save();
+    ctx.translate(tx, ty);
+    
+    // Небольшое случайное отклонение для естественности
+    const sway = Math.sin(Date.now() * 0.001 + seed) * 0.02;
+    ctx.rotate(sway);
+    
+    // Рисуем дерево: x = -w/2 (центр), y = -h (низ на земле)
+    ctx.drawImage(imgTree, -w / 2, -h, w, h);
+    ctx.restore();
   } else {
-    // Заглушка, если картинки нет (рисует то же дерево, что было)
-    const trunkW = 22 * scale;
-    const trunkH = 150 * scale;
-    ctx.fillStyle = '#1a1410';
-    ctx.fillRect(tx - trunkW / 2, ty - trunkH, trunkW, trunkH);
-    ctx.strokeStyle = '#1a1410';
-    ctx.lineWidth = 6 * scale;
+    // Заглушка, если нет tree.png (тёмный треугольник)
+    ctx.fillStyle = '#0d120c';
     ctx.beginPath();
-    ctx.moveTo(tx, ty - trunkH * 0.7);
-    ctx.lineTo(tx - 40 * scale, ty - trunkH * 0.95);
-    ctx.moveTo(tx, ty - trunkH * 0.8);
-    ctx.lineTo(tx + 35 * scale, ty - trunkH * 1.05);
-    ctx.stroke();
-    const crownY = ty - trunkH - 10 * scale;
-    const colors = ['#0d120c', '#111610', '#080c08'];
-    const blobs = [
-      { dx: 0, dy: 0, r: 55 * scale },
-      { dx: -40 * scale, dy: 10 * scale, r: 42 * scale },
-      { dx: 40 * scale, dy: 8 * scale, r: 45 * scale },
-      { dx: -15 * scale, dy: -35 * scale, r: 38 * scale },
-      { dx: 20 * scale, dy: -30 * scale, r: 36 * scale },
-    ];
-    blobs.forEach((b, i) => {
-      ctx.fillStyle = colors[i % colors.length];
-      ctx.beginPath();
-      ctx.arc(tx + b.dx, crownY + b.dy, b.r, 0, Math.PI * 2);
-      ctx.fill();
-    });
+    ctx.moveTo(tx, ty - 150 * scale);
+    ctx.lineTo(tx + 40 * scale, ty);
+    ctx.lineTo(tx - 40 * scale, ty);
+    ctx.fill();
   }
 }
  
@@ -418,15 +396,16 @@ function drawWorld() {
   ctx.translate(-Math.floor(cameraX), -Math.floor(cameraY));
 
   if (currentZone === 'outside') {
+    /* Деревья — теперь через ассеты */
     const treeRows = [
-      { y: 800, count: 22, scale: 1.0 },
-      { y: 700, count: 18, scale: 1.2 },
-      { y: 640, count: 14, scale: 1.4 },
+      { y: 850, count: 22, scale: 0.8, seed: 0 },
+      { y: 750, count: 18, scale: 1.0, seed: 1 },
+      { y: 680, count: 14, scale: 1.2, seed: 2 },
     ];
     treeRows.forEach(row => {
       for (let i = 0; i < row.count; i++) {
         const tx = 120 + i * (WORLD.outside.width / row.count) + Math.sin(i * 1.7) * 40;
-        drawTree(tx, row.y, row.scale);
+        drawTreeAsset(tx, row.y, row.scale, row.seed + i);
       }
     });
 
@@ -503,6 +482,7 @@ function drawWorld() {
     drawHero(heroX, heroY, isWalking, heroDirection, walkTimer);
     
   } else {
+    /* ---- ВНУТРИ КПП ---- */
     ctx.fillStyle = '#141414';
     ctx.fillRect(0, 0, WORLD.inside.width, WORLD.inside.height);
     
@@ -658,16 +638,20 @@ function interact(id) {
 }
 
 const gameObjects = {
-  horace_outside: { onClick: () => say("Гораций смотрит на тебя через мутное стекло и стучит пальцем по вывеске: «Зайди».", "Гораций") },
+  horace_outside: {
+    onClick: () => say("Гораций смотрит на тебя через мутное стекло и стучит пальцем по вывеске: «Зайди».", "Гораций")
+  },
   horace_inside: {
     onClick: () => {
       if (state.flags.barrierOpen) { say("— Проходи, — говорит Гораций.", "Гораций"); return; }
+      
       if (state.items.includes('note') && !state.flags.horaceTalked) {
         state.flags.horaceTalked = true; save();
         say("«О, ты нашёл мой пропуск? — Гораций облегчённо выдыхает. — А то я уже обыскался. Давай сюда». Он ставит печать. Шлагбаум поднимается.", "Гораций");
         state.flags.barrierOpen = true; save();
         return;
       }
+      
       if (state.flags.horaceTalked) { say("— Пропуск нужен. Ищи в самом низу тропинки.", "Гораций"); return; }
       state.flags.horaceTalked = true; save();
       say("«Ещё один. Пропуск есть?» Ты мотаешь головой. «Я свой потерял. Обронил где-то внизу, на тропинке. Найдёшь — подниму шлагбаум».", "Гораций");
@@ -697,13 +681,15 @@ const gameObjects = {
       say("Старая записка. «Что надеется на прощенье Божье...» — дальше не разобрать. С обратной стороны печать Горация. Это его пропуск!");
     }
   },
-  barrier: { text: () => state.flags.barrierOpen ? "Шлагбаум поднят." : "Шлагбаум опущен. Нужен пропуск Горация." }
+  barrier: {
+    text: () => state.flags.barrierOpen ? "Шлагбаум поднят." : "Шлагбаум опущен. Нужен пропуск Горация."
+  }
 };
 
 /* ============ ИНВЕНТАРЬ ============ */
 const allItems = { 
   keycard: { icon: '🗝', title: 'Ключ-карта', desc: 'Собственность КПП.' },
-  note: { icon: '📜', title: 'Записка', desc: '«Что надеется на прощенье Божье...» С печатью Горация.' }
+  note: { icon: '📜', title: 'Записка', desc: '«Что надеется на прощенье Божьей...» С печатью Горация.' }
 };
 function renderInventory() {
   const inv = document.getElementById('inventory');
@@ -724,6 +710,7 @@ load();
 if (state.cutsceneDone) {
   document.getElementById('cutscene').classList.add('hidden');
   document.getElementById('game').classList.remove('hidden');
+  playForestMusic(); // Если игра загрузилась сразу, запускаем эмбиент леса
   initGame();
 } else {
   showCutscene();
