@@ -78,9 +78,16 @@
     pointer-events: none; transition: opacity 0.8s; z-index: 200;
   }
   #fadeOverlay.active { opacity: 1; }
+
+  /* Скрытые аудио-элементы */
+  audio { display: none; }
 </style>
 </head>
 <body>
+
+<!-- АУДИО -->
+<audio id="bgmIntro" loop src="intro.mp3"></audio>
+<audio id="bgmForest" loop src="forest.mp3"></audio>
 
 <div id="cutscene">
   <div id="csBg"></div>
@@ -114,6 +121,31 @@ function save() { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }
 function load() {
   const raw = localStorage.getItem(SAVE_KEY);
   if (raw) { try { Object.assign(state, JSON.parse(raw)); } catch(e) {} }
+}
+
+/* ============ АУДИО СИСТЕМА ============ */
+const audioIntro = document.getElementById('bgmIntro');
+const audioForest = document.getElementById('bgmForest');
+let audioStarted = false;
+
+function playAudio(track) {
+  // Браузеры блокируют автовоспроизведение до первого клика пользователя
+  const playPromise = track.play();
+  if (playPromise !== undefined) {
+    playPromise.catch(e => { console.log("Аудио ждёт клика пользователя"); });
+  }
+}
+
+function switchMusic(trackName) {
+  if (trackName === 'intro') {
+    audioForest.pause();
+    if (!audioIntro.paused) return;
+    playAudio(audioIntro);
+  } else if (trackName === 'forest') {
+    audioIntro.pause();
+    if (!audioForest.paused) return;
+    playAudio(audioForest);
+  }
 }
 
 /* ============ ТЕКСТ ============ */
@@ -173,6 +205,12 @@ function renderCsSlide() {
   typeInto(csTextContent, slide.text, 40, () => { csNext.style.display = 'block'; });
 }
 csNext.addEventListener('click', () => {
+  // Запускаем музыку интро при первом клике
+  if (!audioStarted) {
+    audioStarted = true;
+    switchMusic('intro');
+  }
+  
   if (csIndex < cutscene.length - 1) { csIndex++; renderCsSlide(); }
   else {
     document.getElementById('cutscene').classList.add('hidden');
@@ -188,7 +226,6 @@ const ctx = gameCanvas.getContext('2d');
 
 let currentZone = 'outside'; 
 
-/* Локация заметно больше: 6000 x 2000 */
 const WORLD = {
   outside: { width: 6000, height: 2000, minY: 820, maxY: 1900 },
   inside: { width: 1200, height: 800, minY: 500, maxY: 750 }
@@ -209,11 +246,13 @@ const keys = { w: false, a: false, s: false, d: false };
 /* ============ СПРАЙТЫ ============ */
 const imgHero = new Image();
 const imgCharon = new Image();
+const imgTree = new Image(); // Загрузка дерева
 imgHero.src = 'hero.png'; 
 imgCharon.src = 'charon.png';
+imgTree.src = 'tree.png'; 
 
-let imagesLoaded = false;
-let loadCount = 0;
+let imagesLoaded = 0;
+let totalImages = 3;
 
 function processImage(img) {
   const tempCanvas = document.createElement('canvas');
@@ -237,15 +276,16 @@ function processImage(img) {
   return tempCanvas;
 }
 
-function checkLoaded() { loadCount++; if (loadCount >= 2) imagesLoaded = true; }
-imgHero.onload = checkLoaded; imgCharon.onload = checkLoaded;
+function checkLoaded() { imagesLoaded++; }
+imgHero.onload = checkLoaded; imgCharon.onload = checkLoaded; imgTree.onload = checkLoaded;
 imgHero.onerror = () => { console.error('Нет hero.png'); checkLoaded(); };
 imgCharon.onerror = () => { console.error('Нет charon.png'); checkLoaded(); };
+imgTree.onerror = () => { console.error('Нет tree.png'); checkLoaded(); };
 
 let heroSprite = null;
 let charonSprite = null;
+let treeSprite = null;
 
-/* Пульсация глаз */
 let eyePulse = 0;
 
 function initGame() {
@@ -256,6 +296,9 @@ function initGame() {
   gameCanvas.width = 1280; 
   gameCanvas.height = 720;
   
+  // Включаем музыку леса
+  switchMusic('forest');
+  
   renderInventory();
   say("Тьма отступила: лес стал различим. Деревья здесь мёртвые, но воздух уже не такой тяжёлый. Впереди — КПП, единственный островок неясного света. Записка где-то в самом низу тропинки.");
   requestAnimationFrame(tick);
@@ -263,7 +306,6 @@ function initGame() {
 
 /* ============ ОТРИСОВКА ПЕРСОНАЖЕЙ ============ */
 function drawGlowingEyes(x, y, direction) {
-  /* Сверкающие глаза: два маленьких красных блика с пульсацией */
   const pulse = 0.6 + Math.sin(eyePulse) * 0.4;
   const eyeOffsetX = 10 * (direction < 0 ? -1 : 1);
   ctx.save();
@@ -279,7 +321,7 @@ function drawGlowingEyes(x, y, direction) {
 }
 
 function drawHero(x, y, isWalking, direction, walkTimer) {
-  if (imagesLoaded && imgHero.complete && !heroSprite) heroSprite = processImage(imgHero);
+  if (imgHero.complete && !heroSprite) heroSprite = processImage(imgHero);
 
   ctx.save();
   ctx.translate(x, y);
@@ -294,19 +336,17 @@ function drawHero(x, y, isWalking, direction, walkTimer) {
   if (heroSprite) {
     const w = 180; 
     const h = 140; 
-    /* Убрано свечение вокруг персонажа — только спрайт */
     ctx.drawImage(heroSprite, -w / 2, -h, w, h);
   } else {
     ctx.fillStyle = '#3a2a2a'; ctx.beginPath(); ctx.arc(0, -20, 20, 0, Math.PI*2); ctx.fill();
   }
   ctx.restore();
 
-  /* Сверкающие глаза рисуются поверх, без свечения всего тела */
   drawGlowingEyes(x, y, direction);
 }
 
 function drawCharon(x, y) {
-  if (imagesLoaded && imgCharon.complete && !charonSprite) charonSprite = processImage(imgCharon);
+  if (imgCharon.complete && !charonSprite) charonSprite = processImage(imgCharon);
 
   ctx.save();
   ctx.translate(x, y);
@@ -314,7 +354,6 @@ function drawCharon(x, y) {
   if (charonSprite) {
     const w = 190; 
     const h = 150;
-    /* Лёгкое свечение вокруг Харона оставляем — это призрачный персонаж */
     ctx.shadowColor = 'rgba(180, 180, 180, 0.35)';
     ctx.shadowBlur = 18;
     ctx.drawImage(charonSprite, -w / 2, -h, w, h);
@@ -324,48 +363,50 @@ function drawCharon(x, y) {
   ctx.restore();
 }
  
-/* ============ ДЕРЕВЬЯ ============ */
-function drawTree(tx, ty, scale = 1, seed = 0) {
-  /* Дерево: ствол + ветки + крона из нескольких окружностей.
-     Цвета листьев теперь ТЁМНЫЕ, почти чёрные, как в Сумрачном лесу. */
-  const trunkW = 22 * scale;
-  const trunkH = 150 * scale;
+/* ============ ДЕРЕВЬЯ (АССЕТЫ) ============ */
+function drawTree(tx, ty, scale = 1) {
+  if (imgTree.complete && !treeSprite) treeSprite = processImage(imgTree);
 
-  /* Ствол (тёмный серо-коричневый, почти чёрный) */
-  ctx.fillStyle = '#1a1410';
-  ctx.fillRect(tx - trunkW / 2, ty - trunkH, trunkW, trunkH);
-
-  /* Ветки */
-  ctx.strokeStyle = '#1a1410';
-  ctx.lineWidth = 6 * scale;
-  ctx.beginPath();
-  ctx.moveTo(tx, ty - trunkH * 0.7);
-  ctx.lineTo(tx - 40 * scale, ty - trunkH * 0.95);
-  ctx.moveTo(tx, ty - trunkH * 0.8);
-  ctx.lineTo(tx + 35 * scale, ty - trunkH * 1.05);
-  ctx.stroke();
-
-  /* Крона — очень тёмные, хвойно-пепельные оттенки */
-  const crownY = ty - trunkH - 10 * scale;
-  const colors = ['#0d120c', '#111610', '#080c08'];
-  const blobs = [
-    { dx: 0, dy: 0, r: 55 * scale },
-    { dx: -40 * scale, dy: 10 * scale, r: 42 * scale },
-    { dx: 40 * scale, dy: 8 * scale, r: 45 * scale },
-    { dx: -15 * scale, dy: -35 * scale, r: 38 * scale },
-    { dx: 20 * scale, dy: -30 * scale, r: 36 * scale },
-  ];
-  blobs.forEach((b, i) => {
-    ctx.fillStyle = colors[(i + seed) % colors.length];
+  if (treeSprite) {
+    // Если картинка загружена, рисуем её
+    const w = 120 * scale; 
+    const h = 200 * scale;
+    // Отрисовка с привязкой к низу ствола (чтобы ноги/корни были на земле)
+    ctx.drawImage(treeSprite, tx - w / 2, ty - h, w, h);
+  } else {
+    // Заглушка, если картинки нет (рисует то же дерево, что было)
+    const trunkW = 22 * scale;
+    const trunkH = 150 * scale;
+    ctx.fillStyle = '#1a1410';
+    ctx.fillRect(tx - trunkW / 2, ty - trunkH, trunkW, trunkH);
+    ctx.strokeStyle = '#1a1410';
+    ctx.lineWidth = 6 * scale;
     ctx.beginPath();
-    ctx.arc(tx + b.dx, crownY + b.dy, b.r, 0, Math.PI * 2);
-    ctx.fill();
-  });
+    ctx.moveTo(tx, ty - trunkH * 0.7);
+    ctx.lineTo(tx - 40 * scale, ty - trunkH * 0.95);
+    ctx.moveTo(tx, ty - trunkH * 0.8);
+    ctx.lineTo(tx + 35 * scale, ty - trunkH * 1.05);
+    ctx.stroke();
+    const crownY = ty - trunkH - 10 * scale;
+    const colors = ['#0d120c', '#111610', '#080c08'];
+    const blobs = [
+      { dx: 0, dy: 0, r: 55 * scale },
+      { dx: -40 * scale, dy: 10 * scale, r: 42 * scale },
+      { dx: 40 * scale, dy: 8 * scale, r: 45 * scale },
+      { dx: -15 * scale, dy: -35 * scale, r: 38 * scale },
+      { dx: 20 * scale, dy: -30 * scale, r: 36 * scale },
+    ];
+    blobs.forEach((b, i) => {
+      ctx.fillStyle = colors[i % colors.length];
+      ctx.beginPath();
+      ctx.arc(tx + b.dx, crownY + b.dy, b.r, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
 }
  
-/* ============ ОТРИСОВКА МИРА (СУМРАЧНЫЙ, ХОЛОДНЫЙ) ============ */
+/* ============ ОТРИСОВКА МИРА ============ */
 function drawWorld() {
-  /* Небо: холодное, серо-стальное, без коричневого */
   const skyGrad = ctx.createLinearGradient(0, 0, 0, gameCanvas.height);
   skyGrad.addColorStop(0, '#0e1114'); 
   skyGrad.addColorStop(0.5, '#14181b'); 
@@ -377,24 +418,21 @@ function drawWorld() {
   ctx.translate(-Math.floor(cameraX), -Math.floor(cameraY));
 
   if (currentZone === 'outside') {
-    /* Деревья — теперь с тёмной кроной */
     const treeRows = [
-      { y: 800, count: 22, scale: 1.0, seed: 0 },
-      { y: 700, count: 18, scale: 1.2, seed: 1 },
-      { y: 640, count: 14, scale: 1.4, seed: 2 },
+      { y: 800, count: 22, scale: 1.0 },
+      { y: 700, count: 18, scale: 1.2 },
+      { y: 640, count: 14, scale: 1.4 },
     ];
     treeRows.forEach(row => {
       for (let i = 0; i < row.count; i++) {
         const tx = 120 + i * (WORLD.outside.width / row.count) + Math.sin(i * 1.7) * 40;
-        drawTree(tx, row.y, row.scale, row.seed + i);
+        drawTree(tx, row.y, row.scale);
       }
     });
 
-    /* Земля — холодный пепельно-серый */
     ctx.fillStyle = '#1e1e1e';
     ctx.fillRect(0, WORLD.outside.minY, WORLD.outside.width, WORLD.outside.height);
 
-    /* Тропинка — бледно-серый след, а не песок */
     ctx.fillStyle = '#2a2a2a';
     ctx.beginPath();
     ctx.moveTo(300, 1950);
@@ -405,7 +443,6 @@ function drawWorld() {
     ctx.quadraticCurveTo(1650, 1600, 420, 1980);
     ctx.fill();
 
-    /* Пятна на земле — тёмно-серые */
     ctx.fillStyle = '#2c2c2c';
     ctx.beginPath();
     ctx.moveTo(600, 1850);
@@ -416,12 +453,11 @@ function drawWorld() {
     ctx.quadraticCurveTo(1850, 1500, 700, 1900);
     ctx.fill();
 
-    /* Будка КПП (тёмный силуэт) */
+    /* Будка КПП */
     ctx.fillStyle = '#1e1e1e';
     ctx.fillRect(2900, 700, 150, 250);
     ctx.fillStyle = '#141414';
     ctx.fillRect(2880, 680, 190, 20); 
-    /* Тусклый свет в окне — бледно-жёлтый, единственный тёплый акцент */
     ctx.fillStyle = '#5a5030'; 
     ctx.fillRect(2930, 750, 90, 70); 
     ctx.fillStyle = '#141414';
@@ -441,7 +477,6 @@ function drawWorld() {
       }
     }
 
-    /* Ключ-карта */
     if (!state.items.includes('keycard')) {
       ctx.fillStyle = '#4a7a5a';
       ctx.fillRect(2400, 1000, 20, 12);
@@ -450,7 +485,6 @@ function drawWorld() {
       ctx.shadowBlur = 0;
     }
     
-    /* Записка — в самом низу тропинки */
     if (!state.items.includes('note')) {
       ctx.fillStyle = '#c0c8c4';
       ctx.fillRect(560, 1850, 15, 20);
@@ -459,7 +493,6 @@ function drawWorld() {
       ctx.shadowBlur = 0;
     }
 
-    /* Туман — серый, холодный, стелется низко */
     const fog = ctx.createLinearGradient(0, 900, 0, 1600);
     fog.addColorStop(0, 'rgba(60, 65, 70, 0)');
     fog.addColorStop(1, 'rgba(60, 65, 70, 0.2)');
@@ -470,21 +503,18 @@ function drawWorld() {
     drawHero(heroX, heroY, isWalking, heroDirection, walkTimer);
     
   } else {
-    /* ---- ВНУТРИ КПП ---- */
     ctx.fillStyle = '#141414';
     ctx.fillRect(0, 0, WORLD.inside.width, WORLD.inside.height);
     
     ctx.fillStyle = '#1e1e1e';
     ctx.fillRect(0, WORLD.inside.minY, WORLD.inside.width, WORLD.inside.height);
     
-    /* Стол */
     ctx.fillStyle = '#2a2a2a';
     ctx.fillRect(400, 480, 200, 40);
     ctx.fillStyle = '#141414';
     ctx.fillRect(420, 520, 10, 80);
     ctx.fillRect(570, 520, 10, 80);
     
-    /* Гораций за столом */
     ctx.save();
     ctx.translate(500, 520);
     ctx.fillStyle = '#1e1e1e'; 
@@ -495,7 +525,6 @@ function drawWorld() {
     ctx.fillRect(-36, -140, 72, 30);
     ctx.restore();
 
-    /* Свет от лампы — тусклый */
     const lampLight = ctx.createRadialGradient(500, 400, 10, 500, 400, 300);
     lampLight.addColorStop(0, 'rgba(100, 90, 60, 0.2)');
     lampLight.addColorStop(1, 'rgba(0,0,0,0)');
@@ -510,7 +539,6 @@ function drawWorld() {
 
   ctx.restore();
   
-  /* Виньетка — слабая, чтобы лес не тонул во тьме, но давил */
   const vignette = ctx.createRadialGradient(
     gameCanvas.width/2, gameCanvas.height/2, 300,
     gameCanvas.width/2, gameCanvas.height/2, 900
@@ -526,7 +554,6 @@ function tick(now) {
   const dt = Math.min(0.05, (now - lastTime) / 1000);
   lastTime = now;
 
-  /* Пульсация глаз */
   eyePulse += dt * 4;
 
   let dx = 0; let dy = 0;
@@ -585,37 +612,15 @@ gameCanvas.addEventListener('click', (e) => {
   const clickY = (e.clientY - rect.top) * (gameCanvas.height / rect.height) + cameraY;
 
   if (currentZone === 'outside') {
-    /* Дверь будки */
-    if (clickX >= 2910 && clickX <= 2960 && clickY >= 850 && clickY <= 950) {
-      enterBooth(); return;
-    }
-    /* Окно будки — Гораций снаружи */
-    if (clickX >= 2930 && clickX <= 3020 && clickY >= 750 && clickY <= 820) {
-      interact('horace_outside'); return;
-    }
-    /* Харон */
-    if (clickX >= 3220 && clickX <= 3380 && clickY >= 650 && clickY <= 850) {
-      interact('charon'); return;
-    }
-    /* Ключ-карта */
-    if (!state.items.includes('keycard') && clickX >= 2400 && clickX <= 2420 && clickY >= 1000 && clickY <= 1012) {
-      interact('keycard'); return;
-    }
-    /* Записка — в самом низу тропинки */
-    if (!state.items.includes('note') && clickX >= 560 && clickX <= 575 && clickY >= 1850 && clickY <= 1870) {
-      interact('note'); return;
-    }
-    /* Шлагбаум */
-    if (clickX >= 3080 && clickX <= 3300 && clickY >= 780 && clickY <= 830) {
-      interact('barrier'); return;
-    }
+    if (clickX >= 2910 && clickX <= 2960 && clickY >= 850 && clickY <= 950) { enterBooth(); return; }
+    if (clickX >= 2930 && clickX <= 3020 && clickY >= 750 && clickY <= 820) { interact('horace_outside'); return; }
+    if (clickX >= 3220 && clickX <= 3380 && clickY >= 650 && clickY <= 850) { interact('charon'); return; }
+    if (!state.items.includes('keycard') && clickX >= 2400 && clickX <= 2420 && clickY >= 1000 && clickY <= 1012) { interact('keycard'); return; }
+    if (!state.items.includes('note') && clickX >= 560 && clickX <= 575 && clickY >= 1850 && clickY <= 1870) { interact('note'); return; }
+    if (clickX >= 3080 && clickX <= 3300 && clickY >= 780 && clickY <= 830) { interact('barrier'); return; }
   } else {
-    if (clickX >= 0 && clickX <= 50 && clickY >= 500 && clickY <= 700) {
-      exitBooth(); return;
-    }
-    if (clickX >= 440 && clickX <= 560 && clickY >= 380 && clickY <= 550) {
-      interact('horace_inside'); return;
-    }
+    if (clickX >= 0 && clickX <= 50 && clickY >= 500 && clickY <= 700) { exitBooth(); return; }
+    if (clickX >= 440 && clickX <= 560 && clickY >= 380 && clickY <= 550) { interact('horace_inside'); return; }
   }
 });
 
@@ -653,20 +658,16 @@ function interact(id) {
 }
 
 const gameObjects = {
-  horace_outside: {
-    onClick: () => say("Гораций смотрит на тебя через мутное стекло и стучит пальцем по вывеске: «Зайди».", "Гораций")
-  },
+  horace_outside: { onClick: () => say("Гораций смотрит на тебя через мутное стекло и стучит пальцем по вывеске: «Зайди».", "Гораций") },
   horace_inside: {
     onClick: () => {
       if (state.flags.barrierOpen) { say("— Проходи, — говорит Гораций.", "Гораций"); return; }
-      
       if (state.items.includes('note') && !state.flags.horaceTalked) {
         state.flags.horaceTalked = true; save();
         say("«О, ты нашёл мой пропуск? — Гораций облегчённо выдыхает. — А то я уже обыскался. Давай сюда». Он ставит печать. Шлагбаум поднимается.", "Гораций");
         state.flags.barrierOpen = true; save();
         return;
       }
-      
       if (state.flags.horaceTalked) { say("— Пропуск нужен. Ищи в самом низу тропинки.", "Гораций"); return; }
       state.flags.horaceTalked = true; save();
       say("«Ещё один. Пропуск есть?» Ты мотаешь головой. «Я свой потерял. Обронил где-то внизу, на тропинке. Найдёшь — подниму шлагбаум».", "Гораций");
@@ -696,9 +697,7 @@ const gameObjects = {
       say("Старая записка. «Что надеется на прощенье Божье...» — дальше не разобрать. С обратной стороны печать Горация. Это его пропуск!");
     }
   },
-  barrier: {
-    text: () => state.flags.barrierOpen ? "Шлагбаум поднят." : "Шлагбаум опущен. Нужен пропуск Горация."
-  }
+  barrier: { text: () => state.flags.barrierOpen ? "Шлагбаум поднят." : "Шлагбаум опущен. Нужен пропуск Горация." }
 };
 
 /* ============ ИНВЕНТАРЬ ============ */
