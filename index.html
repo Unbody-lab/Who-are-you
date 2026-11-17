@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Кто ты — Пролог (Пиксель + Звук)</title>
+<title>Кто ты — Пролог (Пиксель)</title>
 <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -104,70 +104,12 @@
 </div>
 
 <script>
-/* ============ ЗВУКОВОЙ ДВИЖОК ============ */
-const AudioContext = window.AudioContext || window.webkitAudioContext;
-let audioCtx = null;
-let isAudioStarted = false;
-
-function initAudio() {
-  if (!audioCtx) audioCtx = new AudioContext();
-  if (audioCtx.state === 'suspended') audioCtx.resume();
-}
-
-const motifNotes = [
-  { f: 440.00, d: 0.4 }, { f: 523.25, d: 0.4 }, { f: 493.88, d: 0.4 },
-  { f: 440.00, d: 0.8 }, { f: 329.63, d: 0.4 }, { f: 392.00, d: 0.4 },
-  { f: 440.00, d: 1.2 },
-];
-let melodyTimeout = null;
-
-function playNote(frequency, duration, delay, type = 'sine') {
-  if (!audioCtx) return;
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
-  osc.type = type; osc.frequency.value = frequency;
-  const now = audioCtx.currentTime + delay;
-  gain.gain.setValueAtTime(0, now);
-  gain.gain.linearRampToValueAtTime(0.15, now + 0.05);
-  gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
-  osc.connect(gain); gain.connect(audioCtx.destination);
-  osc.start(now); osc.stop(now + duration);
-}
-
-function playMotif() {
-  if (!audioCtx) return;
-  let timeOffset = 0;
-  motifNotes.forEach((note, index) => {
-    if (index === motifNotes.length - 1) {
-       playNote(note.f, note.d, timeOffset, 'triangle');
-       playNote(note.f, note.d, timeOffset + 0.2, 'sine');
-       playNote(note.f, note.d, timeOffset + 0.4, 'sine');
-    } else {
-       playNote(note.f, note.d, timeOffset, 'triangle');
-    }
-    timeOffset += note.d;
-  });
-}
-
-let stepTimer = 0;
-function playStep() {
-  if (!audioCtx) return;
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
-  osc.type = 'square'; osc.frequency.value = 100 + Math.random() * 20;
-  const now = audioCtx.currentTime;
-  gain.gain.setValueAtTime(0.05, now);
-  gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
-  osc.connect(gain); gain.connect(audioCtx.destination);
-  osc.start(now); osc.stop(now + 0.1);
-}
-
 /* ============ СОСТОЯНИЕ ============ */
 const state = {
   seen: {}, items: [], flags: {}, cutsceneDone: false,
-  hero: { x: 500, y: 1000 }
+  hero: { x: 500, y: 800 }
 };
-const SAVE_KEY = 'kto_ty_pixel_dante_v3';
+const SAVE_KEY = 'kto_ty_pixel_dante';
 function save() { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }
 function load() {
   const raw = localStorage.getItem(SAVE_KEY);
@@ -182,8 +124,10 @@ function say(text, speaker) {
   const panel = document.getElementById('textPanel');
   const el = document.getElementById('textContent');
   const prefix = speaker ? `<span class="speaker">${speaker}:</span> ` : '';
+  
   el.innerHTML = ''; let i = 0;
-  clearInterval(typeTimer); clearTimeout(hidePanelTimer);
+  clearInterval(typeTimer);
+  clearTimeout(hidePanelTimer);
   panel.classList.add('show');
 
   typeTimer = setInterval(() => {
@@ -210,7 +154,6 @@ const cutscene = [
   { bg: 'radial-gradient(circle at 50% 30%, #2a1010 0%, #000 70%)', text: 'Ты жил. Как все: дышал, забывал, обещал. Кому-то — важное. Кому-то — пустое.' },
   { bg: 'radial-gradient(circle at 50% 50%, #3a0505 0%, #000 70%)', text: 'А потом — тишина. Не тьма, не свет. Просто тишина, в которой ты перестал быть.' },
   { bg: 'radial-gradient(circle at 50% 60%, #2a0505 0%, #000 70%)', text: 'И вот ты здесь. Внизу. Там, где начинается всё, что ты откладывал.' },
-  { bg: 'radial-gradient(circle at 50% 50%, #0a0a0a 0%, #000 70%)', text: 'Ты помнишь только её. Не лицо, не имя. Только тепло. И что-то в груди говорит: иди.' },
   { bg: 'radial-gradient(circle at 50% 50%, #0a0a0a 0%, #000 70%)', text: 'Сумрачный лес. КПП. Начало.' },
 ];
 let csIndex = 0;
@@ -227,26 +170,14 @@ function renderCsSlide() {
   const slide = cutscene[csIndex];
   csBg.style.background = slide.bg;
   csNext.style.display = 'none';
-
-  if (csIndex === 4) {
-    initAudio();
-    setTimeout(playMotif, 500);
-  }
-  if (csIndex === 5) {
-    clearTimeout(melodyTimeout);
-    if (audioCtx) { audioCtx.close(); audioCtx = null; }
-  }
-
   typeInto(csTextContent, slide.text, 40, () => { csNext.style.display = 'block'; });
 }
 csNext.addEventListener('click', () => {
-  initAudio();
   if (csIndex < cutscene.length - 1) { csIndex++; renderCsSlide(); }
   else {
     document.getElementById('cutscene').classList.add('hidden');
     document.getElementById('game').classList.remove('hidden');
     state.cutsceneDone = true; save();
-    if (!audioCtx) { audioCtx = new AudioContext(); }
     initGame();
   }
 });
@@ -257,6 +188,7 @@ const ctx = gameCanvas.getContext('2d');
 
 let currentZone = 'outside'; 
 
+/* Локация заметно больше: 6000 x 2000 */
 const WORLD = {
   outside: { width: 6000, height: 2000, minY: 820, maxY: 1900 },
   inside: { width: 1200, height: 800, minY: 500, maxY: 750 }
@@ -274,47 +206,81 @@ let cameraY = 0;
 let lastTime = performance.now();
 const keys = { w: false, a: false, s: false, d: false };
 
-/* ============ СПРАЙТЫ (В КОДЕ) ============ */
-const HERO_PIXELS = [
-  "....####....", "...######...", "...##oo##...", "...##oo##...",
-  "....####....", "...######...", "..########..", "..########..",
-  "..##....##..", "..##....##..", "...##..##...", "...##..##...",
-  "....####....",
-];
-const CHARON_PIXELS = [
-  "....####....", "...######...", "...##oo##...", "...##oo##...",
-  "...######...", "..##wwww##..", "..##wwww##..", "..########..",
-  "..##....##..", "..##....##..", "...##..##...", "...##..##...",
-  "....####....",
-];
+/* ============ СПРАЙТЫ ============ */
+const imgHero = new Image();
+const imgCharon = new Image();
+imgHero.src = 'hero.png'; 
+imgCharon.src = 'charon.png';
 
-function drawSprite(pixels, x, y, scale, colors) {
-  for (let row = 0; row < pixels.length; row++) {
-    for (let col = 0; col < pixels[row].length; col++) {
-      const char = pixels[row][col];
-      if (char === '.') continue;
-      ctx.fillStyle = colors[char] || '#fff';
-      ctx.fillRect(x + col * scale, y + row * scale, scale, scale);
+let imagesLoaded = false;
+let loadCount = 0;
+
+function processImage(img) {
+  const tempCanvas = document.createElement('canvas');
+  tempCanvas.width = img.width;
+  tempCanvas.height = img.height;
+  const tempCtx = tempCanvas.getContext('2d');
+  tempCtx.drawImage(img, 0, 0);
+  const imgData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+  const data = imgData.data;
+  for (let y = 0; y < tempCanvas.height; y++) {
+    for (let x = 0; x < tempCanvas.width; x++) {
+      const i = (y * tempCanvas.width + x) * 4;
+      if (data[i] > 200 && data[i+1] > 200 && data[i+2] > 200) {
+        if (x < 20 || x > tempCanvas.width - 20 || y < 20 || y > tempCanvas.height - 20) {
+          data[i+3] = 0; 
+        }
+      }
     }
   }
+  tempCtx.putImageData(imgData, 0, 0);
+  return tempCanvas;
 }
 
+function checkLoaded() { loadCount++; if (loadCount >= 2) imagesLoaded = true; }
+imgHero.onload = checkLoaded; imgCharon.onload = checkLoaded;
+imgHero.onerror = () => { console.error('Нет hero.png'); checkLoaded(); };
+imgCharon.onerror = () => { console.error('Нет charon.png'); checkLoaded(); };
+
+let heroSprite = null;
+let charonSprite = null;
+
+/* Пульсация глаз */
+let eyePulse = 0;
+
+function initGame() {
+  load();
+  heroX = state.hero?.x ?? 500;
+  heroY = state.hero?.y ?? 1000;
+  
+  gameCanvas.width = 1280; 
+  gameCanvas.height = 720;
+  
+  renderInventory();
+  say("Тьма отступила: лес стал различим. Деревья здесь мёртвые, но воздух уже не такой тяжёлый. Впереди — КПП, единственный островок неясного света. Записка где-то в самом низу тропинки.");
+  requestAnimationFrame(tick);
+}
+
+/* ============ ОТРИСОВКА ПЕРСОНАЖЕЙ ============ */
 function drawGlowingEyes(x, y, direction) {
+  /* Сверкающие глаза: два маленьких красных блика с пульсацией */
   const pulse = 0.6 + Math.sin(eyePulse) * 0.4;
-  const eyeOffsetX = 8 * (direction < 0 ? -1 : 1);
+  const eyeOffsetX = 10 * (direction < 0 ? -1 : 1);
   ctx.save();
   ctx.globalAlpha = pulse;
   ctx.fillStyle = '#ff2a2a';
   ctx.shadowColor = '#ff0000';
   ctx.shadowBlur = 8;
   ctx.beginPath();
-  ctx.arc(x - eyeOffsetX, y - 20, 3, 0, Math.PI * 2);
-  ctx.arc(x + eyeOffsetX, y - 20, 3, 0, Math.PI * 2);
+  ctx.arc(x - eyeOffsetX, y - 118, 4, 0, Math.PI * 2);
+  ctx.arc(x + eyeOffsetX, y - 118, 4, 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
 }
 
 function drawHero(x, y, isWalking, direction, walkTimer) {
+  if (imagesLoaded && imgHero.complete && !heroSprite) heroSprite = processImage(imgHero);
+
   ctx.save();
   ctx.translate(x, y);
   
@@ -325,33 +291,51 @@ function drawHero(x, y, isWalking, direction, walkTimer) {
 
   if (direction < 0) ctx.scale(-1, 1);
 
-  const heroColors = { '#': '#1a2230', 'o': '#ff2222' };
-  drawSprite(HERO_PIXELS, -12, -26, 2, heroColors); // центрируем
-  
+  if (heroSprite) {
+    const w = 180; 
+    const h = 140; 
+    /* Убрано свечение вокруг персонажа — только спрайт */
+    ctx.drawImage(heroSprite, -w / 2, -h, w, h);
+  } else {
+    ctx.fillStyle = '#3a2a2a'; ctx.beginPath(); ctx.arc(0, -20, 20, 0, Math.PI*2); ctx.fill();
+  }
   ctx.restore();
 
+  /* Сверкающие глаза рисуются поверх, без свечения всего тела */
   drawGlowingEyes(x, y, direction);
 }
 
 function drawCharon(x, y) {
+  if (imagesLoaded && imgCharon.complete && !charonSprite) charonSprite = processImage(imgCharon);
+
   ctx.save();
   ctx.translate(x, y);
-  const charonColors = { '#': '#0d0d0d', 'o': '#5a7a6a', 'w': '#e0e0e0' };
   
-  ctx.shadowColor = 'rgba(180, 180, 180, 0.35)';
-  ctx.shadowBlur = 18;
-  drawSprite(CHARON_PIXELS, -12, -26, 2, charonColors);
+  if (charonSprite) {
+    const w = 190; 
+    const h = 150;
+    /* Лёгкое свечение вокруг Харона оставляем — это призрачный персонаж */
+    ctx.shadowColor = 'rgba(180, 180, 180, 0.35)';
+    ctx.shadowBlur = 18;
+    ctx.drawImage(charonSprite, -w / 2, -h, w, h);
+  } else {
+    ctx.fillStyle = '#d0d0d0'; ctx.beginPath(); ctx.arc(0, -20, 20, 0, Math.PI*2); ctx.fill();
+  }
   ctx.restore();
 }
  
 /* ============ ДЕРЕВЬЯ ============ */
 function drawTree(tx, ty, scale = 1, seed = 0) {
+  /* Дерево: ствол + ветки + крона из нескольких окружностей.
+     Цвета листьев теперь ТЁМНЫЕ, почти чёрные, как в Сумрачном лесу. */
   const trunkW = 22 * scale;
   const trunkH = 150 * scale;
 
+  /* Ствол (тёмный серо-коричневый, почти чёрный) */
   ctx.fillStyle = '#1a1410';
   ctx.fillRect(tx - trunkW / 2, ty - trunkH, trunkW, trunkH);
 
+  /* Ветки */
   ctx.strokeStyle = '#1a1410';
   ctx.lineWidth = 6 * scale;
   ctx.beginPath();
@@ -361,6 +345,7 @@ function drawTree(tx, ty, scale = 1, seed = 0) {
   ctx.lineTo(tx + 35 * scale, ty - trunkH * 1.05);
   ctx.stroke();
 
+  /* Крона — очень тёмные, хвойно-пепельные оттенки */
   const crownY = ty - trunkH - 10 * scale;
   const colors = ['#0d120c', '#111610', '#080c08'];
   const blobs = [
@@ -378,10 +363,9 @@ function drawTree(tx, ty, scale = 1, seed = 0) {
   });
 }
  
-/* ============ ОТРИСОВКА МИРА ============ */
-let eyePulse = 0;
-
+/* ============ ОТРИСОВКА МИРА (СУМРАЧНЫЙ, ХОЛОДНЫЙ) ============ */
 function drawWorld() {
+  /* Небо: холодное, серо-стальное, без коричневого */
   const skyGrad = ctx.createLinearGradient(0, 0, 0, gameCanvas.height);
   skyGrad.addColorStop(0, '#0e1114'); 
   skyGrad.addColorStop(0.5, '#14181b'); 
@@ -393,6 +377,7 @@ function drawWorld() {
   ctx.translate(-Math.floor(cameraX), -Math.floor(cameraY));
 
   if (currentZone === 'outside') {
+    /* Деревья — теперь с тёмной кроной */
     const treeRows = [
       { y: 800, count: 22, scale: 1.0, seed: 0 },
       { y: 700, count: 18, scale: 1.2, seed: 1 },
@@ -405,9 +390,11 @@ function drawWorld() {
       }
     });
 
+    /* Земля — холодный пепельно-серый */
     ctx.fillStyle = '#1e1e1e';
     ctx.fillRect(0, WORLD.outside.minY, WORLD.outside.width, WORLD.outside.height);
 
+    /* Тропинка — бледно-серый след, а не песок */
     ctx.fillStyle = '#2a2a2a';
     ctx.beginPath();
     ctx.moveTo(300, 1950);
@@ -418,6 +405,7 @@ function drawWorld() {
     ctx.quadraticCurveTo(1650, 1600, 420, 1980);
     ctx.fill();
 
+    /* Пятна на земле — тёмно-серые */
     ctx.fillStyle = '#2c2c2c';
     ctx.beginPath();
     ctx.moveTo(600, 1850);
@@ -428,10 +416,12 @@ function drawWorld() {
     ctx.quadraticCurveTo(1850, 1500, 700, 1900);
     ctx.fill();
 
+    /* Будка КПП (тёмный силуэт) */
     ctx.fillStyle = '#1e1e1e';
     ctx.fillRect(2900, 700, 150, 250);
     ctx.fillStyle = '#141414';
     ctx.fillRect(2880, 680, 190, 20); 
+    /* Тусклый свет в окне — бледно-жёлтый, единственный тёплый акцент */
     ctx.fillStyle = '#5a5030'; 
     ctx.fillRect(2930, 750, 90, 70); 
     ctx.fillStyle = '#141414';
@@ -439,6 +429,7 @@ function drawWorld() {
     ctx.fillStyle = '#444';
     ctx.fillRect(2940, 900, 6, 6); 
 
+    /* Шлагбаум */
     ctx.fillStyle = '#1e1e1e';
     ctx.fillRect(3080, 780, 15, 170);
     for (let i = 0; i < 8; i++) {
@@ -450,6 +441,7 @@ function drawWorld() {
       }
     }
 
+    /* Ключ-карта */
     if (!state.items.includes('keycard')) {
       ctx.fillStyle = '#4a7a5a';
       ctx.fillRect(2400, 1000, 20, 12);
@@ -458,6 +450,7 @@ function drawWorld() {
       ctx.shadowBlur = 0;
     }
     
+    /* Записка — в самом низу тропинки */
     if (!state.items.includes('note')) {
       ctx.fillStyle = '#c0c8c4';
       ctx.fillRect(560, 1850, 15, 20);
@@ -466,6 +459,7 @@ function drawWorld() {
       ctx.shadowBlur = 0;
     }
 
+    /* Туман — серый, холодный, стелется низко */
     const fog = ctx.createLinearGradient(0, 900, 0, 1600);
     fog.addColorStop(0, 'rgba(60, 65, 70, 0)');
     fog.addColorStop(1, 'rgba(60, 65, 70, 0.2)');
@@ -476,18 +470,21 @@ function drawWorld() {
     drawHero(heroX, heroY, isWalking, heroDirection, walkTimer);
     
   } else {
+    /* ---- ВНУТРИ КПП ---- */
     ctx.fillStyle = '#141414';
     ctx.fillRect(0, 0, WORLD.inside.width, WORLD.inside.height);
     
     ctx.fillStyle = '#1e1e1e';
     ctx.fillRect(0, WORLD.inside.minY, WORLD.inside.width, WORLD.inside.height);
     
+    /* Стол */
     ctx.fillStyle = '#2a2a2a';
     ctx.fillRect(400, 480, 200, 40);
     ctx.fillStyle = '#141414';
     ctx.fillRect(420, 520, 10, 80);
     ctx.fillRect(570, 520, 10, 80);
     
+    /* Гораций за столом */
     ctx.save();
     ctx.translate(500, 520);
     ctx.fillStyle = '#1e1e1e'; 
@@ -498,6 +495,7 @@ function drawWorld() {
     ctx.fillRect(-36, -140, 72, 30);
     ctx.restore();
 
+    /* Свет от лампы — тусклый */
     const lampLight = ctx.createRadialGradient(500, 400, 10, 500, 400, 300);
     lampLight.addColorStop(0, 'rgba(100, 90, 60, 0.2)');
     lampLight.addColorStop(1, 'rgba(0,0,0,0)');
@@ -512,6 +510,7 @@ function drawWorld() {
 
   ctx.restore();
   
+  /* Виньетка — слабая, чтобы лес не тонул во тьме, но давил */
   const vignette = ctx.createRadialGradient(
     gameCanvas.width/2, gameCanvas.height/2, 300,
     gameCanvas.width/2, gameCanvas.height/2, 900
@@ -523,20 +522,11 @@ function drawWorld() {
 }
 
 /* ============ ЛОГИКА И ЦИКЛ ============ */
-function initGame() {
-  load();
-  heroX = state.hero?.x ?? 500;
-  heroY = state.hero?.y ?? 1000;
-  gameCanvas.width = 1280; 
-  gameCanvas.height = 720;
-  renderInventory();
-  say("Тьма отступила: лес стал различим. Деревья здесь мёртвые, но воздух уже не такой тяжёлый. Впереди — КПП, единственный островок неясного света. Записка где-то в самом низу тропинки.");
-  requestAnimationFrame(tick);
-}
-
 function tick(now) {
   const dt = Math.min(0.05, (now - lastTime) / 1000);
   lastTime = now;
+
+  /* Пульсация глаз */
   eyePulse += dt * 4;
 
   let dx = 0; let dy = 0;
@@ -551,12 +541,8 @@ function tick(now) {
     heroY += (dy/length) * heroSpeed * dt;
     isWalking = true;
     walkTimer += dt * 12;
-    
-    stepTimer += dt;
-    if (stepTimer > 0.3) { playStep(); stepTimer = 0; }
   } else {
     isWalking = false;
-    stepTimer = 0;
   }
 
   const zone = WORLD[currentZone];
@@ -599,15 +585,37 @@ gameCanvas.addEventListener('click', (e) => {
   const clickY = (e.clientY - rect.top) * (gameCanvas.height / rect.height) + cameraY;
 
   if (currentZone === 'outside') {
-    if (clickX >= 2910 && clickX <= 2960 && clickY >= 850 && clickY <= 950) { enterBooth(); return; }
-    if (clickX >= 2930 && clickX <= 3020 && clickY >= 750 && clickY <= 820) { interact('horace_outside'); return; }
-    if (clickX >= 3200 && clickX <= 3400 && clickY >= 700 && clickY <= 900) { interact('charon'); return; }
-    if (!state.items.includes('keycard') && clickX >= 2380 && clickX <= 2440 && clickY >= 980 && clickY <= 1030) { interact('keycard'); return; }
-    if (!state.items.includes('note') && clickX >= 540 && clickX <= 600 && clickY >= 1830 && clickY <= 1890) { interact('note'); return; }
-    if (clickX >= 3080 && clickX <= 3300 && clickY >= 780 && clickY <= 830) { interact('barrier'); return; }
+    /* Дверь будки */
+    if (clickX >= 2910 && clickX <= 2960 && clickY >= 850 && clickY <= 950) {
+      enterBooth(); return;
+    }
+    /* Окно будки — Гораций снаружи */
+    if (clickX >= 2930 && clickX <= 3020 && clickY >= 750 && clickY <= 820) {
+      interact('horace_outside'); return;
+    }
+    /* Харон */
+    if (clickX >= 3220 && clickX <= 3380 && clickY >= 650 && clickY <= 850) {
+      interact('charon'); return;
+    }
+    /* Ключ-карта */
+    if (!state.items.includes('keycard') && clickX >= 2400 && clickX <= 2420 && clickY >= 1000 && clickY <= 1012) {
+      interact('keycard'); return;
+    }
+    /* Записка — в самом низу тропинки */
+    if (!state.items.includes('note') && clickX >= 560 && clickX <= 575 && clickY >= 1850 && clickY <= 1870) {
+      interact('note'); return;
+    }
+    /* Шлагбаум */
+    if (clickX >= 3080 && clickX <= 3300 && clickY >= 780 && clickY <= 830) {
+      interact('barrier'); return;
+    }
   } else {
-    if (clickX >= 0 && clickX <= 50 && clickY >= 500 && clickY <= 700) { exitBooth(); return; }
-    if (clickX >= 440 && clickX <= 560 && clickY >= 380 && clickY <= 550) { interact('horace_inside'); return; }
+    if (clickX >= 0 && clickX <= 50 && clickY >= 500 && clickY <= 700) {
+      exitBooth(); return;
+    }
+    if (clickX >= 440 && clickX <= 560 && clickY >= 380 && clickY <= 550) {
+      interact('horace_inside'); return;
+    }
   }
 });
 
