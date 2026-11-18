@@ -43,37 +43,64 @@
     position: fixed; inset: 0; z-index: 350;
     background: #050202; display: none; flex-direction: column;
     align-items: center; padding: 40px;
-    overflow-y: auto; /* Прокрутка для длинного списка */
+    overflow-y: auto; 
   }
   #chapterSelect h2 {
     font-size: 40px; color: #a08080; margin-bottom: 30px;
     flex-shrink: 0;
   }
-  .chapters-grid {
-    display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
-    gap: 20px;
-    width: 100%; max-width: 1400px; margin-bottom: 30px;
+  
+  .circle-block {
+    width: 100%; max-width: 1200px; margin-bottom: 30px;
+    background: #110b0b; border: 2px solid #2a1515; border-radius: 8px;
+    padding: 20px; display: flex; flex-direction: column;
   }
-  .chapter-card {
+  .circle-block.locked {
+    opacity: 0.6; filter: grayscale(0.8);
+  }
+  .circle-title {
+    font-size: 32px; color: #d08080; margin-bottom: 15px;
+    border-bottom: 1px solid #3a1010; padding-bottom: 10px;
+  }
+  
+  .locations-row {
+    display: flex; gap: 20px; flex-wrap: wrap;
+  }
+  
+  .location-card {
     background: #1a1010; border: 2px solid #3a1010;
-    display: flex; flex-direction: column;
-    cursor: pointer; transition: all 0.2s;
-    padding: 15px;
+    width: 280px; border-radius: 4px; overflow: hidden;
+    display: flex; flex-direction: column; transition: all 0.2s;
   }
-  .chapter-card:hover {
+  .location-card.active {
+    cursor: pointer;
+  }
+  .location-card.active:hover {
     border-color: #8a3030; box-shadow: 0 0 15px rgba(138,48,48,0.5); transform: scale(1.02);
   }
-  .chapter-card h3 {
-    color: #d08080; font-size: 26px; margin-bottom: 10px;
-    border-bottom: 1px solid #3a1010; padding-bottom: 5px;
+  .location-card.locked {
+    cursor: not-allowed; border-color: #222;
   }
-  .chapter-locations {
-    font-size: 18px; color: #a08080; line-height: 1.2;
-    margin-bottom: 10px; flex-grow: 1;
+  .loc-img {
+    width: 100%; height: 140px; object-fit: cover;
+    border-bottom: 2px solid #3a1010; background: #111;
+    display: flex; align-items: center; justify-content: center;
+    color: #444; font-size: 20px;
   }
-  .chapter-boss {
-    font-size: 20px; color: #ff4a4a; font-style: italic;
-    margin-top: auto; border-top: 1px solid #3a1010; padding-top: 10px;
+  .location-card.active .loc-img {
+    background: #1a1010; /* Заглушка фона, если нет img */
+  }
+  .loc-info {
+    padding: 15px; display: flex; flex-direction: column; gap: 5px;
+  }
+  .loc-title {
+    font-size: 24px; color: #d08080;
+  }
+  .loc-desc {
+    font-size: 18px; color: #a08080; font-style: italic;
+  }
+  .loc-status {
+    font-size: 18px; color: #5a8080; margin-top: 5px;
   }
 
   /* ===== НАСТРОЙКИ ===== */
@@ -174,8 +201,8 @@
 <!-- ================= ВЫБОР ГЛАВ ================= -->
 <div id="chapterSelect">
   <h2>Выбор главы</h2>
-  <div class="chapters-grid" id="chaptersGrid">
-    <!-- Карточки генерируются в JS -->
+  <div id="chaptersContainer">
+    <!-- Блоки глав генерируются в JS -->
   </div>
   <button class="menu-btn" style="width:200px; margin-bottom: 30px;" id="btnBackFromChapters">Назад</button>
 </div>
@@ -275,77 +302,165 @@ function hideSettings() {
   document.getElementById('mainMenu').style.display = 'flex';
 }
 
-/* ============ СПИСОК ГЛАВ ============ */
+/* ============ СПИСОК ГЛАВ (БЛОЧНАЯ СТРУКТУРА) ============ */
 const chaptersData = [
-  { 
-    title: '1 Круг · Лимб', 
-    locs: ['Университет Гомера', 'Церковь Вергилия', 'Тюрьма перевоспитания'], 
-    boss: 'Харон' 
+  {
+    title: 'Пролог',
+    locked: false,
+    locations: [
+      { 
+        title: 'Сумрачный лес', 
+        desc: 'Вы очутились в странном лесу, вы ничего не помните из прошлой жизни, ни имени, ни кем вы были, всё что вам остаётся это идти вперёд в надежде, что впереди что-то есть...', 
+        available: true,
+        img: 'loc_forest.png' 
+      },
+      { 
+        title: '???', 
+        desc: 'В разработке', 
+        available: false,
+        img: null 
+      }
+    ]
   },
-  { 
-    title: '2 Круг · Похоть', 
-    locs: ['Современный мегаполис', 'Центр мегаполиса со стриптиз-клубами и борделями', 'Трущобы (бедный район с полной безнравственностью)', 'Ветряная пустыня с ветряками'], 
-    boss: 'Минос' 
+  {
+    title: '1 Круг · Лимб',
+    locked: true,
+    locations: [
+      { title: '???', desc: 'Неизвестно', available: false },
+      { title: '???', desc: 'Неизвестно', available: false }
+    ]
   },
-  { 
-    title: '3 Круг · Чревоугодие', 
-    locs: ['Бесконечный дождь', 'Сплошное потребление', 'Огромный рынок (торговля органами)', 'Зловонное болото с магазинами и ларьками', 'Логово Цербера'], 
-    boss: 'Цербер' 
+  {
+    title: '2 Круг · Похоть',
+    locked: true,
+    locations: [
+      { title: '???', desc: 'Неизвестно', available: false }
+    ]
   },
-  { 
-    title: '4 Круг · Жадность', 
-    locs: ['Мегаполис золота и неона', 'Торговый центр "Плутос"', 'Стройка со строительной техникой', 'Парк развлечений "Плутоса"', 'Дворец Плутоса'], 
-    boss: 'Плутос' 
+  {
+    title: '3 Круг · Чревоугодие',
+    locked: true,
+    locations: [
+      { title: '???', desc: 'Неизвестно', available: false }
+    ]
   },
-  { 
-    title: '5 Круг · Гнев', 
-    locs: ['Огромная река Стикс', 'Порт', 'Корабль', 'Дамба пред стенами в Дит'], 
-    boss: 'Флегий' 
+  {
+    title: '4 Круг · Жадность',
+    locked: true,
+    locations: [
+      { title: '???', desc: 'Неизвестно', available: false }
+    ]
   },
-  { 
-    title: '6 Круг · Ересь', 
-    locs: ['Небольшой городок Дит', 'Библиотека лжи', 'Кладбище', 'Крематорий'], 
-    boss: 'Нет' 
+  {
+    title: '5 Круг · Гнев',
+    locked: true,
+    locations: [
+      { title: '???', desc: 'Неизвестно', available: false }
+    ]
   },
-  { 
-    title: '7 Круг · Насилие', 
-    locs: ['Земля пропитанная кровью', 'Военная база', 'Лес самоубийц (жуткий парк)', 'Промышленная зона с заводами и фабриками'], 
-    boss: 'Нет' 
+  {
+    title: '6 Круг · Ересь',
+    locked: true,
+    locations: [
+      { title: '???', desc: 'Неизвестно', available: false }
+    ]
   },
-  { 
-    title: '8 Круг · Обман', 
-    locs: ['Огромный хаотичный мегаполис', 'Казино', 'Стадион', 'Амфитеатр'], 
-    boss: 'Герион' 
+  {
+    title: '7 Круг · Насилие',
+    locked: true,
+    locations: [
+      { title: '???', desc: 'Неизвестно', available: false }
+    ]
   },
-  { 
-    title: '9 Круг · Предательство', 
-    locs: ['Огромное замороженное озеро Коцит', 'Шахта Каины', 'Городок для укрытия предателей (Антенора)', 'Огромный стол в Толомее', 'Огромный алтарь Люцифера в Джудекке'], 
-    boss: 'Люцифер' 
+  {
+    title: '8 Круг · Обман',
+    locked: true,
+    locations: [
+      { title: '???', desc: 'Неизвестно', available: false }
+    ]
+  },
+  {
+    title: '9 Круг · Предательство',
+    locked: true,
+    locations: [
+      { title: '???', desc: 'Неизвестно', available: false }
+    ]
   }
 ];
 
 function renderChapters() {
-  const grid = document.getElementById('chaptersGrid');
-  grid.innerHTML = '';
-  
-  chaptersData.forEach(ch => {
-    const card = document.createElement('div');
-    card.className = 'chapter-card';
+  const container = document.getElementById('chaptersContainer');
+  container.innerHTML = '';
+
+  chaptersData.forEach(circle => {
+    const block = document.createElement('div');
+    block.className = 'circle-block' + (circle.locked ? ' locked' : '');
     
-    // Формируем список локаций
-    const locsHtml = ch.locs.map(loc => `• ${loc}`).join('<br>');
-    
-    card.innerHTML = `
-      <h3>${ch.title}</h3>
-      <div class="chapter-locations">${locsHtml}</div>
-      <div class="chapter-boss">Босс: ${ch.boss}</div>
-    `;
-    
-    card.onclick = () => {
-      alert(`В разработке: ${ch.title}`);
-      // Здесь будет логика перехода на нужную главу
-    };
-    grid.appendChild(card);
+    // Заголовок круга
+    const title = document.createElement('div');
+    title.className = 'circle-title';
+    title.textContent = circle.title;
+    block.appendChild(title);
+
+    // Ряд с локациями
+    const row = document.createElement('div');
+    row.className = 'locations-row';
+
+    circle.locations.forEach(loc => {
+      const card = document.createElement('div');
+      card.className = 'location-card ' + (loc.available ? 'active' : 'locked');
+
+      // Картинка локации
+      const imgDiv = document.createElement('div');
+      imgDiv.className = 'loc-img';
+      if (loc.img) {
+        const img = document.createElement('img');
+        img.src = loc.img;
+        img.style.width = '100%';
+        img.style.height = '100%';
+        img.style.objectFit = 'cover';
+        img.onerror = () => { img.style.display = 'none'; imgDiv.textContent = 'Нет изображения'; };
+        imgDiv.appendChild(img);
+      } else {
+        imgDiv.textContent = '???';
+      }
+
+      // Инфо-блок
+      const infoDiv = document.createElement('div');
+      infoDiv.className = 'loc-info';
+      
+      const locTitle = document.createElement('div');
+      locTitle.className = 'loc-title';
+      locTitle.textContent = loc.title;
+      
+      const locDesc = document.createElement('div');
+      locDesc.className = 'loc-desc';
+      locDesc.textContent = loc.desc;
+
+      const locStatus = document.createElement('div');
+      locStatus.className = 'loc-status';
+      locStatus.textContent = loc.available ? 'Доступно' : 'В разработке';
+
+      infoDiv.appendChild(locTitle);
+      infoDiv.appendChild(locDesc);
+      infoDiv.appendChild(locStatus);
+
+      card.appendChild(imgDiv);
+      card.appendChild(infoDiv);
+
+      // Клик
+      if (loc.available) {
+        card.addEventListener('click', () => {
+          alert(`Запуск локации: ${loc.title}`);
+          // Здесь можно вызвать startGame() или переход на конкретную локацию
+        });
+      }
+
+      row.appendChild(card);
+    });
+
+    block.appendChild(row);
+    container.appendChild(block);
   });
 }
 
@@ -457,7 +572,7 @@ const imgTree = new Image();
 
 imgHero.src = 'hero.png'; 
 imgCharon.src = 'charon.png';
-imgTree.src = 'tree.png'; // Дерево
+imgTree.src = 'tree.png';
 
 let imagesLoaded = false;
 let loadCount = 0;
@@ -524,7 +639,6 @@ function drawHero(x, y, isWalking, direction, walkTimer) {
   if (direction < 0) ctx.scale(-1, 1);
 
   if (heroSprite) {
-    // УВЕЛИЧЕННЫЙ СПРАЙТ ГЕРОЯ
     const w = 120; 
     const h = 140; 
     ctx.drawImage(heroSprite, -w / 2, -h, w, h);
@@ -541,7 +655,6 @@ function drawCharon(x, y) {
   ctx.translate(x, y);
   
   if (charonSprite) {
-    // УВЕЛИЧЕННЫЙ СПРАЙТ ХАРОНА
     const w = 130; 
     const h = 150;
     ctx.shadowColor = 'rgba(180, 180, 180, 0.35)';
@@ -594,22 +707,16 @@ function drawWorld() {
 
   if (currentZone === 'outside') {
     /* 
-       Деревья: 
-       Задний ряд (самый дальний) уменьшен до 0.3
-       Средний ряд — 0.5
-       Ближний ряд — 0.7
+       Деревья: только ОДИН ряд спереди. 
+       Задний план полностью убран.
     */
-    const treeRows = [
-      { y: 880, count: 35, scale: 0.3, seed: 0 }, // Дальний план
-      { y: 780, count: 20, scale: 0.5, seed: 1 }, // Средний план
-      { y: 680, count: 12, scale: 0.7, seed: 2 }, // Ближний план
-    ];
-    treeRows.forEach(row => {
-      for (let i = 0; i < row.count; i++) {
-        const tx = (i * (WORLD.outside.width / row.count)) + Math.sin(i) * 50;
-        drawTreeAsset(tx, row.y, row.scale, row.seed + i);
-      }
-    });
+    const treeRow = { y: 820, count: 25, scale: 0.8, seed: 0 };
+    
+    for (let i = 0; i < treeRow.count; i++) {
+      // Равномерное распределение по ширине
+      const tx = (i * (WORLD.outside.width / treeRow.count)) + Math.sin(i * 3.3) * 60;
+      drawTreeAsset(tx, treeRow.y, treeRow.scale, treeRow.seed + i);
+    }
 
     ctx.fillStyle = '#1e1e1e';
     ctx.fillRect(0, WORLD.outside.minY, WORLD.outside.width, WORLD.outside.height);
