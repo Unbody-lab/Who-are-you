@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -7,15 +8,87 @@
 <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  :root {
+    --brightness: 1;
+  }
+
   body {
     background: #020202; color: #8a8a8a; font-family: 'VT323', monospace;
     overflow: hidden; height: 100vh; user-select: none;
+    filter: brightness(var(--brightness));
+    transition: filter 0.3s;
+  }
+
+  /* ===== ГЛАВНОЕ МЕНЮ ===== */
+  #mainMenu {
+    position: fixed; inset: 0; z-index: 400;
+    background: #050202; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+  }
+  #mainMenu h1 {
+    font-size: 64px; color: #8a3030; margin-bottom: 50px; letter-spacing: 4px;
+    text-shadow: 0 0 20px rgba(138,48,48,0.5);
+  }
+  .menu-btn {
+    background: transparent; border: 2px solid #3a1010; color: #a08080;
+    padding: 15px 40px; font-size: 32px; font-family: 'VT323', monospace;
+    cursor: pointer; margin: 10px; width: 300px; transition: all 0.2s;
+  }
+  .menu-btn:hover {
+    background: #3a1010; color: #fff; box-shadow: 0 0 15px #8a3030;
+  }
+
+  /* ===== ЭКРАН ВЫБОРА ГЛАВ ===== */
+  #chapterSelect {
+    position: fixed; inset: 0; z-index: 350;
+    background: #050202; display: none; flex-direction: column;
+    align-items: center; padding: 40px;
+  }
+  #chapterSelect h2 {
+    font-size: 40px; color: #a08080; margin-bottom: 30px;
+  }
+  .chapters-grid {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 20px;
+    width: 100%; max-width: 1200px; margin-bottom: 30px;
+  }
+  .chapter-card {
+    background: #1a1010; border: 2px solid #3a1010;
+    display: flex; flex-direction: column; align-items: center;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .chapter-card:hover {
+    border-color: #8a3030; box-shadow: 0 0 15px rgba(138,48,48,0.5); transform: scale(1.05);
+  }
+  .chapter-card img {
+    width: 100%; height: 120px; object-fit: cover;
+    border-bottom: 2px solid #3a1010; background: #111;
+  }
+  .chapter-card span {
+    padding: 10px; font-size: 20px; color: #a08080; text-align: center;
+  }
+
+  /* ===== НАСТРОЙКИ ===== */
+  #settings {
+    position: fixed; inset: 0; z-index: 350;
+    background: #050202; display: none; flex-direction: column;
+    align-items: center; justify-content: center;
+  }
+  #settings h2 {
+    font-size: 40px; color: #a08080; margin-bottom: 30px;
+  }
+  .setting-row {
+    display: flex; align-items: center; gap: 20px; margin-bottom: 20px;
+    font-size: 24px;
+  }
+  input[type=range] {
+    width: 300px; accent-color: #8a3030;
   }
 
   /* ===== КАТСЦЕНА ===== */
   #cutscene {
     position: fixed; inset: 0; z-index: 300; background: #000;
-    display: flex; align-items: center; justify-content: center;
+    display: none; align-items: center; justify-content: center;
     transition: opacity 1.5s;
   }
   #cutscene.hidden { opacity: 0; pointer-events: none; }
@@ -36,13 +109,13 @@
   /* ===== ИГРА ===== */
   #game {
     position: fixed; inset: 0; opacity: 1; transition: opacity 1.5s;
-    overflow: hidden; display: flex; align-items: center; justify-content: center; background: #000;
+    overflow: hidden; display: none; align-items: center; justify-content: center; background: #000;
   }
   #game.hidden { opacity: 0; pointer-events: none; }
 
   #gameCanvas {
     display: block; width: 100vw; height: 100vh;
-    image-rendering: pixelated; image-rendering: crisp-edges;
+image-rendering: pixelated; image-rendering: crisp-edges;
   }
 
   #uiOverlay {
@@ -82,18 +155,47 @@
 </head>
 <body>
 
+<!-- ================= ГЛАВНОЕ МЕНЮ ================= -->
+<div id="mainMenu">
+  <h1>КТО ТЫ</h1>
+  <button class="menu-btn" onclick="startGame()">Играть</button>
+  <button class="menu-btn" onclick="showChapters()">Выбор глав</button>
+  <button class="menu-btn" onclick="showSettings()">Настройки</button>
+</div>
+
+<!-- ================= ВЫБОР ГЛАВ ================= -->
+<div id="chapterSelect">
+  <h2>Выбор главы</h2>
+  <div class="chapters-grid" id="chaptersGrid">
+    <!-- Карточки генерируются в JS -->
+  </div>
+  <button class="menu-btn" style="width:200px;" onclick="hideChapters()">Назад</button>
+</div>
+
+<!-- ================= НАСТРОЙКИ ================= -->
+<div id="settings">
+  <h2>Настройки</h2>
+  <div class="setting-row">
+    <span>Яркость:</span>
+    <input type="range" id="brightnessSlider" min="0.3" max="1.5" step="0.1" value="1">
+  </div>
+  <button class="menu-btn" style="width:200px; margin-top:30px;" onclick="hideSettings()">Назад</button>
+</div>
+
+<!-- ================= КАТСЦЕНА ================= -->
 <div id="cutscene">
   <div id="csBg"></div>
   <div id="csText"><span id="csTextContent"></span></div>
   <div id="csNext">нажми, чтобы продолжить →</div>
 </div>
 
-<div id="game" class="hidden">
+<!-- ================= ИГРА ================= -->
+<div id="game">
   <canvas id="gameCanvas"></canvas>
   
   <div id="uiOverlay">
     <div id="topBar">
-      <div id="locName">Круг 1 · Лимб</div>
+      <div id="locName">Пролог</div>
       <div id="locGoal">Сумрачный лес</div>
     </div>
     
@@ -108,37 +210,96 @@
 <audio id="bgmForest" src="forest_ambient.mp3" loop></audio>
 
 <script>
-/* ============ АУДИО МЕНЕДЖЕР ============ */
+/* ============ АУДИО И НАСТРОЙКИ ============ */
 const audioIntro = document.getElementById('bgmIntro');
 const audioForest = document.getElementById('bgmForest');
-
-// Громкость по умолчанию (можно настроить)
 audioIntro.volume = 0.6;
 audioForest.volume = 0.4;
 
 let isAudioStarted = false;
-
 function playIntroMusic() {
   if (isAudioStarted) return;
   isAudioStarted = true;
-  audioIntro.play().catch(e => console.log("Браузер заблокировал аудио до клика"));
+  audioIntro.play().catch(e => console.log("Аудио заблокировано"));
 }
-
 function playForestMusic() {
   if (!audioIntro.paused) audioIntro.pause();
   audioForest.currentTime = 0;
-  audioForest.play().catch(e => console.log("Ошибка воспроизведения леса"));
+  audioForest.play().catch(e => console.log("Ошибка аудио"));
 }
 
-// Запускаем интро-музыку при первом клике по катсцене
-document.getElementById('cutscene').addEventListener('click', playIntroMusic, { once: true });
+// Настройки яркости
+const slider = document.getElementById('brightnessSlider');
+slider.addEventListener('input', (e) => {
+document.documentElement.style.setProperty('--brightness', e.target.value);
+});
+
+/* ============ НАВИГАЦИЯ МЕНЮ ============ */
+function startGame() {
+  document.getElementById('mainMenu').style.display = 'none';
+  document.getElementById('cutscene').style.display = 'flex';
+  playIntroMusic();
+  showCutscene();
+}
+
+function showChapters() {
+  document.getElementById('mainMenu').style.display = 'none';
+  document.getElementById('chapterSelect').style.display = 'flex';
+  renderChapters();
+}
+function hideChapters() {
+  document.getElementById('chapterSelect').style.display = 'none';
+  document.getElementById('mainMenu').style.display = 'flex';
+}
+
+function showSettings() {
+  document.getElementById('mainMenu').style.display = 'none';
+  document.getElementById('settings').style.display = 'flex';
+}
+function hideSettings() {
+  document.getElementById('settings').style.display = 'none';
+  document.getElementById('mainMenu').style.display = 'flex';
+}
+
+// Генерация карточек глав
+const chaptersList = [
+  { id: 'prologue', title: 'Пролог', img: 'chapter_prologue.png' },
+  { id: '1', title: 'Круг 1 · Лимб', img: 'chapter_1.png' },
+  { id: '2', title: 'Круг 2 · Похоть', img: 'chapter_2.png' },
+  { id: '3', title: 'Круг 3 · Чревоугодие', img: 'chapter_3.png' },
+  { id: '4', title: 'Круг 4 · Жадность', img: 'chapter_4.png' },
+  { id: '5', title: 'Круг 5 · Гнев', img: 'chapter_5.png' },
+  { id: '6', title: 'Круг 6 · Ересь', img: 'chapter_6.png' },
+  { id: '7', title: 'Круг 7 · Насилие', img: 'chapter_7.png' },
+  { id: '8', title: 'Круг 8 · Обман', img: 'chapter_8.png' },
+  { id: '9', title: 'Круг 9 · Предательство', img: 'chapter_9.png' }
+];
+
+function renderChapters() {
+  const grid = document.getElementById('chaptersGrid');
+  grid.innerHTML = '';
+  chaptersList.forEach(ch => {
+    const card = document.createElement('div');
+    card.className = 'chapter-card';
+    // Если картинка не загрузится, браузер покажет alt или пустоту, можно добавить onerror
+    card.innerHTML = `
+      <img src="${ch.img}" alt="${ch.title}" onerror="this.style.display='none'">
+      <span>${ch.title}</span>
+    `;
+    card.onclick = () => {
+      alert(`В разработке: ${ch.title}`);
+      // Здесь будет логика перехода на нужную главу
+    };
+    grid.appendChild(card);
+  });
+}
 
 /* ============ СОСТОЯНИЕ ============ */
 const state = {
   seen: {}, items: [], flags: {}, cutsceneDone: false,
   hero: { x: 500, y: 800 }
 };
-const SAVE_KEY = 'kto_ty_pixel_dante';
+const SAVE_KEY = 'kto_ty_pixel_dante_v3';
 function save() { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }
 function load() {
   const raw = localStorage.getItem(SAVE_KEY);
@@ -178,9 +339,9 @@ function typeInto(el, text, speed = 40, cb) {
 }
 
 /* ============ КАТСЦЕНА ============ */
-const cutscene = [
+const cutsceneData = [
   { bg: 'radial-gradient(circle at 50% 40%, #1a1010 0%, #000 70%)', text: 'Ты не помнишь своего имени. Никто здесь его не помнит. Имени больше нет — есть только «ты».' },
-  { bg: 'radial-gradient(circle at 50% 30%, #2a1010 0%, #000 70%)', text: 'Ты жил. Как все: дышал, забывал, обещал. Кому-то — важное. Кому-то — пустое.' },
+{ bg: 'radial-gradient(circle at 50% 30%, #2a1010 0%, #000 70%)', text: 'Ты жил. Как все: дышал, забывал, обещал. Кому-то — важное. Кому-то — пустое.' },
   { bg: 'radial-gradient(circle at 50% 50%, #3a0505 0%, #000 70%)', text: 'А потом — тишина. Не тьма, не свет. Просто тишина, в которой ты перестал быть.' },
   { bg: 'radial-gradient(circle at 50% 60%, #2a0505 0%, #000 70%)', text: 'И вот ты здесь. Внизу. Там, где начинается всё, что ты откладывал.' },
   { bg: 'radial-gradient(circle at 50% 50%, #0a0a0a 0%, #000 70%)', text: 'Сумрачный лес. КПП. Начало.' },
@@ -191,24 +352,22 @@ const csTextContent = document.getElementById('csTextContent');
 const csNext = document.getElementById('csNext');
 
 function showCutscene() {
-  document.getElementById('cutscene').classList.remove('hidden');
-  document.getElementById('game').classList.add('hidden');
   csIndex = 0; renderCsSlide();
 }
 function renderCsSlide() {
-  const slide = cutscene[csIndex];
+  const slide = cutsceneData[csIndex];
   csBg.style.background = slide.bg;
   csNext.style.display = 'none';
   typeInto(csTextContent, slide.text, 40, () => { csNext.style.display = 'block'; });
 }
 csNext.addEventListener('click', (e) => {
-  e.stopPropagation(); // Чтобы не дублировать клик
-  if (csIndex < cutscene.length - 1) { csIndex++; renderCsSlide(); }
+  e.stopPropagation();
+  if (csIndex < cutsceneData.length - 1) { csIndex++; renderCsSlide(); }
   else {
-    document.getElementById('cutscene').classList.add('hidden');
-    document.getElementById('game').classList.remove('hidden');
+    document.getElementById('cutscene').style.display = 'none';
+    document.getElementById('game').style.display = 'flex';
     state.cutsceneDone = true; save();
-    playForestMusic(); // Включаем музыку леса
+    playForestMusic();
     initGame();
   }
 });
@@ -239,11 +398,11 @@ const keys = { w: false, a: false, s: false, d: false };
 /* ============ ЗАГРУЗКА АССЕТОВ ============ */
 const imgHero = new Image();
 const imgCharon = new Image();
-const imgTree = new Image(); // Ассет дерева
+const imgTree = new Image();
 
 imgHero.src = 'hero.png'; 
 imgCharon.src = 'charon.png';
-imgTree.src = 'tree.png'; // Загружаем дерево
+imgTree.src = 'tree.png'; // Дерево
 
 let imagesLoaded = false;
 let loadCount = 0;
@@ -281,7 +440,6 @@ imgTree.onerror = () => { console.error('Нет tree.png'); checkLoaded(); };
 
 let heroSprite = null;
 let charonSprite = null;
-let eyePulse = 0;
 
 function initGame() {
   load();
@@ -297,23 +455,8 @@ function initGame() {
 }
 
 /* ============ ОТРИСОВКА ПЕРСОНАЖЕЙ ============ */
-function drawGlowingEyes(x, y, direction) {
-  const pulse = 0.6 + Math.sin(eyePulse) * 0.4;
-  const eyeOffsetX = 10 * (direction < 0 ? -1 : 1);
-  ctx.save();
-  ctx.globalAlpha = pulse;
-  ctx.fillStyle = '#ff2a2a';
-  ctx.shadowColor = '#ff0000';
-  ctx.shadowBlur = 8;
-  ctx.beginPath();
-  ctx.arc(x - eyeOffsetX, y - 118, 4, 0, Math.PI * 2);
-  ctx.arc(x + eyeOffsetX, y - 118, 4, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
-}
-
 function drawHero(x, y, isWalking, direction, walkTimer) {
-  if (imagesLoaded && imgHero.complete && !heroSprite) heroSprite = processImage(imgHero);
+if (imagesLoaded && imgHero.complete && !heroSprite) heroSprite = processImage(imgHero);
 
   ctx.save();
   ctx.translate(x, y);
@@ -326,15 +469,14 @@ function drawHero(x, y, isWalking, direction, walkTimer) {
   if (direction < 0) ctx.scale(-1, 1);
 
   if (heroSprite) {
-    const w = 180; 
-    const h = 140; 
+    // Размер спрайта героя (уменьшен, чтобы соответствовал деревьям)
+    const w = 90; 
+    const h = 110; 
     ctx.drawImage(heroSprite, -w / 2, -h, w, h);
   } else {
     ctx.fillStyle = '#3a2a2a'; ctx.beginPath(); ctx.arc(0, -20, 20, 0, Math.PI*2); ctx.fill();
   }
   ctx.restore();
-
-  drawGlowingEyes(x, y, direction);
 }
 
 function drawCharon(x, y) {
@@ -344,11 +486,11 @@ function drawCharon(x, y) {
   ctx.translate(x, y);
   
   if (charonSprite) {
-    const w = 190; 
-    const h = 150;
+    const w = 100; 
+    const h = 120;
     ctx.shadowColor = 'rgba(180, 180, 180, 0.35)';
     ctx.shadowBlur = 18;
-ctx.drawImage(charonSprite, -w / 2, -h, w, h);
+    ctx.drawImage(charonSprite, -w / 2, -h, w, h);
   } else {
     ctx.fillStyle = '#d0d0d0'; ctx.beginPath(); ctx.arc(0, -20, 20, 0, Math.PI*2); ctx.fill();
   }
@@ -358,27 +500,27 @@ ctx.drawImage(charonSprite, -w / 2, -h, w, h);
 /* ============ ДЕРЕВЬЯ (АССЕТЫ) ============ */
 function drawTreeAsset(tx, ty, scale = 1, seed = 0) {
   if (imgTree.complete && imgTree.naturalWidth > 0) {
-    // Рисуем ассет дерева. Предполагаем, что точка привязки — низ по центру (корни).
+    // Уменьшенный масштаб, чтобы деревья не были гигантскими
     const w = imgTree.width * scale;
     const h = imgTree.height * scale;
     
     ctx.save();
     ctx.translate(tx, ty);
     
-    // Небольшое случайное отклонение для естественности
-    const sway = Math.sin(Date.now() * 0.001 + seed) * 0.02;
+    // Легкое покачивание
+    const sway = Math.sin(Date.now() * 0.001 + seed) * 0.01;
     ctx.rotate(sway);
     
     // Рисуем дерево: x = -w/2 (центр), y = -h (низ на земле)
     ctx.drawImage(imgTree, -w / 2, -h, w, h);
     ctx.restore();
   } else {
-    // Заглушка, если нет tree.png (тёмный треугольник)
+    // Заглушка, если нет tree.png
     ctx.fillStyle = '#0d120c';
     ctx.beginPath();
-    ctx.moveTo(tx, ty - 150 * scale);
-    ctx.lineTo(tx + 40 * scale, ty);
-    ctx.lineTo(tx - 40 * scale, ty);
+    ctx.moveTo(tx, ty - 100 * scale);
+    ctx.lineTo(tx + 30 * scale, ty);
+    ctx.lineTo(tx - 30 * scale, ty);
     ctx.fill();
   }
 }
@@ -396,15 +538,16 @@ function drawWorld() {
   ctx.translate(-Math.floor(cameraX), -Math.floor(cameraY));
 
   if (currentZone === 'outside') {
-    /* Деревья — теперь через ассеты */
+    /* Деревья: настроены масштаб и позиции, чтобы не налезали */
     const treeRows = [
-      { y: 850, count: 22, scale: 0.8, seed: 0 },
-      { y: 750, count: 18, scale: 1.0, seed: 1 },
-      { y: 680, count: 14, scale: 1.2, seed: 2 },
+      { y: 880, count: 30, scale: 0.4, seed: 0 }, // Дальний план (мелкие)
+      { y: 780, count: 20, scale: 0.6, seed: 1 }, // Средний план
+      { y: 680, count: 12, scale: 0.8, seed: 2 }, // Ближний план (крупные)
     ];
     treeRows.forEach(row => {
       for (let i = 0; i < row.count; i++) {
-        const tx = 120 + i * (WORLD.outside.width / row.count) + Math.sin(i * 1.7) * 40;
+        // Равномерное распределение с небольшим смещением
+        const tx = (i * (WORLD.outside.width / row.count)) + Math.sin(i) * 50;
         drawTreeAsset(tx, row.y, row.scale, row.seed + i);
       }
     });
@@ -437,8 +580,8 @@ function drawWorld() {
     ctx.fillRect(2900, 700, 150, 250);
     ctx.fillStyle = '#141414';
     ctx.fillRect(2880, 680, 190, 20); 
-    ctx.fillStyle = '#5a5030'; 
-    ctx.fillRect(2930, 750, 90, 70); 
+    ctx.fillStyle = '#5a5030';
+ctx.fillRect(2930, 750, 90, 70); 
     ctx.fillStyle = '#141414';
     ctx.fillRect(2910, 850, 50, 100); 
     ctx.fillStyle = '#444';
@@ -471,7 +614,8 @@ function drawWorld() {
       ctx.strokeRect(560, 1850, 15, 20);
       ctx.shadowBlur = 0;
     }
-const fog = ctx.createLinearGradient(0, 900, 0, 1600);
+
+    const fog = ctx.createLinearGradient(0, 900, 0, 1600);
     fog.addColorStop(0, 'rgba(60, 65, 70, 0)');
     fog.addColorStop(1, 'rgba(60, 65, 70, 0.2)');
     ctx.fillStyle = fog;
@@ -533,8 +677,6 @@ function tick(now) {
   const dt = Math.min(0.05, (now - lastTime) / 1000);
   lastTime = now;
 
-  eyePulse += dt * 4;
-
   let dx = 0; let dy = 0;
   if (keys.a) { dx -= 1; heroDirection = -1; }
   if (keys.d) { dx += 1; heroDirection = 1; }
@@ -563,8 +705,7 @@ function tick(now) {
   
   cameraX = Math.max(0, Math.min(zone.width - gameCanvas.width, cameraX));
   cameraY = Math.max(0, Math.min(zone.height - gameCanvas.height + 200, cameraY));
-
-  if (state.hero) { state.hero.x = heroX; state.hero.y = heroY; }
+if (state.hero) { state.hero.x = heroX; state.hero.y = heroY; }
 
   drawWorld();
   requestAnimationFrame(tick);
@@ -586,8 +727,7 @@ window.addEventListener('keyup', (e) => {
 });
 
 gameCanvas.addEventListener('click', (e) => {
-11:57
-const rect = gameCanvas.getBoundingClientRect();
+  const rect = gameCanvas.getBoundingClientRect();
   const clickX = (e.clientX - rect.left) * (gameCanvas.width / rect.width) + cameraX;
   const clickY = (e.clientY - rect.top) * (gameCanvas.height / rect.height) + cameraY;
 
@@ -624,7 +764,8 @@ function exitBooth() {
   setTimeout(() => {
     currentZone = 'outside';
     heroX = 2910; heroY = 980;
-    document.getElementById('locName').innerText = 'Круг 1 · Лимб';
+    document.getElementById('locName').innerText = 'Пролог';
+    document.getElementById('locGoal').innerText = 'Сумрачный лес';
     fade.classList.remove('active');
   }, 800);
 }
@@ -651,8 +792,7 @@ const gameObjects = {
         state.flags.barrierOpen = true; save();
         return;
       }
-      
-      if (state.flags.horaceTalked) { say("— Пропуск нужен. Ищи в самом низу тропинки.", "Гораций"); return; }
+if (state.flags.horaceTalked) { say("— Пропуск нужен. Ищи в самом низу тропинки.", "Гораций"); return; }
       state.flags.horaceTalked = true; save();
       say("«Ещё один. Пропуск есть?» Ты мотаешь головой. «Я свой потерял. Обронил где-то внизу, на тропинке. Найдёшь — подниму шлагбаум».", "Гораций");
     }
@@ -677,7 +817,7 @@ const gameObjects = {
   note: {
     onClick: () => {
       if (state.items.includes('note')) return;
-state.items.push('note'); save(); renderInventory();
+      state.items.push('note'); save(); renderInventory();
       say("Старая записка. «Что надеется на прощенье Божье...» — дальше не разобрать. С обратной стороны печать Горация. Это его пропуск!");
     }
   },
@@ -690,7 +830,7 @@ state.items.push('note'); save(); renderInventory();
 const allItems = { 
   keycard: { icon: '🗝', title: 'Ключ-карта', desc: 'Собственность КПП.' },
   note: { icon: '📜 
-', title: 'Записка', desc: '«Что надеется на прощенье Божьей...» С печатью Горация.' }
+', title: 'Записка', desc: '«Что надеется на прощенье Божье...» С печатью Горация.' }
 };
 function renderInventory() {
   const inv = document.getElementById('inventory');
@@ -704,17 +844,6 @@ function renderInventory() {
     });
     inv.appendChild(el);
   });
-}
-
-/* ============ СТАРТ ============ */
-load();
-if (state.cutsceneDone) {
-  document.getElementById('cutscene').classList.add('hidden');
-  document.getElementById('game').classList.remove('hidden');
-  playForestMusic(); // Если игра загрузилась сразу, запускаем эмбиент леса
-  initGame();
-} else {
-  showCutscene();
 }
 </script>
 
