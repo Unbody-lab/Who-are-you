@@ -459,7 +459,6 @@ function renderChapters() {
 
       if (loc.available) {
         card.addEventListener('click', () => {
-          // Запуск игры
           document.getElementById('chapterSelect').style.display = 'none';
           document.getElementById('cutscene').style.display = 'flex';
           playIntroMusic();
@@ -576,6 +575,23 @@ let cameraY = 0;
 let lastTime = performance.now();
 const keys = { w: false, a: false, s: false, d: false };
 
+/* ============ ЗВЁЗДЫ ============ */
+const stars = [];
+function initStars() {
+  stars.length = 0;
+  for (let i = 0; i < 150; i++) {
+    stars.push({
+      x: Math.random() * WORLD.outside.width,
+      y: Math.random() * 500,
+      size: Math.random() * 2 + 1,
+      baseAlpha: Math.random() * 0.6 + 0.2,
+      twinkleSpeed: Math.random() * 2 + 0.5,
+      phase: Math.random() * Math.PI * 2
+    });
+  }
+}
+initStars();
+
 /* ============ ЗАГРУЗКА АССЕТОВ ============ */
 const imgHero = new Image();
 const imgCharon = new Image();
@@ -583,13 +599,12 @@ const imgTree = new Image();
 
 imgHero.src = 'hero.png'; 
 imgCharon.src = 'charon.png';
-imgTree.src = 'tre2e.png';
+imgTree.src = 'tree.png';
 
 let imagesLoaded = false;
 let loadCount = 0;
 const totalImages = 3;
 
-// ИСПРАВЛЕННАЯ ФУНКЦИЯ: Удаляет ВЕСЬ белый фон, а не только по краям
 function processImage(img) {
   const tempCanvas = document.createElement('canvas');
   tempCanvas.width = img.width;
@@ -604,7 +619,6 @@ function processImage(img) {
     const r = data[i];
     const g = data[i + 1];
     const b = data[i + 2];
-    // Если пиксель близок к белому — делаем прозрачным
     if (r > 230 && g > 230 && b > 230) {
       data[i + 3] = 0;
     }
@@ -620,11 +634,11 @@ imgCharon.onload = checkLoaded;
 imgTree.onload = checkLoaded;
 imgHero.onerror = () => { console.error('Нет hero.png'); checkLoaded(); };
 imgCharon.onerror = () => { console.error('Нет charon.png'); checkLoaded(); };
-imgTree.onerror = () => { console.error('Нет tree.png'); checkLoaded(); };
+imgTree.onerror = () => { console.error('Нет tre2e.png'); checkLoaded(); };
 
 let heroSprite = null;
 let charonSprite = null;
-let treeSprite = null; // Добавлено для обработанного дерева
+let treeSprite = null;
 
 function initGame() {
   load();
@@ -683,7 +697,6 @@ function drawCharon(x, y) {
  
 /* ============ ДЕРЕВЬЯ ============ */
 function drawTreeAsset(tx, ty, scale = 1, seed = 0) {
-  // Обрабатываем картинку дерева один раз
   if (imagesLoaded && imgTree.complete && !treeSprite) {
     treeSprite = processImage(imgTree);
   }
@@ -701,7 +714,6 @@ function drawTreeAsset(tx, ty, scale = 1, seed = 0) {
     ctx.drawImage(treeSprite, -w / 2, -h, w, h);
     ctx.restore();
   } else {
-    // Заглушка, пока картинка грузится
     ctx.fillStyle = '#0d120c';
     ctx.beginPath();
     ctx.moveTo(tx, ty - 100 * scale);
@@ -713,21 +725,35 @@ function drawTreeAsset(tx, ty, scale = 1, seed = 0) {
  
 /* ============ ОТРИСОВКА МИРА ============ */
 function drawWorld() {
+  // Небо: ночной градиент
   const skyGrad = ctx.createLinearGradient(0, 0, 0, gameCanvas.height);
-  skyGrad.addColorStop(0, '#0e1114'); 
-  skyGrad.addColorStop(0.5, '#14181b'); 
-  skyGrad.addColorStop(1, '#1a1e21');
+  skyGrad.addColorStop(0, '#04060a'); 
+  skyGrad.addColorStop(0.4, '#0a1018'); 
+  skyGrad.addColorStop(0.7, '#141a22');
+  skyGrad.addColorStop(1, '#1a2028');
   ctx.fillStyle = skyGrad;
   ctx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
+
+  // Звёзды (в экранных координатах, но с учётом параллакса)
+  const starParallax = cameraX * 0.1;
+  stars.forEach(star => {
+    const sx = (star.x - starParallax) % WORLD.outside.width;
+    if (sx < -50 || sx > gameCanvas.width + 50) return;
+    const alpha = star.baseAlpha + Math.sin(Date.now() * 0.001 * star.twinkleSpeed + star.phase) * 0.3;
+    ctx.fillStyle = `rgba(200, 210, 230, ${Math.max(0.1, Math.min(1, alpha))})`;
+    ctx.fillRect(sx, star.y, star.size, star.size);
+  });
 
   ctx.save();
   ctx.translate(-Math.floor(cameraX), -Math.floor(cameraY));
 
   if (currentZone === 'outside') {
-    const treeRow = { y: 820, count: 25, scale: 0.8, seed: 0 };
+    // Деревья: меньше, реже, с большим расстоянием
+    const treeRow = { y: 820, count: 14, scale: 0.45, seed: 0 };
     
     for (let i = 0; i < treeRow.count; i++) {
-      const tx = (i * (WORLD.outside.width / treeRow.count)) + Math.sin(i * 3.3) * 60;
+      const spacing = WORLD.outside.width / treeRow.count;
+      const tx = i * spacing + Math.sin(i * 5.7) * 100;
       drawTreeAsset(tx, treeRow.y, treeRow.scale, treeRow.seed + i);
     }
 
