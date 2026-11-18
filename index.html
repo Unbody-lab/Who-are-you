@@ -88,7 +88,7 @@
     color: #444; font-size: 20px;
   }
   .location-card.active .loc-img {
-    background: #1a1010; /* Заглушка фона, если нет img */
+    background: #1a1010;
   }
   .loc-info {
     padding: 15px; display: flex; flex-direction: column; gap: 5px;
@@ -194,7 +194,6 @@
 <div id="mainMenu">
   <h1>КТО ТЫ</h1>
   <button class="menu-btn" id="btnPlay">Играть</button>
-  <button class="menu-btn" id="btnChapters">Выбор глав</button>
   <button class="menu-btn" id="btnSettings">Настройки</button>
 </div>
 
@@ -270,24 +269,15 @@ slider.addEventListener('input', (e) => {
 });
 
 /* ============ НАВИГАЦИЯ МЕНЮ ============ */
-document.getElementById('btnPlay').addEventListener('click', startGame);
-document.getElementById('btnChapters').addEventListener('click', showChapters);
+document.getElementById('btnPlay').addEventListener('click', () => {
+  document.getElementById('mainMenu').style.display = 'none';
+  document.getElementById('chapterSelect').style.display = 'flex';
+  renderChapters();
+});
 document.getElementById('btnSettings').addEventListener('click', showSettings);
 document.getElementById('btnBackFromChapters').addEventListener('click', hideChapters);
 document.getElementById('btnBackFromSettings').addEventListener('click', hideSettings);
 
-function startGame() {
-  document.getElementById('mainMenu').style.display = 'none';
-  document.getElementById('cutscene').style.display = 'flex';
-  playIntroMusic();
-  showCutscene();
-}
-
-function showChapters() {
-  document.getElementById('mainMenu').style.display = 'none';
-  document.getElementById('chapterSelect').style.display = 'flex';
-  renderChapters();
-}
 function hideChapters() {
   document.getElementById('chapterSelect').style.display = 'none';
   document.getElementById('mainMenu').style.display = 'flex';
@@ -324,66 +314,89 @@ const chaptersData = [
   },
   {
     title: '1 Круг · Лимб',
-    locked: true,
+    locked: false,
     locations: [
-      { title: '???', desc: 'Неизвестно', available: false },
-      { title: '???', desc: 'Неизвестно', available: false }
+      { title: 'Университет Гомера', desc: 'Место, где обитают души великих поэтов и мыслителей.', available: false, img: null },
+      { title: 'Церковь Вергилия', desc: 'Святыня в Лимбе.', available: false, img: null },
+      { title: 'Тюрьма перевоспитания', desc: 'Место для тех, кто ещё может исправиться.', available: false, img: null },
+      { title: 'Босс: Харон', desc: 'Перевозчик душ через реку Ахерон.', available: false, img: null }
     ]
   },
   {
     title: '2 Круг · Похоть',
     locked: true,
     locations: [
-      { title: '???', desc: 'Неизвестно', available: false }
+      { title: 'Современный мегаполис', desc: '', available: false },
+      { title: 'Центр мегаполиса', desc: 'Стриптиз-клубы и бордели.', available: false },
+      { title: 'Трущобы', desc: 'Бедный район с полной безнравственностью.', available: false },
+      { title: 'Ветряная пустыня', desc: 'Пустыня с ветряками.', available: false }
     ]
   },
   {
     title: '3 Круг · Чревоугодие',
     locked: true,
     locations: [
-      { title: '???', desc: 'Неизвестно', available: false }
+      { title: 'Бесконечный дождь', desc: '', available: false },
+      { title: 'Огромный рынок', desc: 'Торговля человеческими органами.', available: false },
+      { title: 'Логово Цербера', desc: '', available: false }
     ]
   },
   {
     title: '4 Круг · Жадность',
     locked: true,
     locations: [
-      { title: '???', desc: 'Неизвестно', available: false }
+      { title: 'Мегаполис золота и неона', desc: '', available: false },
+      { title: 'Торговый центр "Плутос"', desc: '', available: false },
+      { title: 'Стройка', desc: 'Строительная техника.', available: false },
+      { title: 'Дворец Плутоса', desc: '', available: false }
     ]
   },
   {
     title: '5 Круг · Гнев',
     locked: true,
     locations: [
-      { title: '???', desc: 'Неизвестно', available: false }
+      { title: 'Река Стикс', desc: '', available: false },
+      { title: 'Порт', desc: '', available: false },
+      { title: 'Корабль', desc: '', available: false },
+      { title: 'Дамба', desc: 'Пред стенами в Дит.', available: false }
     ]
   },
   {
     title: '6 Круг · Ересь',
     locked: true,
     locations: [
-      { title: '???', desc: 'Неизвестно', available: false }
+      { title: 'Городок Дит', desc: '', available: false },
+      { title: 'Библиотека лжи', desc: '', available: false },
+      { title: 'Кладбище', desc: '', available: false }
     ]
   },
   {
     title: '7 Круг · Насилие',
     locked: true,
     locations: [
-      { title: '???', desc: 'Неизвестно', available: false }
+      { title: 'Земля пропитанная кровью', desc: '', available: false },
+      { title: 'Военная база', desc: '', available: false },
+      { title: 'Лес самоубийц', desc: 'Жуткий парк.', available: false }
     ]
   },
   {
     title: '8 Круг · Обман',
     locked: true,
     locations: [
-      { title: '???', desc: 'Неизвестно', available: false }
+      { title: 'Огромный хаотичный мегаполис', desc: '', available: false },
+      { title: 'Казино', desc: '', available: false },
+      { title: 'Амфитеатр', desc: '', available: false }
     ]
   },
   {
     title: '9 Круг · Предательство',
     locked: true,
     locations: [
-      { title: '???', desc: 'Неизвестно', available: false }
+      { title: 'Озеро Коцит', desc: 'Замороженное озеро.', available: false },
+      { title: 'Шахта Каины', desc: '', available: false },
+      { title: 'Городок для укрытия', desc: 'Антенора.', available: false },
+      { title: 'Стол в Толомее', desc: '', available: false },
+      { title: 'Алтарь Люцифера', desc: 'В Джудекке.', available: false }
     ]
   }
 ];
@@ -396,13 +409,11 @@ function renderChapters() {
     const block = document.createElement('div');
     block.className = 'circle-block' + (circle.locked ? ' locked' : '');
     
-    // Заголовок круга
     const title = document.createElement('div');
     title.className = 'circle-title';
     title.textContent = circle.title;
     block.appendChild(title);
 
-    // Ряд с локациями
     const row = document.createElement('div');
     row.className = 'locations-row';
 
@@ -410,7 +421,6 @@ function renderChapters() {
       const card = document.createElement('div');
       card.className = 'location-card ' + (loc.available ? 'active' : 'locked');
 
-      // Картинка локации
       const imgDiv = document.createElement('div');
       imgDiv.className = 'loc-img';
       if (loc.img) {
@@ -425,7 +435,6 @@ function renderChapters() {
         imgDiv.textContent = '???';
       }
 
-      // Инфо-блок
       const infoDiv = document.createElement('div');
       infoDiv.className = 'loc-info';
       
@@ -448,11 +457,13 @@ function renderChapters() {
       card.appendChild(imgDiv);
       card.appendChild(infoDiv);
 
-      // Клик
       if (loc.available) {
         card.addEventListener('click', () => {
-          alert(`Запуск локации: ${loc.title}`);
-          // Здесь можно вызвать startGame() или переход на конкретную локацию
+          // Запуск игры
+          document.getElementById('chapterSelect').style.display = 'none';
+          document.getElementById('cutscene').style.display = 'flex';
+          playIntroMusic();
+          showCutscene();
         });
       }
 
@@ -675,15 +686,12 @@ function drawTreeAsset(tx, ty, scale = 1, seed = 0) {
     ctx.save();
     ctx.translate(tx, ty);
     
-    // Легкое покачивание
     const sway = Math.sin(Date.now() * 0.001 + seed) * 0.01;
     ctx.rotate(sway);
     
-    // Рисуем дерево: x = -w/2 (центр), y = -h (низ на земле)
     ctx.drawImage(imgTree, -w / 2, -h, w, h);
     ctx.restore();
   } else {
-    // Заглушка, если нет tree.png
     ctx.fillStyle = '#0d120c';
     ctx.beginPath();
     ctx.moveTo(tx, ty - 100 * scale);
@@ -706,14 +714,9 @@ function drawWorld() {
   ctx.translate(-Math.floor(cameraX), -Math.floor(cameraY));
 
   if (currentZone === 'outside') {
-    /* 
-       Деревья: только ОДИН ряд спереди. 
-       Задний план полностью убран.
-    */
     const treeRow = { y: 820, count: 25, scale: 0.8, seed: 0 };
     
     for (let i = 0; i < treeRow.count; i++) {
-      // Равномерное распределение по ширине
       const tx = (i * (WORLD.outside.width / treeRow.count)) + Math.sin(i * 3.3) * 60;
       drawTreeAsset(tx, treeRow.y, treeRow.scale, treeRow.seed + i);
     }
@@ -741,7 +744,6 @@ function drawWorld() {
     ctx.quadraticCurveTo(1850, 1500, 700, 1900);
     ctx.fill();
 
-    /* Будка КПП */
     ctx.fillStyle = '#1e1e1e';
     ctx.fillRect(2900, 700, 150, 250);
     ctx.fillStyle = '#141414';
@@ -753,7 +755,6 @@ function drawWorld() {
     ctx.fillStyle = '#444';
     ctx.fillRect(2940, 900, 6, 6); 
 
-    /* Шлагбаум */
     ctx.fillStyle = '#1e1e1e';
     ctx.fillRect(3080, 780, 15, 170);
     for (let i = 0; i < 8; i++) {
@@ -791,7 +792,6 @@ function drawWorld() {
     drawHero(heroX, heroY, isWalking, heroDirection, walkTimer);
     
   } else {
-    /* ---- ВНУТРИ КПП ---- */
     ctx.fillStyle = '#141414';
     ctx.fillRect(0, 0, WORLD.inside.width, WORLD.inside.height);
     
