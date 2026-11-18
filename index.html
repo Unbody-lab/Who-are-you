@@ -103,7 +103,7 @@
     font-size: 18px; color: #5a8080; margin-top: 5px;
   }
 
-  /* ===== НАСТРОЙИ ===== */
+  /* ===== НАСТРОЙКИ ===== */
   #settings {
     position: fixed; inset: 0; z-index: 350;
     background: #050202; display: none; flex-direction: column;
@@ -300,7 +300,7 @@ const chaptersData = [
     locations: [
       { 
         title: 'Сумрачный лес', 
-        desc: 'ы очутились в странном лесу, вы ничего не помните из прошлой жизни, ни имени, ни кем вы были, всё что вам остаётся это идти вперёд в надежде, что впереди что-то есть...', 
+        desc: 'Вы очутились в странном лесу, вы ничего не помните из прошлой жизни, ни имени, ни кем вы были, всё что вам остаётся это идти вперёд в надежде, что впереди что-то есть...', 
         available: true,
         img: 'loc_forest.png' 
       },
@@ -522,8 +522,8 @@ function typeInto(el, text, speed = 40, cb) {
 const cutsceneData = [
   { bg: 'radial-gradient(circle at 50% 40%, #1a1010 0%, #000 70%)', text: 'Ты не помнишь своего имени. Никто здесь его не помнит. Имени больше нет — есть только «ты».' },
   { bg: 'radial-gradient(circle at 50% 30%, #2a1010 0%, #000 70%)', text: 'Ты жил. Как все: дышал, забывал, обещал. Кому-то — важное. Кому-то — пустое.' },
-  { bg: 'radial-gradient(circle at 50% 50%, #3a0505 0%, #000 70%)', text: 'А потом — тишина. Не тьма, не свет. Просто тишина, в которой ы перестал быть.' },
-  { bg: 'radial-gradient(circle at 50% 60%, #2a0505 0%, #000 70%)', text: 'И вот ты здесь. Внизу. Там, где начинается всё, что ты откладывал.' },
+  { bg: 'radial-gradient(circle at 50% 50%, #3a0505 0%, #000 70%)', text: 'А потом — тишина. Не тьма, не свет. Просто тишина, в которой ты перестал быть.' },
+  { bg: 'radial-gradient(circle at 50% 60%, #2a0505 0%, #000 70%)', text: 'И вот ты здесь. Внизу. Там, где начинается всё, чт ты откладывал.' },
   { bg: 'radial-gradient(circle at 50% 50%, #0a0a0a 0%, #000 70%)', text: 'Сумрачный лес. КПП. Начало.' },
 ];
 let csIndex = 0;
@@ -592,36 +592,53 @@ function initStars() {
 }
 initStars();
 
-/* ============ ДЕРЕВЬЯ (ПРЕДГЕНЕРАЦИЯ И СОРТИРОВКА) ============ */
+/* ============ ДЕРЕВЬЯ ТОЛЬКО ПО БОКАМ ============ */
 const trees = [];
 function initTrees() {
   trees.length = 0;
 
-  // Дальний план (маленькие деревья)
-  for (let i = 0; i < 30; i++) {
+  // Границы тропинки по X (центральная зона ез деревьев)
+  const pathLeft = 1700;
+  const pathRight = 4300;
+
+  // Дальний план (маленькие деревья по краям)
+  for (let i = 0; i < 35; i++) {
+    const isLeft = Math.random() > 0.5;
+    const x = isLeft 
+      ? Math.random() * pathLeft 
+      : pathRight + Math.random() * (WORLD.outside.width - pathRight);
     trees.push({
-      x: 100 + Math.random() * WORLD.outside.width,
-      y: 850 + Math.random() * 200,
+      x: x,
+      y: 850 + Math.random() * 250,
       scale: 0.35,
       seed: i
     });
   }
 
-  // Средний план
-  for (let i = 0; i < 25; i++) {
+  // Средний план (по крам, немного заходят на тропинку сверху)
+  for (let i = 0; i < 28; i++) {
+    const isLeft = Math.random() > 0.5;
+    // Средний план заходит на тропинку сверху, но не внизу
+    const x = isLeft 
+      ? Math.random() * (pathLeft + 200) 
+      : (pathRight - 200) + Math.random() * (WORLD.outside.width - pathRight + 200);
     trees.push({
-      x: Math.random() * WORLD.outside.width,
-      y: 950 + Math.random() * 300,
+      x: x,
+      y: 950 + Math.random() * 350,
       scale: 0.6,
       seed: i + 100
     });
   }
 
-  // Ближний план (крупные деревья)
-  for (let i = 0; i < 15; i++) {
+  // Ближний план (крупные деревья — только по краям, ниже Y)
+  for (let i = 0; i < 18; i++) {
+    const isLeft = Math.random() > 0.5;
+    const x = isLeft 
+      ? Math.random() * (pathLeft - 100) 
+      : (pathRight + 100) + Math.random() * (WORLD.outside.width - pathRight - 100);
     trees.push({
-      x: Math.random() * WORLD.outside.width,
-      y: 1100 + Math.random() * 400,
+      x: x,
+      y: 1100 + Math.random() * 450,
       scale: 0.85,
       seed: i + 200
     });
@@ -639,7 +656,7 @@ const imgTree = new Image();
 
 imgHero.src = 'hero.png'; 
 imgCharon.src = 'charon.png';
-imgTree.src = 'tre2e.png';
+imgTree.src = 'tree.png';
 
 let imagesLoaded = false;
 let loadCount = 0;
@@ -689,7 +706,7 @@ function initGame() {
   gameCanvas.height = 720;
 
   renderInventory();
-  say("Тьма отступила: лес стал различим. Деревья здесь мёртвые, но воздух уже не такой тяжёлый. Впереди — КПП, единственный островок неясного света. Записка где-то в самом низу тропинки.");
+  say("Тьма отступила: лес сал различим. Деревья здесь мёртвые, но воздух уже не такой тяжёлый. Впереди — КПП, единственный островок неясного света. Записка где-то в самом низу тропинки.");
   requestAnimationFrame(tick);
 }
 
@@ -853,7 +870,7 @@ function drawWorld() {
       ctx.shadowBlur = 0;
     }
 
-    // Деревья (отсортированные по Y — дальние рисуются первыми)
+    // Деревья (отсорированные по Y — дальние рисуются первыми)
     trees.forEach(tree => {
       drawTreeAsset(tree.x, tree.y, tree.scale, tree.seed);
     });
@@ -1074,7 +1091,7 @@ const gameObjects = {
 
 /* ============ ИНВЕНТАРЬ ============ */
 const allItems = { 
-  keycard: { icon: '🗝', title: 'Ключ-карта', desc: 'Собственность КПП.' },
+  keycard: { icon: '🗝', title: 'люч-карта', desc: 'Собственность КПП.' },
   note: { icon: '📜', title: 'Записка', desc: '«Что надеется на прощенье Божье...» С печатью Горация.' }
 };
 function renderInventory() {
