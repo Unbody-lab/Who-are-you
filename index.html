@@ -43,28 +43,37 @@
     position: fixed; inset: 0; z-index: 350;
     background: #050202; display: none; flex-direction: column;
     align-items: center; padding: 40px;
+    overflow-y: auto; /* Прокрутка для длинного списка */
   }
   #chapterSelect h2 {
     font-size: 40px; color: #a08080; margin-bottom: 30px;
+    flex-shrink: 0;
   }
   .chapters-grid {
-    display: grid; grid-template-columns: repeat(5, 1fr); gap: 20px;
-    width: 100%; max-width: 1200px; margin-bottom: 30px;
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
+    gap: 20px;
+    width: 100%; max-width: 1400px; margin-bottom: 30px;
   }
   .chapter-card {
     background: #1a1010; border: 2px solid #3a1010;
-    display: flex; flex-direction: column; align-items: center;
+    display: flex; flex-direction: column;
     cursor: pointer; transition: all 0.2s;
+    padding: 15px;
   }
   .chapter-card:hover {
-    border-color: #8a3030; box-shadow: 0 0 15px rgba(138,48,48,0.5); transform: scale(1.05);
+    border-color: #8a3030; box-shadow: 0 0 15px rgba(138,48,48,0.5); transform: scale(1.02);
   }
-  .chapter-card img {
-    width: 100%; height: 120px; object-fit: cover;
-    border-bottom: 2px solid #3a1010; background: #111;
+  .chapter-card h3 {
+    color: #d08080; font-size: 26px; margin-bottom: 10px;
+    border-bottom: 1px solid #3a1010; padding-bottom: 5px;
   }
-  .chapter-card span {
-    padding: 10px; font-size: 20px; color: #a08080; text-align: center;
+  .chapter-locations {
+    font-size: 18px; color: #a08080; line-height: 1.2;
+    margin-bottom: 10px; flex-grow: 1;
+  }
+  .chapter-boss {
+    font-size: 20px; color: #ff4a4a; font-style: italic;
+    margin-top: auto; border-top: 1px solid #3a1010; padding-top: 10px;
   }
 
   /* ===== НАСТРОЙКИ ===== */
@@ -114,7 +123,7 @@
 
   #gameCanvas {
     display: block; width: 100vw; height: 100vh;
-image-rendering: pixelated; image-rendering: crisp-edges;
+    image-rendering: pixelated; image-rendering: crisp-edges;
   }
 
   #uiOverlay {
@@ -157,9 +166,9 @@ image-rendering: pixelated; image-rendering: crisp-edges;
 <!-- ================= ГЛАВНОЕ МЕНЮ ================= -->
 <div id="mainMenu">
   <h1>КТО ТЫ</h1>
-  <button class="menu-btn" onclick="startGame()">Играть</button>
-  <button class="menu-btn" onclick="showChapters()">Выбор глав</button>
-  <button class="menu-btn" onclick="showSettings()">Настройки</button>
+  <button class="menu-btn" id="btnPlay">Играть</button>
+  <button class="menu-btn" id="btnChapters">Выбор глав</button>
+  <button class="menu-btn" id="btnSettings">Настройки</button>
 </div>
 
 <!-- ================= ВЫБОР ГЛАВ ================= -->
@@ -168,7 +177,7 @@ image-rendering: pixelated; image-rendering: crisp-edges;
   <div class="chapters-grid" id="chaptersGrid">
     <!-- Карточки генерируются в JS -->
   </div>
-  <button class="menu-btn" style="width:200px;" onclick="hideChapters()">Назад</button>
+  <button class="menu-btn" style="width:200px; margin-bottom: 30px;" id="btnBackFromChapters">Назад</button>
 </div>
 
 <!-- ================= НАСТРОЙКИ ================= -->
@@ -178,7 +187,7 @@ image-rendering: pixelated; image-rendering: crisp-edges;
     <span>Яркость:</span>
     <input type="range" id="brightnessSlider" min="0.3" max="1.5" step="0.1" value="1">
   </div>
-  <button class="menu-btn" style="width:200px; margin-top:30px;" onclick="hideSettings()">Назад</button>
+  <button class="menu-btn" style="width:200px; margin-top:30px;" id="btnBackFromSettings">Назад</button>
 </div>
 
 <!-- ================= КАТСЦЕНА ================= -->
@@ -230,10 +239,16 @@ function playForestMusic() {
 // Настройки яркости
 const slider = document.getElementById('brightnessSlider');
 slider.addEventListener('input', (e) => {
-document.documentElement.style.setProperty('--brightness', e.target.value);
+  document.documentElement.style.setProperty('--brightness', e.target.value);
 });
 
 /* ============ НАВИГАЦИЯ МЕНЮ ============ */
+document.getElementById('btnPlay').addEventListener('click', startGame);
+document.getElementById('btnChapters').addEventListener('click', showChapters);
+document.getElementById('btnSettings').addEventListener('click', showSettings);
+document.getElementById('btnBackFromChapters').addEventListener('click', hideChapters);
+document.getElementById('btnBackFromSettings').addEventListener('click', hideSettings);
+
 function startGame() {
   document.getElementById('mainMenu').style.display = 'none';
   document.getElementById('cutscene').style.display = 'flex';
@@ -260,31 +275,72 @@ function hideSettings() {
   document.getElementById('mainMenu').style.display = 'flex';
 }
 
-// Генерация карточек глав
-const chaptersList = [
-  { id: 'prologue', title: 'Пролог', img: 'chapter_prologue.png' },
-  { id: '1', title: 'Круг 1 · Лимб', img: 'chapter_1.png' },
-  { id: '2', title: 'Круг 2 · Похоть', img: 'chapter_2.png' },
-  { id: '3', title: 'Круг 3 · Чревоугодие', img: 'chapter_3.png' },
-  { id: '4', title: 'Круг 4 · Жадность', img: 'chapter_4.png' },
-  { id: '5', title: 'Круг 5 · Гнев', img: 'chapter_5.png' },
-  { id: '6', title: 'Круг 6 · Ересь', img: 'chapter_6.png' },
-  { id: '7', title: 'Круг 7 · Насилие', img: 'chapter_7.png' },
-  { id: '8', title: 'Круг 8 · Обман', img: 'chapter_8.png' },
-  { id: '9', title: 'Круг 9 · Предательство', img: 'chapter_9.png' }
+/* ============ СПИСОК ГЛАВ ============ */
+const chaptersData = [
+  { 
+    title: '1 Круг · Лимб', 
+    locs: ['Университет Гомера', 'Церковь Вергилия', 'Тюрьма перевоспитания'], 
+    boss: 'Харон' 
+  },
+  { 
+    title: '2 Круг · Похоть', 
+    locs: ['Современный мегаполис', 'Центр мегаполиса со стриптиз-клубами и борделями', 'Трущобы (бедный район с полной безнравственностью)', 'Ветряная пустыня с ветряками'], 
+    boss: 'Минос' 
+  },
+  { 
+    title: '3 Круг · Чревоугодие', 
+    locs: ['Бесконечный дождь', 'Сплошное потребление', 'Огромный рынок (торговля органами)', 'Зловонное болото с магазинами и ларьками', 'Логово Цербера'], 
+    boss: 'Цербер' 
+  },
+  { 
+    title: '4 Круг · Жадность', 
+    locs: ['Мегаполис золота и неона', 'Торговый центр "Плутос"', 'Стройка со строительной техникой', 'Парк развлечений "Плутоса"', 'Дворец Плутоса'], 
+    boss: 'Плутос' 
+  },
+  { 
+    title: '5 Круг · Гнев', 
+    locs: ['Огромная река Стикс', 'Порт', 'Корабль', 'Дамба пред стенами в Дит'], 
+    boss: 'Флегий' 
+  },
+  { 
+    title: '6 Круг · Ересь', 
+    locs: ['Небольшой городок Дит', 'Библиотека лжи', 'Кладбище', 'Крематорий'], 
+    boss: 'Нет' 
+  },
+  { 
+    title: '7 Круг · Насилие', 
+    locs: ['Земля пропитанная кровью', 'Военная база', 'Лес самоубийц (жуткий парк)', 'Промышленная зона с заводами и фабриками'], 
+    boss: 'Нет' 
+  },
+  { 
+    title: '8 Круг · Обман', 
+    locs: ['Огромный хаотичный мегаполис', 'Казино', 'Стадион', 'Амфитеатр'], 
+    boss: 'Герион' 
+  },
+  { 
+    title: '9 Круг · Предательство', 
+    locs: ['Огромное замороженное озеро Коцит', 'Шахта Каины', 'Городок для укрытия предателей (Антенора)', 'Огромный стол в Толомее', 'Огромный алтарь Люцифера в Джудекке'], 
+    boss: 'Люцифер' 
+  }
 ];
 
 function renderChapters() {
   const grid = document.getElementById('chaptersGrid');
   grid.innerHTML = '';
-  chaptersList.forEach(ch => {
+  
+  chaptersData.forEach(ch => {
     const card = document.createElement('div');
     card.className = 'chapter-card';
-    // Если картинка не загрузится, браузер покажет alt или пустоту, можно добавить onerror
+    
+    // Формируем список локаций
+    const locsHtml = ch.locs.map(loc => `• ${loc}`).join('<br>');
+    
     card.innerHTML = `
-      <img src="${ch.img}" alt="${ch.title}" onerror="this.style.display='none'">
-      <span>${ch.title}</span>
+      <h3>${ch.title}</h3>
+      <div class="chapter-locations">${locsHtml}</div>
+      <div class="chapter-boss">Босс: ${ch.boss}</div>
     `;
+    
     card.onclick = () => {
       alert(`В разработке: ${ch.title}`);
       // Здесь будет логика перехода на нужную главу
@@ -340,7 +396,7 @@ function typeInto(el, text, speed = 40, cb) {
 /* ============ КАТСЦЕНА ============ */
 const cutsceneData = [
   { bg: 'radial-gradient(circle at 50% 40%, #1a1010 0%, #000 70%)', text: 'Ты не помнишь своего имени. Никто здесь его не помнит. Имени больше нет — есть только «ты».' },
-{ bg: 'radial-gradient(circle at 50% 30%, #2a1010 0%, #000 70%)', text: 'Ты жил. Как все: дышал, забывал, обещал. Кому-то — важное. Кому-то — пустое.' },
+  { bg: 'radial-gradient(circle at 50% 30%, #2a1010 0%, #000 70%)', text: 'Ты жил. Как все: дышал, забывал, обещал. Кому-то — важное. Кому-то — пустое.' },
   { bg: 'radial-gradient(circle at 50% 50%, #3a0505 0%, #000 70%)', text: 'А потом — тишина. Не тьма, не свет. Просто тишина, в которой ты перестал быть.' },
   { bg: 'radial-gradient(circle at 50% 60%, #2a0505 0%, #000 70%)', text: 'И вот ты здесь. Внизу. Там, где начинается всё, что ты откладывал.' },
   { bg: 'radial-gradient(circle at 50% 50%, #0a0a0a 0%, #000 70%)', text: 'Сумрачный лес. КПП. Начало.' },
@@ -455,7 +511,7 @@ function initGame() {
 
 /* ============ ОТРИСОВКА ПЕРСОНАЖЕЙ ============ */
 function drawHero(x, y, isWalking, direction, walkTimer) {
-if (imagesLoaded && imgHero.complete && !heroSprite) heroSprite = processImage(imgHero);
+  if (imagesLoaded && imgHero.complete && !heroSprite) heroSprite = processImage(imgHero);
 
   ctx.save();
   ctx.translate(x, y);
@@ -468,9 +524,9 @@ if (imagesLoaded && imgHero.complete && !heroSprite) heroSprite = processImage(i
   if (direction < 0) ctx.scale(-1, 1);
 
   if (heroSprite) {
-    // Размер спрайта героя (уменьшен, чтобы соответствовал деревьям)
-    const w = 90; 
-    const h = 110; 
+    // УВЕЛИЧЕННЫЙ СПРАЙТ ГЕРОЯ
+    const w = 120; 
+    const h = 140; 
     ctx.drawImage(heroSprite, -w / 2, -h, w, h);
   } else {
     ctx.fillStyle = '#3a2a2a'; ctx.beginPath(); ctx.arc(0, -20, 20, 0, Math.PI*2); ctx.fill();
@@ -485,8 +541,9 @@ function drawCharon(x, y) {
   ctx.translate(x, y);
   
   if (charonSprite) {
-    const w = 100; 
-    const h = 120;
+    // УВЕЛИЧЕННЫЙ СПРАЙТ ХАРОНА
+    const w = 130; 
+    const h = 150;
     ctx.shadowColor = 'rgba(180, 180, 180, 0.35)';
     ctx.shadowBlur = 18;
     ctx.drawImage(charonSprite, -w / 2, -h, w, h);
@@ -496,10 +553,9 @@ function drawCharon(x, y) {
   ctx.restore();
 }
  
-/* ============ ДЕРЕВЬЯ (АССЕТЫ) ============ */
+/* ============ ДЕРЕВЬЯ ============ */
 function drawTreeAsset(tx, ty, scale = 1, seed = 0) {
   if (imgTree.complete && imgTree.naturalWidth > 0) {
-    // Уменьшенный масштаб, чтобы деревья не были гигантскими
     const w = imgTree.width * scale;
     const h = imgTree.height * scale;
     
@@ -537,15 +593,19 @@ function drawWorld() {
   ctx.translate(-Math.floor(cameraX), -Math.floor(cameraY));
 
   if (currentZone === 'outside') {
-    /* Деревья: настроены масштаб и позиции, чтобы не налезали */
+    /* 
+       Деревья: 
+       Задний ряд (самый дальний) уменьшен до 0.3
+       Средний ряд — 0.5
+       Ближний ряд — 0.7
+    */
     const treeRows = [
-      { y: 880, count: 30, scale: 0.4, seed: 0 }, // Дальний план (мелкие)
-      { y: 780, count: 20, scale: 0.6, seed: 1 }, // Средний план
-      { y: 680, count: 12, scale: 0.8, seed: 2 }, // Ближний план (крупные)
+      { y: 880, count: 35, scale: 0.3, seed: 0 }, // Дальний план
+      { y: 780, count: 20, scale: 0.5, seed: 1 }, // Средний план
+      { y: 680, count: 12, scale: 0.7, seed: 2 }, // Ближний план
     ];
     treeRows.forEach(row => {
       for (let i = 0; i < row.count; i++) {
-        // Равномерное распределение с небольшим смещением
         const tx = (i * (WORLD.outside.width / row.count)) + Math.sin(i) * 50;
         drawTreeAsset(tx, row.y, row.scale, row.seed + i);
       }
@@ -580,7 +640,7 @@ function drawWorld() {
     ctx.fillStyle = '#141414';
     ctx.fillRect(2880, 680, 190, 20); 
     ctx.fillStyle = '#5a5030';
-ctx.fillRect(2930, 750, 90, 70); 
+    ctx.fillRect(2930, 750, 90, 70); 
     ctx.fillStyle = '#141414';
     ctx.fillRect(2910, 850, 50, 100); 
     ctx.fillStyle = '#444';
@@ -704,7 +764,8 @@ function tick(now) {
   
   cameraX = Math.max(0, Math.min(zone.width - gameCanvas.width, cameraX));
   cameraY = Math.max(0, Math.min(zone.height - gameCanvas.height + 200, cameraY));
-if (state.hero) { state.hero.x = heroX; state.hero.y = heroY; }
+
+  if (state.hero) { state.hero.x = heroX; state.hero.y = heroY; }
 
   drawWorld();
   requestAnimationFrame(tick);
@@ -791,7 +852,8 @@ const gameObjects = {
         state.flags.barrierOpen = true; save();
         return;
       }
-if (state.flags.horaceTalked) { say("— Пропуск нужен. Ищи в самом низу тропинки.", "Гораций"); return; }
+      
+      if (state.flags.horaceTalked) { say("— Пропуск нужен. Ищи в самом низу тропинки.", "Гораций"); return; }
       state.flags.horaceTalked = true; save();
       say("«Ещё один. Пропуск есть?» Ты мотаешь головой. «Я свой потерял. Обронил где-то внизу, на тропинке. Найдёшь — подниму шлагбаум».", "Гораций");
     }
@@ -843,6 +905,7 @@ function renderInventory() {
     inv.appendChild(el);
   });
 }
+
 </script>
 
 </body>
