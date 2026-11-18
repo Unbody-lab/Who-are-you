@@ -314,7 +314,7 @@ const chaptersData = [
   },
   {
     title: '1 Круг · Лимб',
-    locked: false,
+    locked: true,
     locations: [
       { title: '???', desc: 'В разработке', available: false, img: null },
       { title: '???', desc: 'В разработке', available: false, img: null },
@@ -337,7 +337,7 @@ const chaptersData = [
     locked: true,
     locations: [
       { title: '???', desc: 'В разработке', available: false },
-      { title: '???', desc: 'ТВ разработке', available: false },
+      { title: '???', desc: 'В разработке', available: false },
       { title: '???', desc: 'В разработке', available: false }
     ]
   },
@@ -589,24 +589,27 @@ let imagesLoaded = false;
 let loadCount = 0;
 const totalImages = 3;
 
+// ИСПРАВЛЕННАЯ ФУНКЦИЯ: Удаляет ВЕСЬ белый фон, а не только по краям
 function processImage(img) {
   const tempCanvas = document.createElement('canvas');
   tempCanvas.width = img.width;
   tempCanvas.height = img.height;
   const tempCtx = tempCanvas.getContext('2d');
   tempCtx.drawImage(img, 0, 0);
+  
   const imgData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
   const data = imgData.data;
-  for (let y = 0; y < tempCanvas.height; y++) {
-    for (let x = 0; x < tempCanvas.width; x++) {
-      const i = (y * tempCanvas.width + x) * 4;
-      if (data[i] > 200 && data[i+1] > 200 && data[i+2] > 200) {
-        if (x < 20 || x > tempCanvas.width - 20 || y < 20 || y > tempCanvas.height - 20) {
-          data[i+3] = 0; 
-        }
-      }
+  
+  for (let i = 0; i < data.length; i += 4) {
+    const r = data[i];
+    const g = data[i + 1];
+    const b = data[i + 2];
+    // Если пиксель близок к белому — делаем прозрачным
+    if (r > 230 && g > 230 && b > 230) {
+      data[i + 3] = 0;
     }
   }
+  
   tempCtx.putImageData(imgData, 0, 0);
   return tempCanvas;
 }
@@ -621,6 +624,7 @@ imgTree.onerror = () => { console.error('Нет tree.png'); checkLoaded(); };
 
 let heroSprite = null;
 let charonSprite = null;
+let treeSprite = null; // Добавлено для обработанного дерева
 
 function initGame() {
   load();
@@ -679,9 +683,14 @@ function drawCharon(x, y) {
  
 /* ============ ДЕРЕВЬЯ ============ */
 function drawTreeAsset(tx, ty, scale = 1, seed = 0) {
-  if (imgTree.complete && imgTree.naturalWidth > 0) {
-    const w = imgTree.width * scale;
-    const h = imgTree.height * scale;
+  // Обрабатываем картинку дерева один раз
+  if (imagesLoaded && imgTree.complete && !treeSprite) {
+    treeSprite = processImage(imgTree);
+  }
+
+  if (treeSprite) {
+    const w = treeSprite.width * scale;
+    const h = treeSprite.height * scale;
     
     ctx.save();
     ctx.translate(tx, ty);
@@ -689,9 +698,10 @@ function drawTreeAsset(tx, ty, scale = 1, seed = 0) {
     const sway = Math.sin(Date.now() * 0.001 + seed) * 0.01;
     ctx.rotate(sway);
     
-    ctx.drawImage(imgTree, -w / 2, -h, w, h);
+    ctx.drawImage(treeSprite, -w / 2, -h, w, h);
     ctx.restore();
   } else {
+    // Заглушка, пока картинка грузится
     ctx.fillStyle = '#0d120c';
     ctx.beginPath();
     ctx.moveTo(tx, ty - 100 * scale);
