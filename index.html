@@ -304,12 +304,7 @@ const chaptersData = [
         available: true,
         img: 'loc_forest.png' 
       },
-      { 
-        title: '???', 
-        desc: 'В разработке', 
-        available: false,
-        img: null 
-      }
+      { title: '???', desc: 'В разработке', available: false, img: null }
     ]
   },
   {
@@ -595,15 +590,13 @@ initStars();
 /* ============ ЗАГРУЗКА АССЕТОВ ============ */
 const imgHero = new Image();
 const imgCharon = new Image();
-const imgTree = new Image();
 
 imgHero.src = 'hero.png'; 
 imgCharon.src = 'charon.png';
-imgTree.src = 'tree.png'; // Убедитесь, что картинка дерева лежит рядом с файлом HTML и называется tree.png
 
 let imagesLoaded = false;
 let loadCount = 0;
-const totalImages = 3;
+const totalImages = 2; // Деревья больше не грузим, рисуем кодом
 
 function processImage(img) {
   const tempCanvas = document.createElement('canvas');
@@ -615,7 +608,7 @@ function processImage(img) {
   const imgData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
   const data = imgData.data;
   
-  // Очистка белого фона
+  // Очистка белого/светлого фона
   for (let i = 0; i < data.length; i += 4) {
     const r = data[i];
     const g = data[i + 1];
@@ -632,14 +625,11 @@ function processImage(img) {
 function checkLoaded() { loadCount++; if (loadCount >= totalImages) imagesLoaded = true; }
 imgHero.onload = checkLoaded; 
 imgCharon.onload = checkLoaded;
-imgTree.onload = checkLoaded;
 imgHero.onerror = () => { console.error('Нет hero.png'); checkLoaded(); };
 imgCharon.onerror = () => { console.error('Нет charon.png'); checkLoaded(); };
-imgTree.onerror = () => { console.error('Нет tree.png'); checkLoaded(); };
 
 let heroSprite = null;
 let charonSprite = null;
-let treeSprite = null;
 
 function initGame() {
   load();
@@ -669,6 +659,7 @@ function drawHero(x, y, isWalking, direction, walkTimer) {
   if (direction < 0) ctx.scale(-1, 1);
 
   if (heroSprite) {
+    // Правильный размер героя
     const w = 120; 
     const h = 140; 
     ctx.drawImage(heroSprite, -w / 2, -h, w, h);
@@ -696,32 +687,45 @@ function drawCharon(x, y) {
   ctx.restore();
 }
  
-/* ============ ДЕРЕВЬЯ ============ */
-function drawTreeAsset(tx, ty, scale = 1, seed = 0) {
-  if (imagesLoaded && imgTree.complete && !treeSprite) {
-    treeSprite = processImage(imgTree);
-  }
+/* ============ ПРОЦЕДУРНЫЕ ДЕРЕВЬЯ (КРАСИВЫЙ ЛЕС) ============ */
+function drawTree(tx, ty, scale = 1, seed = 0) {
+  // Рисуем красивое, темное хвойное дерево кодом
+  const trunkW = 20 * scale;
+  const trunkH = 140 * scale;
 
-  if (treeSprite) {
-    const w = treeSprite.width * scale;
-    const h = treeSprite.height * scale;
-    
-    ctx.save();
-    ctx.translate(tx, ty);
-    
-    const sway = Math.sin(Date.now() * 0.001 + seed) * 0.01;
-    ctx.rotate(sway);
-    
-    ctx.drawImage(treeSprite, -w / 2, -h, w, h);
-    ctx.restore();
-  } else {
-    ctx.fillStyle = '#0d120c';
+  // Ствол
+  ctx.fillStyle = '#0a0d0a';
+  ctx.fillRect(tx - trunkW / 2, ty - trunkH, trunkW, trunkH);
+
+  // Ветки
+  ctx.strokeStyle = '#0a0d0a';
+  ctx.lineWidth = 6 * scale;
+  ctx.beginPath();
+  ctx.moveTo(tx, ty - trunkH * 0.7);
+  ctx.lineTo(tx - 30 * scale, ty - trunkH * 0.9);
+  ctx.moveTo(tx, ty - trunkH * 0.8);
+  ctx.lineTo(tx + 25 * scale, ty - trunkH * 1.0);
+  ctx.stroke();
+
+  // Крона (несколько кругов для объема, цвет - темный хвойный)
+  const crownY = ty - trunkH - 5 * scale;
+  const colors = ['#0b120c', '#0f160f', '#080d08'];
+  
+  const blobs = [
+    { dx: 0, dy: 0, r: 50 * scale },
+    { dx: -35 * scale, dy: 15 * scale, r: 40 * scale },
+    { dx: 35 * scale, dy: 10 * scale, r: 45 * scale },
+    { dx: -15 * scale, dy: -30 * scale, r: 35 * scale },
+    { dx: 15 * scale, dy: -35 * scale, r: 35 * scale },
+    { dx: 0, dy: -60 * scale, r: 30 * scale }
+  ];
+
+  blobs.forEach((b, i) => {
+    ctx.fillStyle = colors[(i + seed) % colors.length];
     ctx.beginPath();
-    ctx.moveTo(tx, ty - 100 * scale);
-    ctx.lineTo(tx + 30 * scale, ty);
-    ctx.lineTo(tx - 30 * scale, ty);
+    ctx.arc(tx + b.dx, crownY + b.dy, b.r, 0, Math.PI * 2);
     ctx.fill();
-  }
+  });
 }
  
 /* ============ ОТРИСОВКА МИРА ============ */
@@ -749,37 +753,28 @@ function drawWorld() {
   ctx.translate(-Math.floor(cameraX), -Math.floor(cameraY));
 
   if (currentZone === 'outside') {
-    /* 
-      Заполняем лес деревьями в несколько слоев (рядов).
-      Используем рандомизацию, чтобы лес выглядел естественно.
-    */
     
-    // 1. Дальний план (маленькие деревья на фоне)
-    for (let i = 0; i < 30; i++) {
-      const tx = 100 + Math.random() * WORLD.outside.width;
-      const ty = 850 + Math.random() * 200; // Немного выше по карте
-      drawTreeAsset(tx, ty, 0.35, i); // Масштаб 0.35
-    }
+    // Расставляем деревья строго по слоям (глубине), чтобы не было каши
+    const treeRows = [
+      { y: 850, count: 40, scale: 0.4, seed: 1 },  // Дальний план
+      { y: 950, count: 25, scale: 0.65, seed: 2 }, // Средний план
+      { y: 1100, count: 12, scale: 0.9, seed: 3 }  // Ближний план
+    ];
 
-    // 2. Средний план (основной массив)
-    for (let i = 0; i < 25; i++) {
-      const tx = Math.random() * WORLD.outside.width;
-      const ty = 950 + Math.random() * 300;
-      drawTreeAsset(tx, ty, 0.6, i + 100); // Масштаб 0.6
-    }
+    treeRows.forEach((row, rIndex) => {
+      for (let i = 0; i < row.count; i++) {
+        // Равномерное распределение по оси X
+        const tx = (i * (WORLD.outside.width / row.count)) + (Math.sin(i * 3) * 30) + 50;
+        drawTree(tx, row.y, row.scale, row.seed + i);
+      }
+    });
 
-    // 3. Ближний план (крупные деревья)
-    for (let i = 0; i < 15; i++) {
-      const tx = Math.random() * WORLD.outside.width;
-      const ty = 1100 + Math.random() * 400;
-      drawTreeAsset(tx, ty, 0.85, i + 200); // Масштаб 0.85
-    }
-
-    // Земля
-    ctx.fillStyle = '#1e1e1e';
+    // Земля (земля рисуется после деревьев, чтобы закрыть их корни)
+    ctx.fillStyle = '#151515';
     ctx.fillRect(0, WORLD.outside.minY, WORLD.outside.width, WORLD.outside.height);
 
-    ctx.fillStyle = '#2a2a2a';
+    // Тропинка
+    ctx.fillStyle = '#222222';
     ctx.beginPath();
     ctx.moveTo(300, 1950);
     ctx.quadraticCurveTo(1600, 1500, 2900, 1200);
@@ -789,7 +784,7 @@ function drawWorld() {
     ctx.quadraticCurveTo(1650, 1600, 420, 1980);
     ctx.fill();
 
-    ctx.fillStyle = '#2c2c2c';
+    ctx.fillStyle = '#262626';
     ctx.beginPath();
     ctx.moveTo(600, 1850);
     ctx.quadraticCurveTo(1800, 1400, 2600, 1250);
@@ -799,7 +794,7 @@ function drawWorld() {
     ctx.quadraticCurveTo(1850, 1500, 700, 1900);
     ctx.fill();
 
-    // КПП
+    // Будка КПП
     ctx.fillStyle = '#1e1e1e';
     ctx.fillRect(2900, 700, 150, 250);
     ctx.fillStyle = '#141414';
@@ -1072,7 +1067,6 @@ function renderInventory() {
     inv.appendChild(el);
   });
 }
-
 </script>
 
 </body>
