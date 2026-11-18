@@ -599,7 +599,7 @@ const imgTree = new Image();
 
 imgHero.src = 'hero.png'; 
 imgCharon.src = 'charon.png';
-imgTree.src = 'tree.png';
+imgTree.src = 'tree.png'; // Убедитесь, что картинка дерева лежит рядом с файлом HTML и называется tree.png
 
 let imagesLoaded = false;
 let loadCount = 0;
@@ -615,6 +615,7 @@ function processImage(img) {
   const imgData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
   const data = imgData.data;
   
+  // Очистка белого фона
   for (let i = 0; i < data.length; i += 4) {
     const r = data[i];
     const g = data[i + 1];
@@ -634,7 +635,7 @@ imgCharon.onload = checkLoaded;
 imgTree.onload = checkLoaded;
 imgHero.onerror = () => { console.error('Нет hero.png'); checkLoaded(); };
 imgCharon.onerror = () => { console.error('Нет charon.png'); checkLoaded(); };
-imgTree.onerror = () => { console.error('Нет tre2e.png'); checkLoaded(); };
+imgTree.onerror = () => { console.error('Нет tree.png'); checkLoaded(); };
 
 let heroSprite = null;
 let charonSprite = null;
@@ -734,7 +735,7 @@ function drawWorld() {
   ctx.fillStyle = skyGrad;
   ctx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
 
-  // Звёзды (в экранных координатах, но с учётом параллакса)
+  // Звёзды
   const starParallax = cameraX * 0.1;
   stars.forEach(star => {
     const sx = (star.x - starParallax) % WORLD.outside.width;
@@ -748,15 +749,33 @@ function drawWorld() {
   ctx.translate(-Math.floor(cameraX), -Math.floor(cameraY));
 
   if (currentZone === 'outside') {
-    // Деревья: меньше, реже, с большим расстоянием
-    const treeRow = { y: 820, count: 14, scale: 0.45, seed: 0 };
+    /* 
+      Заполняем лес деревьями в несколько слоев (рядов).
+      Используем рандомизацию, чтобы лес выглядел естественно.
+    */
     
-    for (let i = 0; i < treeRow.count; i++) {
-      const spacing = WORLD.outside.width / treeRow.count;
-      const tx = i * spacing + Math.sin(i * 5.7) * 100;
-      drawTreeAsset(tx, treeRow.y, treeRow.scale, treeRow.seed + i);
+    // 1. Дальний план (маленькие деревья на фоне)
+    for (let i = 0; i < 30; i++) {
+      const tx = 100 + Math.random() * WORLD.outside.width;
+      const ty = 850 + Math.random() * 200; // Немного выше по карте
+      drawTreeAsset(tx, ty, 0.35, i); // Масштаб 0.35
     }
 
+    // 2. Средний план (основной массив)
+    for (let i = 0; i < 25; i++) {
+      const tx = Math.random() * WORLD.outside.width;
+      const ty = 950 + Math.random() * 300;
+      drawTreeAsset(tx, ty, 0.6, i + 100); // Масштаб 0.6
+    }
+
+    // 3. Ближний план (крупные деревья)
+    for (let i = 0; i < 15; i++) {
+      const tx = Math.random() * WORLD.outside.width;
+      const ty = 1100 + Math.random() * 400;
+      drawTreeAsset(tx, ty, 0.85, i + 200); // Масштаб 0.85
+    }
+
+    // Земля
     ctx.fillStyle = '#1e1e1e';
     ctx.fillRect(0, WORLD.outside.minY, WORLD.outside.width, WORLD.outside.height);
 
@@ -780,6 +799,7 @@ function drawWorld() {
     ctx.quadraticCurveTo(1850, 1500, 700, 1900);
     ctx.fill();
 
+    // КПП
     ctx.fillStyle = '#1e1e1e';
     ctx.fillRect(2900, 700, 150, 250);
     ctx.fillStyle = '#141414';
@@ -791,6 +811,7 @@ function drawWorld() {
     ctx.fillStyle = '#444';
     ctx.fillRect(2940, 900, 6, 6); 
 
+    // Шлагбаум
     ctx.fillStyle = '#1e1e1e';
     ctx.fillRect(3080, 780, 15, 170);
     for (let i = 0; i < 8; i++) {
@@ -802,6 +823,7 @@ function drawWorld() {
       }
     }
 
+    // Предметы
     if (!state.items.includes('keycard')) {
       ctx.fillStyle = '#4a7a5a';
       ctx.fillRect(2400, 1000, 20, 12);
@@ -818,9 +840,10 @@ function drawWorld() {
       ctx.shadowBlur = 0;
     }
 
+    // Туман
     const fog = ctx.createLinearGradient(0, 900, 0, 1600);
     fog.addColorStop(0, 'rgba(60, 65, 70, 0)');
-    fog.addColorStop(1, 'rgba(60, 65, 70, 0.2)');
+    fog.addColorStop(1, 'rgba(60, 65, 70, 0.3)');
     ctx.fillStyle = fog;
     ctx.fillRect(cameraX, 900, gameCanvas.width, 700);
 
@@ -828,6 +851,7 @@ function drawWorld() {
     drawHero(heroX, heroY, isWalking, heroDirection, walkTimer);
     
   } else {
+    // Внутри КПП
     ctx.fillStyle = '#141414';
     ctx.fillRect(0, 0, WORLD.inside.width, WORLD.inside.height);
     
