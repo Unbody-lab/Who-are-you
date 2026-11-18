@@ -348,7 +348,7 @@ function drawCharon(x, y) {
     const h = 150;
     ctx.shadowColor = 'rgba(180, 180, 180, 0.35)';
     ctx.shadowBlur = 18;
-    ctx.drawImage(charonSprite, -w / 2, -h, w, h);
+ctx.drawImage(charonSprite, -w / 2, -h, w, h);
   } else {
     ctx.fillStyle = '#d0d0d0'; ctx.beginPath(); ctx.arc(0, -20, 20, 0, Math.PI*2); ctx.fill();
   }
@@ -471,8 +471,7 @@ function drawWorld() {
       ctx.strokeRect(560, 1850, 15, 20);
       ctx.shadowBlur = 0;
     }
-
-    const fog = ctx.createLinearGradient(0, 900, 0, 1600);
+const fog = ctx.createLinearGradient(0, 900, 0, 1600);
     fog.addColorStop(0, 'rgba(60, 65, 70, 0)');
     fog.addColorStop(1, 'rgba(60, 65, 70, 0.2)');
     ctx.fillStyle = fog;
@@ -587,7 +586,8 @@ window.addEventListener('keyup', (e) => {
 });
 
 gameCanvas.addEventListener('click', (e) => {
-  const rect = gameCanvas.getBoundingClientRect();
+11:57
+const rect = gameCanvas.getBoundingClientRect();
   const clickX = (e.clientX - rect.left) * (gameCanvas.width / rect.width) + cameraX;
   const clickY = (e.clientY - rect.top) * (gameCanvas.height / rect.height) + cameraY;
 
@@ -677,7 +677,7 @@ const gameObjects = {
   note: {
     onClick: () => {
       if (state.items.includes('note')) return;
-      state.items.push('note'); save(); renderInventory();
+state.items.push('note'); save(); renderInventory();
       say("Старая записка. «Что надеется на прощенье Божье...» — дальше не разобрать. С обратной стороны печать Горация. Это его пропуск!");
     }
   },
@@ -689,7 +689,8 @@ const gameObjects = {
 /* ============ ИНВЕНТАРЬ ============ */
 const allItems = { 
   keycard: { icon: '🗝', title: 'Ключ-карта', desc: 'Собственность КПП.' },
-  note: { icon: '📜', title: 'Записка', desc: '«Что надеется на прощенье Божьей...» С печатью Горация.' }
+  note: { icon: '📜 
+', title: 'Записка', desc: '«Что надеется на прощенье Божьей...» С печатью Горация.' }
 };
 function renderInventory() {
   const inv = document.getElementById('inventory');
