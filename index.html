@@ -129,7 +129,9 @@
   #cutscene.hidden { opacity: 0; pointer-events: none; }
   #csBg { position: absolute; inset: 0; transition: background 1.2s; background: #0a0a0a; }
   #csText {
-    position: absolute; bottom: 0; left: 0; right: 0; min-height: 200px;
+    position: absolute; bottom: 0; left
+
+: 0; right: 0; min-height: 200px;
     background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.95) 40%);
     padding: 50px 80px; font-size: 32px; line-height: 1.4;
     color: #a0a0a0; display: flex; align-items: flex-end; z-index: 2;
@@ -234,6 +236,7 @@
     </div>
 
     <div id="inventory"></div>
+    <div id="heroControls" style="position:absolute;left:20px;bottom:20px;color:#806060;font-size:18px;background:rgba(5,2,2,.65);padding:8px 12px;border:1px solid #3a1010;border-radius:4px;">WASD — движение · Space — прыжок · J — атака · C — присесть</div>
     <div id="textPanel"><span id="textContent"></span></div>
   </div>
   <div id="fadeOverlay"></div>
@@ -358,7 +361,9 @@ const chaptersData = [
       { title: '???', desc: 'В разработке', available: false },
       { title: '???', desc: 'В разработке', available: false },
       { title: '???', desc: 'В разработке', available: false },
-      { title: '???', desc: 'В разработке', available: false }
+      { title: '???', desc: 'В разработке', available:
+
+false }
     ]
   },
   {
@@ -488,6 +493,7 @@ function load() {
 
 /* ============ ТЕКСТ ============ */
 let typeTimer = null;
+
 let hidePanelTimer = null;
 
 function say(text, speaker) {
@@ -711,29 +717,89 @@ function initGame() {
 }
 
 /* ============ ОТРИСОВКА ПЕРСОНАЖЕЙ ============ */
+/* Анимации главного героя: кадры загружаются из папки assets/hero */
+const heroAnimations = {};
+const heroAnimationNames = [
+  'walk_down','walk_up','walk_left','walk_right',
+  'jump','attack','crouch','pickup_item','knocked_out','wake_up','stand_up','dead'
+];
+const heroFrameCounts = {
+  walk_down:4, walk_up:4, walk_left:4, walk_right:4,
+  jump:2, attack:3, crouch:2, pickup_item:2,
+  knocked_out:2, wake_up:3, stand_up:2, dead:2
+};
+heroAnimationNames.forEach(name => {
+  heroAnimations[name] = [];
+  for (let i = 1; i <= heroFrameCounts[name]; i++) {
+    const frame = new Image();
+    frame.src = `assets/hero/${name}/${name}_${String(i).padStart(2,'0')}.png`;
+    heroAnimations[name].push(frame);
+  }
+});
+
+let heroFacing = 'down';
+let heroAction = null;
+let heroActionTimer = 0;
+let heroDead = false;
+
+function playHeroAction(name, duration = 0.7) {
+  if (heroDead && name !== 'wake_up' && name !== 'stand_up') return;
+  heroAction = name;
+  heroActionTimer = duration;
+  if (name === 'dead') heroDead = true;
+  if (name === 'wake_up') heroDead = false;
+}
+
 function drawHero(x, y, isWalking, direction, walkTimer) {
-  if (imagesLoaded && imgHero.complete && !heroSprite) heroSprite = processImage(imgHero);
-
   ctx.save();
-  ctx.translate(x, y);
+  ctx.translate(Math.round(x), Math.round(y));
 
-  let tilt = isWalking ? Math.sin(walkTimer) * 0.15 : 0;
-  let bounce = isWalking ? Math.abs(Math.sin(walkTimer * 2)) * 3 : 0; 
-  ctx.rotate(tilt * direction);
-  ctx.translate(0, -bounce);
+  let animation = 'walk_down';
+  let frameIndex = 0;
 
-  if (direction < 0) ctx.scale(-1, 1);
+  if (heroDead && (!heroAction || heroActionTimer <= 0)) {
+    animation = 'dead';
+    frameIndex = (heroAnimations.dead || []).length - 1;
+  } else if (heroAction && heroActionTimer > 0) {
+    animation = heroAction;
+    const frames = heroAnimations[animation] || [];
+    const elapsed = Math.max(0, (heroActionDuration(animation) - heroActionTimer));
+    frameIndex = Math.min(frames.length - 1, Math.floor(elapsed * 8));
+  } else if (keys.c) {
+    animation = 'crouch';
+    frameIndex = Math.floor(Date.now() / 260) % 2;
+  } else if (isWalking) {
+    animation = `walk_${heroFacing}`;
+    frameIndex = Math.floor(walkTimer * 1.5) % 4;
+  } else {
+    animation = `walk_${heroFacing}`;
+    frameIndex = 0;
+  }
 
-  if (heroSprite) {
-    const w = 120; 
-    const h = 140; 
+  const frames = heroAnimations[animation] || [];
+  const sprite = frames[frameIndex] || frames[0];
+  if (sprite && sprite.complete && sprite.naturalWidth > 0) {
+    const maxW = animation === 'attack' ? 154 : 120;
+    const maxH = animation === 'attack' ? 142 : 140;
+    const scale = Math.min(maxW / sprite.naturalWidth, maxH / sprite.naturalHeight);
+    const w = sprite.naturalWidth * scale;
+    const h = sprite.naturalHeight * scale;
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(sprite, -w / 2, -h, w, h);
+  } else if (heroSprite) {
+    const w = 120, h = 140;
     ctx.drawImage(heroSprite, -w / 2, -h, w, h);
   } else {
-    ctx.fillStyle = '#3a2a2a'; ctx.beginPath(); ctx.arc(0, -20, 20, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#3a2a2a';
+    ctx.beginPath(); ctx.arc(0, -20, 20, 0, Math.PI * 2); ctx.fill();
   }
   ctx.restore();
 }
 
+function heroActionDuration(name) {
+  return ({ jump:0.65, attack:0.42, pickup_item:0.65, knocked_out:0.8,
+    wake_up:0.9, stand_up:0.65, dead:1.2 })[name] || 0.7;
+}
 function drawCharon(x, y) {
   if (imagesLoaded && imgCharon.complete && !charonSprite) charonSprite = processImage(imgCharon);
 
@@ -747,7 +813,9 @@ function drawCharon(x, y) {
     ctx.shadowBlur = 18;
     ctx.drawImage(charonSprite, -w / 2, -h, w, h);
   } else {
-    ctx.fillStyle = '#d0d0d0'; ctx.beginPath(); ctx.arc(0, -20, 20, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#d0d0d0'; ctx.beginPath(); ctx.arc(0, -20, 20, 0,
+
+Math.PI*2); ctx.fill();
   }
   ctx.restore();
 }
@@ -939,10 +1007,22 @@ function tick(now) {
   lastTime = now;
 
   let dx = 0; let dy = 0;
-  if (keys.a) { dx -= 1; heroDirection = -1; }
-  if (keys.d) { dx += 1; heroDirection = 1; }
-  if (keys.w) { dy -= 1; }
-  if (keys.s) { dy += 1; }
+  if (!heroDead && !heroAction) {
+    if (keys.a) { dx -= 1; heroDirection = -1; heroFacing = 'left'; }
+    if (keys.d) { dx += 1; heroDirection = 1; heroFacing = 'right'; }
+    if (keys.w) { dy -= 1; if (!dx) heroFacing = 'up'; }
+    if (keys.s) { dy += 1; if (!dx) heroFacing = 'down'; }
+  }
+
+  if (heroActionTimer > 0) {
+    heroActionTimer = Math.max(0, heroActionTimer - dt);
+    if (heroActionTimer === 0) {
+      if (heroAction === 'wake_up') playHeroAction('stand_up', 0.65);
+      else heroAction = null;
+    }
+  } else if (!heroDead) {
+    heroAction = null;
+  }
 
   if (dx !== 0 || dy !== 0) {
     const length = Math.sqrt(dx*dx + dy*dy);
@@ -975,17 +1055,27 @@ function tick(now) {
 
 /* ============ ВВОД ============ */
 window.addEventListener('keydown', (e) => {
-  if (e.key === 'w' || e.key === 'W' || e.key === 'ц' || e.key === 'Ц') keys.w = true;
-  if (e.key === 'a' || e.key === 'A' || e.key === 'ф' || e.key === 'Ф') keys.a = true;
-  if (e.key === 's' || e.key === 'S' || e.key === 'ы' || e.key === 'Ы') keys.s = true;
-  if (e.key === 'd' || e.key === 'D' || e.key === 'в' || e.key === 'В') keys.d = true;
+  const k = e.key.toLowerCase();
+  if (k === 'w' || k === 'ц') keys.w = true;
+  if (k === 'a' || k === 'ф') keys.a = true;
+  if (k === 's' || k === 'ы') keys.s = true;
+  if (k === 'd' || k === 'в') keys.d = true;
+  if (k === 'c' || k === 'с') keys.c = true;
+  if (k === ' ' && !e.repeat) { e.preventDefault(); playHeroAction('jump', 0.65); }
+  if (k === 'j' && !e.repeat) playHeroAction('attack', 0.42);
+  if (k === 'k' && !e.repeat) playHeroAction('knocked_out', 0.8);
+  if (k === 'u' && !e.repeat) playHeroAction('wake_up', 0.9);
+  if (k === 'i' && !e.repeat) playHeroAction('stand_up', 0.65);
+  if (k === 'r' && !e.repeat) playHeroAction('dead', 1.2);
 });
 
 window.addEventListener('keyup', (e) => {
-  if (e.key === 'w' || e.key === 'W' || e.key === 'ц' || e.key === 'Ц') keys.w = false;
-  if (e.key === 'a' || e.key === 'A' || e.key === 'ф' || e.key === 'Ф') keys.a = false;
-  if (e.key === 's' || e.key === 'S' || e.key === 'ы' || e.key === 'Ы') keys.s = false;
-  if (e.key === 'd' || e.key === 'D' || e.key === 'в' || e.key === 'В') keys.d = false;
+  const k = e.key.toLowerCase();
+  if (k === 'w' || k === 'ц') keys.w = false;
+  if (k === 'a' || k === 'ф') keys.a = false;
+  if (k === 's' || k === 'ы') keys.s = false;
+  if (k === 'd' || k === 'в') keys.d = false;
+  if (k === 'c' || k === 'с') keys.c = false;
 });
 
 gameCanvas.addEventListener('click', (e) => {
@@ -1073,14 +1163,14 @@ const gameObjects = {
   keycard: {
     onClick: () => {
       if (state.items.includes('keycard')) return;
-      state.items.push('keycard'); save(); renderInventory();
+      state.items.push('keycard'); playHeroAction('pickup_item', 0.65); save(); renderInventory();
       say("Ты подобрал ключ-карту. Она холодная. На обратной стороне: «Собственность КПП. Не терять».");
     }
   },
   note: {
     onClick: () => {
       if (state.items.includes('note')) return;
-      state.items.push('note'); save(); renderInventory();
+      state.items.push('note'); playHeroAction('pickup_item', 0.65); save(); renderInventory();
       say("Старая записка. «Что надеется на прощенье Божье...» — дальше не разобрать. С обратной стороны печать Горация. Это его пропуск!");
     }
   },
