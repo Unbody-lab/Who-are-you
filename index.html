@@ -373,7 +373,8 @@ const WORLD = {
 let heroX = 500, heroY = 1000;
 let heroSpeed = 180;
 let isWalking = false;
-let heroDirection = 1;
+let heroDirection = -1;   // -1 = влево (idle-спрайт hero.png смотрит влево), 1 = вправо
+let heroFacing = 'down';
 let walkTimer = 0;
 let cameraX = 0, cameraY = 0;
 let lastTime = performance.now();
@@ -424,7 +425,7 @@ initTrees();
 const imgHero = new Image();
 const imgCharon = new Image();
 const imgTree = new Image();
-imgHero.src = 'hero.png';      // ← одиночный спрайт лежит в КОРНЕ проекта
+imgHero.src = 'hero.png';      // ← IDLE-спрайт: герой просто стоит (в корне проекта)
 imgCharon.src = 'charon.png';
 imgTree.src = 'tree.png';
 
@@ -478,10 +479,9 @@ Object.keys(heroFrameCounts).forEach(name => {
 /* ===== РАЗМЕР И ОРИЕНТАЦИЯ ПЕРСОНАЖА ===== */
 const HERO_SCALE = 0.5;             // 1 = родной размер спрайта; 0.5 = вдвое меньше
 const SPRITE_BASE_H = 140;          // базовая высота (px) при HERO_SCALE = 1
-const SIDE_FRAMES_FACE_LEFT = true; // ваши walk_left/walk_right нарисованы лицом ВЛЕВО.
+const SIDE_FRAMES_FACE_LEFT = true; // и hero.png, и walk_* нарисованы лицом ВЛЕВО.
                                     // Если при ходьбе ВЛЕВО герой смотрит вправо — поставьте false.
 
-let heroFacing = 'down';
 let heroAction = null;
 let heroActionTimer = 0;
 let heroDead = false;
@@ -526,8 +526,7 @@ function drawHero(x, y) {
     animation = `walk_${heroFacing}`;
     frameIndex = Math.floor(walkTimer * 1.5) % 4;
   } else {
-    animation = `walk_${heroFacing}`;
-    frameIndex = 0;
+    animation = 'idle';   // ← герой просто стоит: hero.png
   }
 
   // дуга прыжка
@@ -537,13 +536,32 @@ function drawHero(x, y) {
     ctx.translate(0, -Math.sin(Math.PI * p) * 26);
   }
 
-  // ЗЕРКАЛИРОВАНИЕ боковых анимаций по направлению движения.
-  // Спрайты в папке нарисованы лицом влево → при ходьбе вправо переворачиваем.
-  const sideAnim = ['walk_left', 'walk_right', 'jump', 'attack', 'pickup_item', 'knocked_out'].includes(animation);
-  if (sideAnim) {
-    if (SIDE_FRAMES_FACE_LEFT && heroFacing === 'right') ctx.scale(-1, 1);
-    if (!SIDE_FRAMES_FACE_LEFT && heroFacing === 'left') ctx.scale(-1, 1);
+  // Зеркалирование по направлению взгляда
+  const flip = (dir) => {
+    if (SIDE_FRAMES_FACE_LEFT && dir === 1) ctx.scale(-1, 1);
+    if (!SIDE_FRAMES_FACE_LEFT && dir === -1) ctx.scale(-1, 1);
+  };
+
+  if (animation === 'idle') {
+    flip(heroDirection);
+    if (!heroSprite && imagesLoaded && imgHero.complete && imgHero.naturalWidth > 0) {
+      heroSprite = processImage(imgHero);
+    }
+    if (heroSprite) {
+      const h = SPRITE_BASE_H * HERO_SCALE;
+      const w = heroSprite.width * (h / heroSprite.height);
+      ctx.drawImage(heroSprite, -w / 2, -h, w, h);
+    } else {
+      ctx.fillStyle = '#3a2a2a';
+      ctx.beginPath(); ctx.arc(0, -14, 14, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+    return;
   }
+
+  // боковые анимации зеркалим по heroFacing; up/down/dead/wake_up — не трогаем
+  const sideAnim = ['walk_left', 'walk_right', 'jump', 'attack', 'pickup_item', 'knocked_out'].includes(animation);
+  if (sideAnim) flip(heroFacing === 'right' ? 1 : -1);
 
   const frames = heroAnimations[animation] || [];
   const sprite = frames[frameIndex] || frames[0];
@@ -556,9 +574,8 @@ function drawHero(x, y) {
     } else {
       ctx.drawImage(sprite, -w / 2, -h, w, h);        // стоя — ноги в точке (x, y)
     }
-  } else if (imagesLoaded && imgHero.complete && imgHero.naturalWidth > 0) {
-    // запасной одиночный спрайт hero.png (корень проекта)
-    if (!heroSprite) heroSprite = processImage(imgHero);
+  } else if (heroSprite) {
+    // если нужный кадр не загрузился — показываем хотя бы idle-стойку
     const h = SPRITE_BASE_H * HERO_SCALE;
     const w = heroSprite.width * (h / heroSprite.height);
     ctx.drawImage(heroSprite, -w / 2, -h, w, h);
@@ -738,7 +755,7 @@ function tick(now) {
   const canMove = !introActive && !heroDead && (!heroAction || heroAction === 'jump');
   if (canMove) {
     if (keys.a) { dx -= 1; heroDirection = -1; heroFacing = 'left'; }
-    if (keys.d) { dx += 1; heroDirection = 1; heroFacing = 'right'; }
+    if (keys.d) { dx += 1; heroDirection = 1;  heroFacing = 'right'; }
     if (keys.w) { dy -= 1; if (!dx) heroFacing = 'up'; }
     if (keys.s) { dy += 1; if (!dx) heroFacing = 'down'; }
   }
