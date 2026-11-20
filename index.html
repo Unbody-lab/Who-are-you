@@ -129,9 +129,7 @@
   #cutscene.hidden { opacity: 0; pointer-events: none; }
   #csBg { position: absolute; inset: 0; transition: background 1.2s; background: #0a0a0a; }
   #csText {
-    position: absolute; bottom: 0; left
-
-: 0; right: 0; min-height: 200px;
+    position: absolute; bottom: 0; left: 0; right: 0; min-height: 200px;
     background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.95) 40%);
     padding: 50px 80px; font-size: 32px; line-height: 1.4;
     color: #a0a0a0; display: flex; align-items: flex-end; z-index: 2;
@@ -202,9 +200,7 @@
 <!-- ================= ВЫБОР ГЛАВ ================= -->
 <div id="chapterSelect">
   <h2>Выбор главы</h2>
-  <div id="chaptersContainer">
-    <!-- Блоки глав генерируются в JS -->
-  </div>
+  <div id="chaptersContainer"></div>
   <button class="menu-btn" style="width:200px; margin-bottom: 30px;" id="btnBackFromChapters">Назад</button>
 </div>
 
@@ -236,7 +232,7 @@
     </div>
 
     <div id="inventory"></div>
-    <div id="heroControls" style="position:absolute;left:20px;bottom:20px;color:#806060;font-size:18px;background:rgba(5,2,2,.65);padding:8px 12px;border:1px solid #3a1010;border-radius:4px;">WASD — движение · Space — прыжок · J — атака · C — присесть</div>
+    <div id="heroControls" style="position:absolute;left:20px;bottom:20px;color:#806060;font-size:18px;background:rgba(5,2,2,.65);padding:8px 12px;border:1px solid #3a1010;border-radius:4px;">WASD — движение · Space — прыжок · J — атака</div>
     <div id="textPanel"><span id="textContent"></span></div>
   </div>
   <div id="fadeOverlay"></div>
@@ -265,7 +261,6 @@ function playForestMusic() {
   audioForest.play().catch(e => console.log("Ошибка аудио"));
 }
 
-// Настройки яркости
 const slider = document.getElementById('brightnessSlider');
 slider.addEventListener('input', (e) => {
   document.documentElement.style.setProperty('--brightness', e.target.value);
@@ -285,7 +280,6 @@ function hideChapters() {
   document.getElementById('chapterSelect').style.display = 'none';
   document.getElementById('mainMenu').style.display = 'flex';
 }
-
 function showSettings() {
   document.getElementById('mainMenu').style.display = 'none';
   document.getElementById('settings').style.display = 'flex';
@@ -295,113 +289,21 @@ function hideSettings() {
   document.getElementById('mainMenu').style.display = 'flex';
 }
 
-/* ============ СПИСОК ГЛАВ (БЛОЧНАЯ СТРУКТУРА) ============ */
+/* ============ СПИСОК ГЛАВ ============ */
 const chaptersData = [
   {
     title: 'Пролог',
     locked: false,
     locations: [
-      { 
-        title: 'Сумрачный лес', 
-        desc: 'Вы очутились в странном лесу, вы ничего не помните из прошлой жизни, ни имени, ни кем вы были, всё что вам остаётся это идти вперёд в надежде, что впереди что-то есть...', 
-        available: true,
-        img: 'loc_forest.png' 
-      },
-      { 
-        title: '???', 
-        desc: 'В разработке', 
-        available: false,
-        img: null 
-      }
+      { title: 'Сумрачный лес', desc: 'Вы очутились в странном лесу...', available: true, img: 'loc_forest.png' },
+      { title: '???', desc: 'В разработке', available: false, img: null }
     ]
   },
   {
     title: '1 Круг · Лимб',
     locked: true,
     locations: [
-      { title: '???', desc: 'В разработке', available: false, img: null },
-      { title: '???', desc: 'В разработке', available: false, img: null },
-      { title: '???', desc: 'В разработке', available: false, img: null },
       { title: '???', desc: 'В разработке', available: false, img: null }
-    ]
-  },
-  {
-    title: '2 Круг · Похоть',
-    locked: true,
-    locations: [
-      { title: '???', desc: 'В разработке', available: false },
-      { title: '???', desc: 'В разработке', available: false },
-      { title: '???', desc: 'В разработке', available: false },
-      { title: '???', desc: 'В разработке', available: false }
-    ]
-  },
-  {
-    title: '3 Круг · Чревоугодие',
-    locked: true,
-    locations: [
-      { title: '???', desc: 'В разработке', available: false },
-      { title: '???', desc: 'В разработке', available: false },
-      { title: '???', desc: 'В разработке', available: false }
-    ]
-  },
-  {
-    title: '4 Круг · Жадность',
-    locked: true,
-    locations: [
-      { title: '???', desc: 'В разработке', available: false },
-      { title: '???', desc: 'В разработке', available: false },
-      { title: '???', desc: 'В разработке', available: false },
-      { title: '???', desc: 'В разработке', available: false }
-    ]
-  },
-  {
-    title: '5 Круг · Гнев',
-    locked: true,
-    locations: [
-      { title: '???', desc: 'В разработке', available: false },
-      { title: '???', desc: 'В разработке', available: false },
-      { title: '???', desc: 'В разработке', available: false },
-      { title: '???', desc: 'В разработке', available:
-
-false }
-    ]
-  },
-  {
-    title: '6 Круг · Ересь',
-    locked: true,
-    locations: [
-      { title: '???', desc: 'В разработке', available: false },
-      { title: '???', desc: 'В разработке', available: false },
-      { title: '???', desc: 'В разработке', available: false }
-    ]
-  },
-  {
-    title: '7 Круг · Насилие',
-    locked: true,
-    locations: [
-      { title: '???', desc: 'В разработке', available: false },
-      { title: '???', desc: 'В разработке', available: false },
-      { title: '???', desc: 'В разработке', available: false }
-    ]
-  },
-  {
-    title: '8 Круг · Обман',
-    locked: true,
-    locations: [
-      { title: '???', desc: 'В разработке', available: false },
-      { title: '???', desc: 'В разработке', available: false },
-      { title: '???', desc: 'В разработке', available: false }
-    ]
-  },
-  {
-    title: '9 Круг · Предательство',
-    locked: true,
-    locations: [
-      { title: '???', desc: 'Замороженное озеро.', available: false },
-      { title: '???', desc: 'В разработке', available: false },
-      { title: '???', desc: 'В разработке', available: false },
-      { title: '???', desc: 'В разработке', available: false },
-      { title: '???', desc: 'В разработке', available: false }
     ]
   }
 ];
@@ -409,11 +311,9 @@ false }
 function renderChapters() {
   const container = document.getElementById('chaptersContainer');
   container.innerHTML = '';
-
   chaptersData.forEach(circle => {
     const block = document.createElement('div');
     block.className = 'circle-block' + (circle.locked ? ' locked' : '');
-
     const title = document.createElement('div');
     title.className = 'circle-title';
     title.textContent = circle.title;
@@ -431,9 +331,7 @@ function renderChapters() {
       if (loc.img) {
         const img = document.createElement('img');
         img.src = loc.img;
-        img.style.width = '100%';
-        img.style.height = '100%';
-        img.style.objectFit = 'cover';
+        img.style.width = '100%'; img.style.height = '100%'; img.style.objectFit = 'cover';
         img.onerror = () => { img.style.display = 'none'; imgDiv.textContent = 'Нет изображения'; };
         imgDiv.appendChild(img);
       } else {
@@ -442,22 +340,7 @@ function renderChapters() {
 
       const infoDiv = document.createElement('div');
       infoDiv.className = 'loc-info';
-
-      const locTitle = document.createElement('div');
-      locTitle.className = 'loc-title';
-      locTitle.textContent = loc.title;
-
-      const locDesc = document.createElement('div');
-      locDesc.className = 'loc-desc';
-      locDesc.textContent = loc.desc;
-
-      const locStatus = document.createElement('div');
-      locStatus.className = 'loc-status';
-      locStatus.textContent = loc.available ? 'Доступно' : 'В разработке';
-
-      infoDiv.appendChild(locTitle);
-      infoDiv.appendChild(locDesc);
-      infoDiv.appendChild(locStatus);
+      infoDiv.innerHTML = `<div class="loc-title">${loc.title}</div><div class="loc-desc">${loc.desc}</div><div class="loc-status">${loc.available ? 'Доступно' : 'В разработке'}</div>`;
 
       card.appendChild(imgDiv);
       card.appendChild(infoDiv);
@@ -470,10 +353,8 @@ function renderChapters() {
           showCutscene();
         });
       }
-
       row.appendChild(card);
     });
-
     block.appendChild(row);
     container.appendChild(block);
   });
@@ -482,9 +363,9 @@ function renderChapters() {
 /* ============ СОСТОЯНИЕ ============ */
 const state = {
   seen: {}, items: [], flags: {}, cutsceneDone: false,
-  hero: { x: 500, y: 800 }
+  hero: { x: 500, y: 1000 }
 };
-const SAVE_KEY = 'kto_ty_pixel_dante_v3';
+const SAVE_KEY = 'kto_ty_pixel_dante_v5';
 function save() { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }
 function load() {
   const raw = localStorage.getItem(SAVE_KEY);
@@ -492,30 +373,19 @@ function load() {
 }
 
 /* ============ ТЕКСТ ============ */
-let typeTimer = null;
-
-let hidePanelTimer = null;
-
+let typeTimer = null, hidePanelTimer = null;
 function say(text, speaker) {
   const panel = document.getElementById('textPanel');
   const el = document.getElementById('textContent');
   const prefix = speaker ? `<span class="speaker">${speaker}:</span> ` : '';
-
   el.innerHTML = ''; let i = 0;
-  clearInterval(typeTimer);
-  clearTimeout(hidePanelTimer);
+  clearInterval(typeTimer); clearTimeout(hidePanelTimer);
   panel.classList.add('show');
-
   typeTimer = setInterval(() => {
-    if (i >= text.length) { 
-      clearInterval(typeTimer); 
-      hidePanelTimer = setTimeout(() => { panel.classList.remove('show'); }, 7000);
-      return; 
-    }
+    if (i >= text.length) { clearInterval(typeTimer); hidePanelTimer = setTimeout(() => { panel.classList.remove('show'); }, 7000); return; }
     el.innerHTML = prefix + text.slice(0, i + 1); i++;
   }, 25);
 }
-
 function typeInto(el, text, speed = 40, cb) {
   clearInterval(typeTimer); el.innerHTML = ''; let i = 0;
   typeTimer = setInterval(() => {
@@ -529,7 +399,7 @@ const cutsceneData = [
   { bg: 'radial-gradient(circle at 50% 40%, #1a1010 0%, #000 70%)', text: 'Ты не помнишь своего имени. Никто здесь его не помнит. Имени больше нет — есть только «ты».' },
   { bg: 'radial-gradient(circle at 50% 30%, #2a1010 0%, #000 70%)', text: 'Ты жил. Как все: дышал, забывал, обещал. Кому-то — важное. Кому-то — пустое.' },
   { bg: 'radial-gradient(circle at 50% 50%, #3a0505 0%, #000 70%)', text: 'А потом — тишина. Не тьма, не свет. Просто тишина, в которой ты перестал быть.' },
-  { bg: 'radial-gradient(circle at 50% 60%, #2a0505 0%, #000 70%)', text: 'И вот ты здесь. Внизу. Там, где начинается всё, чт ты откладывал.' },
+  { bg: 'radial-gradient(circle at 50% 60%, #2a0505 0%, #000 70%)', text: 'И вот ты здесь. Внизу. Там, где начинается всё, что ты откладывал.' },
   { bg: 'radial-gradient(circle at 50% 50%, #0a0a0a 0%, #000 70%)', text: 'Сумрачный лес. КПП. Начало.' },
 ];
 let csIndex = 0;
@@ -537,9 +407,7 @@ const csBg = document.getElementById('csBg');
 const csTextContent = document.getElementById('csTextContent');
 const csNext = document.getElementById('csNext');
 
-function showCutscene() {
-  csIndex = 0; renderCsSlide();
-}
+function showCutscene() { csIndex = 0; renderCsSlide(); }
 function renderCsSlide() {
   const slide = cutsceneData[csIndex];
   csBg.style.background = slide.bg;
@@ -563,25 +431,41 @@ const gameCanvas = document.getElementById('gameCanvas');
 const ctx = gameCanvas.getContext('2d');
 
 let currentZone = 'outside'; 
-
 const WORLD = {
   outside: { width: 6000, height: 2000, minY: 820, maxY: 1900 },
   inside: { width: 1200, height: 800, minY: 500, maxY: 750 }
 };
 
-let heroX = 500;
-let heroY = 1000; 
-let heroSpeed = 180; 
-let isWalking = false;
-let heroDirection = 1;
-let walkTimer = 0;
-
-let cameraX = 0;
-let cameraY = 0;
+let heroX = 500, heroY = 1000, heroSpeed = 180; 
+let isWalking = false, heroDirection = 1, walkTimer = 0;
+let cameraX = 0, cameraY = 0;
 let lastTime = performance.now();
 const keys = { w: false, a: false, s: false, d: false };
 
-/* ============ ЗВЁЗДЫ ============ */
+/* ============ ЗАГРУЗКА СПРАЙТОВ ГЕРОЯ ============ */
+const heroAnimations = {};
+const heroAnimationNames = [
+  'walk_down','walk_up','walk_left','walk_right',
+  'jump','attack','crouch','pickup_item','knocked_out','wake_up','stand_up','dead'
+];
+// Количество кадров для каждой анимации (согласно твоей папке)
+const heroFrameCounts = {
+  walk_down:4, walk_up:4, walk_left:4, walk_right:4,
+  jump:2, attack:3, crouch:2, pickup_item:2,
+  knocked_out:2, wake_up:3, stand_up:2, dead:2
+};
+
+heroAnimationNames.forEach(name => {
+  heroAnimations[name] = [];
+  for (let i = 1; i <= heroFrameCounts[name]; i++) {
+    const frame = new Image();
+    // Формируем путь: assets/hero/walk_down/walk_down_01.png
+    frame.src = `assets/hero/${name}/${name}_${String(i).padStart(2,'0')}.png`;
+    heroAnimations[name].push(frame);
+  }
+});
+
+/* ============ ЗВЁЗДЫ И ДЕРЕВЬЯ ============ */
 const stars = [];
 function initStars() {
   stars.length = 0;
@@ -598,176 +482,132 @@ function initStars() {
 }
 initStars();
 
-/* ============ ДЕРЕВЬЯ ТОЛЬКО ПО БОКАМ ============ */
 const trees = [];
 function initTrees() {
   trees.length = 0;
+  const pathLeft = 1700, pathRight = 4300;
 
-  // Границы тропинки по X (центральная зона ез деревьев)
-  const pathLeft = 1700;
-  const pathRight = 4300;
-
-  // Дальний план (маленькие деревья по краям)
   for (let i = 0; i < 35; i++) {
     const isLeft = Math.random() > 0.5;
-    const x = isLeft 
-      ? Math.random() * pathLeft 
-      : pathRight + Math.random() * (WORLD.outside.width - pathRight);
-    trees.push({
-      x: x,
-      y: 850 + Math.random() * 250,
-      scale: 0.35,
-      seed: i
-    });
+    const x = isLeft ? Math.random() * pathLeft : pathRight + Math.random() * (WORLD.outside.width - pathRight);
+    trees.push({ x: x, y: 850 + Math.random() * 250, scale: 0.35, seed: i });
   }
-
-  // Средний план (по крам, немного заходят на тропинку сверху)
   for (let i = 0; i < 28; i++) {
     const isLeft = Math.random() > 0.5;
-    // Средний план заходит на тропинку сверху, но не внизу
-    const x = isLeft 
-      ? Math.random() * (pathLeft + 200) 
-      : (pathRight - 200) + Math.random() * (WORLD.outside.width - pathRight + 200);
-    trees.push({
-      x: x,
-      y: 950 + Math.random() * 350,
-      scale: 0.6,
-      seed: i + 100
-    });
+    const x = isLeft ? Math.random() * (pathLeft + 200) : (pathRight - 200) + Math.random() * (WORLD.outside.width - pathRight + 200);
+    trees.push({ x: x, y: 950 + Math.random() * 350, scale: 0.6, seed: i + 100 });
   }
-
-  // Ближний план (крупные деревья — только по краям, ниже Y)
   for (let i = 0; i < 18; i++) {
     const isLeft = Math.random() > 0.5;
-    const x = isLeft 
-      ? Math.random() * (pathLeft - 100) 
-      : (pathRight + 100) + Math.random() * (WORLD.outside.width - pathRight - 100);
-    trees.push({
-      x: x,
-      y: 1100 + Math.random() * 450,
-      scale: 0.85,
-      seed: i + 200
-    });
+    const x = isLeft ? Math.random() * (pathLeft - 100) : (pathRight + 100) + Math.random() * (WORLD.outside.width - pathRight - 100);
+    trees.push({ x: x, y: 1100 + Math.random() * 450, scale: 0.85, seed: i + 200 });
   }
-
-  // Сортируем по Y (от дальних к ближним)
   trees.sort((a, b) => a.y - b.y);
 }
 initTrees();
 
-/* ============ ЗАГРУЗКА АССЕТОВ ============ */
-const imgHero = new Image();
+/* ============ ЗАГРУЗКА ОСТАЛЬНЫХ АССЕТОВ ============ */
 const imgCharon = new Image();
 const imgTree = new Image();
-
-imgHero.src = 'hero.png'; 
 imgCharon.src = 'charon.png';
 imgTree.src = 'tree.png';
 
-let imagesLoaded = false;
-let loadCount = 0;
-const totalImages = 3;
+let imagesLoaded = false, loadCount = 0;
+const totalImages = 2; // Герой грузится отдельно массивом
 
 function processImage(img) {
   const tempCanvas = document.createElement('canvas');
-  tempCanvas.width = img.width;
-  tempCanvas.height = img.height;
+  tempCanvas.width = img.width; tempCanvas.height = img.height;
   const tempCtx = tempCanvas.getContext('2d');
   tempCtx.drawImage(img, 0, 0);
-
   const imgData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
   const data = imgData.data;
-
   for (let i = 0; i < data.length; i += 4) {
-    const r = data[i];
-    const g = data[i + 1];
-    const b = data[i + 2];
-    if (r > 230 && g > 230 && b > 230) {
-      data[i + 3] = 0;
-    }
+    if (data[i] > 230 && data[i+1] > 230 && data[i+2] > 230) data[i+3] = 0;
   }
-
   tempCtx.putImageData(imgData, 0, 0);
   return tempCanvas;
 }
 
 function checkLoaded() { loadCount++; if (loadCount >= totalImages) imagesLoaded = true; }
-imgHero.onload = checkLoaded; 
-imgCharon.onload = checkLoaded;
-imgTree.onload = checkLoaded;
-imgHero.onerror = () => { console.error('Нет hero.png'); checkLoaded(); };
+imgCharon.onload = checkLoaded; imgTree.onload = checkLoaded;
 imgCharon.onerror = () => { console.error('Нет charon.png'); checkLoaded(); };
 imgTree.onerror = () => { console.error('Нет tree.png'); checkLoaded(); };
 
-let heroSprite = null;
-let charonSprite = null;
-let treeSprite = null;
+let charonSprite = null, treeSprite = null;
 
-function initGame() {
-  load();
-  heroX = state.hero?.x ?? 500;
-  heroY = state.hero?.y ?? 1000;
-
-  gameCanvas.width = 1280; 
-  gameCanvas.height = 720;
-
-  renderInventory();
-  say("Тьма отступила: лес сал различим. Деревья здесь мёртвые, но воздух уже не такой тяжёлый. Впереди — КПП, единственный островок неясного света. Записка где-то в самом низу тропинки.");
-  requestAnimationFrame(tick);
-}
-
-/* ============ ОТРИСОВКА ПЕРСОНАЖЕЙ ============ */
-/* Анимации главного героя: кадры загружаются из папки assets/hero */
-const heroAnimations = {};
-const heroAnimationNames = [
-  'walk_down','walk_up','walk_left','walk_right',
-  'jump','attack','crouch','pickup_item','knocked_out','wake_up','stand_up','dead'
-];
-const heroFrameCounts = {
-  walk_down:4, walk_up:4, walk_left:4, walk_right:4,
-  jump:2, attack:3, crouch:2, pickup_item:2,
-  knocked_out:2, wake_up:3, stand_up:2, dead:2
-};
-heroAnimationNames.forEach(name => {
-  heroAnimations[name] = [];
-  for (let i = 1; i <= heroFrameCounts[name]; i++) {
-    const frame = new Image();
-    frame.src = `assets/hero/${name}/${name}_${String(i).padStart(2,'0')}.png`;
-    heroAnimations[name].push(frame);
-  }
-});
-
+/* ============ ЛОГИКА АНИМАЦИЙ ГЕРОЯ ============ */
 let heroFacing = 'down';
 let heroAction = null;
 let heroActionTimer = 0;
 let heroDead = false;
+let isAwake = false; // Флаг для стартовой анимации
+let gameStarted = false; // Блокировка управления до пробуждения
 
 function playHeroAction(name, duration = 0.7) {
+  if (!isAwake && name !== 'wake_up') return; // Нельзя действовать, пока лежим
   if (heroDead && name !== 'wake_up' && name !== 'stand_up') return;
+  
   heroAction = name;
   heroActionTimer = duration;
   if (name === 'dead') heroDead = true;
   if (name === 'wake_up') heroDead = false;
 }
 
-function drawHero(x, y, isWalking, direction, walkTimer) {
+function heroActionDuration(name) {
+  return ({ jump:0.65, attack:0.42, pickup_item:0.65, knocked_out:0.8,
+    wake_up:0.9, stand_up:0.65, dead:1.2 })[name] || 0.7;
+}
+
+function initGame() {
+  load();
+  heroX = state.hero?.x ?? 500;
+  heroY = state.hero?.y ?? 1000;
+  gameCanvas.width = 1280; gameCanvas.height = 720;
+  
+  renderInventory();
+  
+  // Запускаем анимацию пробуждения
+  isAwake = false;
+  gameStarted = false;
+  heroAction = 'dead'; // Лежим без сознания
+  heroActionTimer = 999; // Держим кадр
+  document.getElementById('textContent').innerHTML = "Ты открываешь глаза... (Нажми любую клавишу или кликни, чтобы встать)";
+  document.getElementById('textPanel').classList.add('show');
+
+  requestAnimationFrame(tick);
+}
+
+/* ============ ОТРИСОВКА ПЕРСОНАЖЕЙ ============ */
+function drawHero(x, y, isWalking, walkTimer) {
   ctx.save();
   ctx.translate(Math.round(x), Math.round(y));
 
   let animation = 'walk_down';
   let frameIndex = 0;
 
-  if (heroDead && (!heroAction || heroActionTimer <= 0)) {
+  // Приоритет: стартовое пробуждение -> смерть -> действия -> ходьба
+  if (!isAwake) {
+    if (heroAction === 'wake_up') {
+      animation = 'wake_up';
+      const elapsed = heroActionDuration('wake_up') - heroActionTimer;
+      frameIndex = Math.min(2, Math.floor(elapsed * 4));
+    } else if (heroAction === 'stand_up') {
+      animation = 'stand_up';
+      const elapsed = heroActionDuration('stand_up') - heroActionTimer;
+      frameIndex = Math.min(1, Math.floor(elapsed * 4));
+    } else {
+      // Лежит
+      animation = 'dead';
+      frameIndex = 0;
+    }
+  } else if (heroDead && (!heroAction || heroActionTimer <= 0)) {
     animation = 'dead';
     frameIndex = (heroAnimations.dead || []).length - 1;
   } else if (heroAction && heroActionTimer > 0) {
     animation = heroAction;
-    const frames = heroAnimations[animation] || [];
     const elapsed = Math.max(0, (heroActionDuration(animation) - heroActionTimer));
-    frameIndex = Math.min(frames.length - 1, Math.floor(elapsed * 8));
-  } else if (keys.c) {
-    animation = 'crouch';
-    frameIndex = Math.floor(Date.now() / 260) % 2;
+    frameIndex = Math.min((heroAnimations[animation] || []).length - 1, Math.floor(elapsed * 8));
   } else if (isWalking) {
     animation = `walk_${heroFacing}`;
     frameIndex = Math.floor(walkTimer * 1.5) % 4;
@@ -778,88 +618,63 @@ function drawHero(x, y, isWalking, direction, walkTimer) {
 
   const frames = heroAnimations[animation] || [];
   const sprite = frames[frameIndex] || frames[0];
+
   if (sprite && sprite.complete && sprite.naturalWidth > 0) {
-    const maxW = animation === 'attack' ? 154 : 120;
-    const maxH = animation === 'attack' ? 142 : 140;
+    // Масштабируем спрайт, чтобы он был нормального размера в мире
+    const maxW = 100;
+    const maxH = 120;
     const scale = Math.min(maxW / sprite.naturalWidth, maxH / sprite.naturalHeight);
     const w = sprite.naturalWidth * scale;
     const h = sprite.naturalHeight * scale;
+    
     ctx.imageSmoothingEnabled = false;
+    
+    // Если стоим/идём влево, спрайты в папке уже нарисованы правильно, 
+    // поэтому мы НЕ используем ctx.scale(-1, 1). 
+    // Отрисовываем как есть.
     ctx.drawImage(sprite, -w / 2, -h, w, h);
-  } else if (heroSprite) {
-    const w = 120, h = 140;
-    ctx.drawImage(heroSprite, -w / 2, -h, w, h);
   } else {
+    // Заглушка
     ctx.fillStyle = '#3a2a2a';
     ctx.beginPath(); ctx.arc(0, -20, 20, 0, Math.PI * 2); ctx.fill();
   }
   ctx.restore();
 }
 
-function heroActionDuration(name) {
-  return ({ jump:0.65, attack:0.42, pickup_item:0.65, knocked_out:0.8,
-    wake_up:0.9, stand_up:0.65, dead:1.2 })[name] || 0.7;
-}
 function drawCharon(x, y) {
   if (imagesLoaded && imgCharon.complete && !charonSprite) charonSprite = processImage(imgCharon);
-
-  ctx.save();
-  ctx.translate(x, y);
-
+  ctx.save(); ctx.translate(x, y);
   if (charonSprite) {
-    const w = 130; 
-    const h = 150;
-    ctx.shadowColor = 'rgba(180, 180, 180, 0.35)';
-    ctx.shadowBlur = 18;
+    const w = 130, h = 150;
+    ctx.shadowColor = 'rgba(180, 180, 180, 0.35)'; ctx.shadowBlur = 18;
     ctx.drawImage(charonSprite, -w / 2, -h, w, h);
-  } else {
-    ctx.fillStyle = '#d0d0d0'; ctx.beginPath(); ctx.arc(0, -20, 20, 0,
-
-Math.PI*2); ctx.fill();
   }
   ctx.restore();
 }
 
-/* ============ ДЕРЕВЬЯ ============ */
 function drawTreeAsset(tx, ty, scale = 1, seed = 0) {
-  if (imagesLoaded && imgTree.complete && !treeSprite) {
-    treeSprite = processImage(imgTree);
-  }
-
+  if (imagesLoaded && imgTree.complete && !treeSprite) treeSprite = processImage(imgTree);
   if (treeSprite) {
     const w = treeSprite.width * scale;
     const h = treeSprite.height * scale;
-
-    ctx.save();
-    ctx.translate(tx, ty);
-
+    ctx.save(); ctx.translate(tx, ty);
     const sway = Math.sin(Date.now() * 0.001 + seed) * 0.01;
     ctx.rotate(sway);
-
     ctx.drawImage(treeSprite, -w / 2, -h, w, h);
     ctx.restore();
   } else {
     ctx.fillStyle = '#0d120c';
-    ctx.beginPath();
-    ctx.moveTo(tx, ty - 100 * scale);
-    ctx.lineTo(tx + 30 * scale, ty);
-    ctx.lineTo(tx - 30 * scale, ty);
-    ctx.fill();
+    ctx.beginPath(); ctx.moveTo(tx, ty - 100 * scale); ctx.lineTo(tx + 30 * scale, ty); ctx.lineTo(tx - 30 * scale, ty); ctx.fill();
   }
 }
 
 /* ============ ОТРИСОВКА МИРА ============ */
 function drawWorld() {
-  // Небо: ночной градиент
   const skyGrad = ctx.createLinearGradient(0, 0, 0, gameCanvas.height);
-  skyGrad.addColorStop(0, '#04060a'); 
-  skyGrad.addColorStop(0.4, '#0a1018'); 
-  skyGrad.addColorStop(0.7, '#141a22');
-  skyGrad.addColorStop(1, '#1a2028');
-  ctx.fillStyle = skyGrad;
-  ctx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
+  skyGrad.addColorStop(0, '#04060a'); skyGrad.addColorStop(0.4, '#0a1018'); 
+  skyGrad.addColorStop(0.7, '#141a22'); skyGrad.addColorStop(1, '#1a2028');
+  ctx.fillStyle = skyGrad; ctx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
 
-  // Звёзды
   const starParallax = cameraX * 0.1;
   stars.forEach(star => {
     const sx = (star.x - starParallax) % WORLD.outside.width;
@@ -873,132 +688,82 @@ function drawWorld() {
   ctx.translate(-Math.floor(cameraX), -Math.floor(cameraY));
 
   if (currentZone === 'outside') {
-    // Земля (рисуем ПЕРЕД деревьями, чтобы стволы были поверх)
     ctx.fillStyle = '#1e1e1e';
     ctx.fillRect(0, WORLD.outside.minY, WORLD.outside.width, WORLD.outside.height);
-
     ctx.fillStyle = '#2a2a2a';
-    ctx.beginPath();
-    ctx.moveTo(300, 1950);
-    ctx.quadraticCurveTo(1600, 1500, 2900, 1200);
-    ctx.quadraticCurveTo(3400, 1100, 3700, 900);
-    ctx.lineTo(3800, 980);
-    ctx.quadraticCurveTo(3450, 1180, 2950, 1290);
-    ctx.quadraticCurveTo(1650, 1600, 420, 1980);
-    ctx.fill();
+    ctx.beginPath(); ctx.moveTo(300, 1950); ctx.quadraticCurveTo(1600, 1500, 2900, 1200);
+    ctx.quadraticCurveTo(3400, 1100, 3700, 900); ctx.lineTo(3800, 980);
+    ctx.quadraticCurveTo(3450, 1180, 2950, 1290); ctx.quadraticCurveTo(1650, 1600, 420, 1980); ctx.fill();
 
     ctx.fillStyle = '#2c2c2c';
-    ctx.beginPath();
-    ctx.moveTo(600, 1850);
-    ctx.quadraticCurveTo(1800, 1400, 2600, 1250);
-    ctx.quadraticCurveTo(3200, 1150, 3400, 1000);
-    ctx.lineTo(3450, 1080);
-    ctx.quadraticCurveTo(3250, 1250, 2650, 1350);
-    ctx.quadraticCurveTo(1850, 1500, 700, 1900);
-    ctx.fill();
+    ctx.beginPath(); ctx.moveTo(600, 1850); ctx.quadraticCurveTo(1800, 1400, 2600, 1250);
+    ctx.quadraticCurveTo(3200, 1150, 3400, 1000); ctx.lineTo(3450, 1080);
+    ctx.quadraticCurveTo(3250, 1250, 2650, 1350); ctx.quadraticCurveTo(1850, 1500, 700, 1900); ctx.fill();
 
     // КПП
-    ctx.fillStyle = '#1e1e1e';
-    ctx.fillRect(2900, 700, 150, 250);
-    ctx.fillStyle = '#141414';
-    ctx.fillRect(2880, 680, 190, 20); 
-    ctx.fillStyle = '#5a5030';
-    ctx.fillRect(2930, 750, 90, 70); 
-    ctx.fillStyle = '#141414';
-    ctx.fillRect(2910, 850, 50, 100); 
-    ctx.fillStyle = '#444';
-    ctx.fillRect(2940, 900, 6, 6); 
+    ctx.fillStyle = '#1e1e1e'; ctx.fillRect(2900, 700, 150, 250);
+    ctx.fillStyle = '#141414'; ctx.fillRect(2880, 680, 190, 20); 
+    ctx.fillStyle = '#5a5030'; ctx.fillRect(2930, 750, 90, 70); 
+    ctx.fillStyle = '#141414'; ctx.fillRect(2910, 850, 50, 100); 
+    ctx.fillStyle = '#444'; ctx.fillRect(2940, 900, 6, 6); 
 
     // Шлагбаум
-    ctx.fillStyle = '#1e1e1e';
-    ctx.fillRect(3080, 780, 15, 170);
+    ctx.fillStyle = '#1e1e1e'; ctx.fillRect(3080, 780, 15, 170);
     for (let i = 0; i < 8; i++) {
       ctx.fillStyle = i % 2 === 0 ? '#552222' : '#555';
-      if (state.flags.barrierOpen) {
-        ctx.fillRect(3085, 780 - i * 15, 12, 15);
-      } else {
-        ctx.fillRect(3100 + i * 30, 820, 30, 12);
-      }
+      if (state.flags.barrierOpen) ctx.fillRect(3085, 780 - i * 15, 12, 15);
+      else ctx.fillRect(3100 + i * 30, 820, 30, 12);
     }
 
     // Предметы
     if (!state.items.includes('keycard')) {
-      ctx.fillStyle = '#4a7a5a';
-      ctx.fillRect(2400, 1000, 20, 12);
+      ctx.fillStyle = '#4a7a5a'; ctx.fillRect(2400, 1000, 20, 12);
       ctx.shadowColor = '#4a7a5a'; ctx.shadowBlur = 10;
-      ctx.strokeRect(2400, 1000, 20, 12);
-      ctx.shadowBlur = 0;
+      ctx.strokeRect(2400, 1000, 20, 12); ctx.shadowBlur = 0;
     }
-
     if (!state.items.includes('note')) {
-      ctx.fillStyle = '#c0c8c4';
-      ctx.fillRect(560, 1850, 15, 20);
+      ctx.fillStyle = '#c0c8c4'; ctx.fillRect(560, 1850, 15, 20);
       ctx.shadowColor = '#c0c8c4'; ctx.shadowBlur = 10;
-      ctx.strokeRect(560, 1850, 15, 20);
-      ctx.shadowBlur = 0;
+      ctx.strokeRect(560, 1850, 15, 20); ctx.shadowBlur = 0;
     }
 
-    // Деревья (отсорированные по Y — дальние рисуются первыми)
-    trees.forEach(tree => {
-      drawTreeAsset(tree.x, tree.y, tree.scale, tree.seed);
-    });
+    trees.forEach(tree => { drawTreeAsset(tree.x, tree.y, tree.scale, tree.seed); });
 
-    // Туман
     const fog = ctx.createLinearGradient(0, 900, 0, 1600);
-    fog.addColorStop(0, 'rgba(60, 65, 70, 0)');
-    fog.addColorStop(1, 'rgba(60, 65, 70, 0.3)');
-    ctx.fillStyle = fog;
-    ctx.fillRect(cameraX, 900, gameCanvas.width, 700);
+    fog.addColorStop(0, 'rgba(60, 65, 70, 0)'); fog.addColorStop(1, 'rgba(60, 65, 70, 0.3)');
+    ctx.fillStyle = fog; ctx.fillRect(cameraX, 900, gameCanvas.width, 700);
 
     drawCharon(3300, 850);
-    drawHero(heroX, heroY, isWalking, heroDirection, walkTimer);
-
+    drawHero(heroX, heroY, isWalking, walkTimer);
   } else {
     // Внутри КПП
-    ctx.fillStyle = '#141414';
-    ctx.fillRect(0, 0, WORLD.inside.width, WORLD.inside.height);
-
-    ctx.fillStyle = '#1e1e1e';
-    ctx.fillRect(0, WORLD.inside.minY, WORLD.inside.width, WORLD.inside.height);
-
-    ctx.fillStyle = '#2a2a2a';
-    ctx.fillRect(400, 480, 200, 40);
-    ctx.fillStyle = '#141414';
-    ctx.fillRect(420, 520, 10, 80);
-    ctx.fillRect(570, 520, 10, 80);
-
-    ctx.save();
-    ctx.translate(500, 520);
-    ctx.fillStyle = '#1e1e1e'; 
-    ctx.fillRect(-30, -80, 60, 80);
-    ctx.fillStyle = '#2a2a2a';
-    ctx.beginPath(); ctx.arc(0, -100, 30, 0, Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#141414';
-    ctx.fillRect(-36, -140, 72, 30);
+    ctx.fillStyle = '#141414'; ctx.fillRect(0, 0, WORLD.inside.width, WORLD.inside.height);
+    ctx.fillStyle = '#1e1e1e'; ctx.fillRect(0, WORLD.inside.minY, WORLD.inside.width, WORLD.inside.height);
+    
+    ctx.fillStyle = '#2a2a2a'; ctx.fillRect(400, 480, 200, 40);
+    ctx.fillStyle = '#141414'; ctx.fillRect(420, 520, 10, 80); ctx.fillRect(570, 520, 10, 80);
+    
+    ctx.save(); ctx.translate(500, 520);
+    ctx.fillStyle = '#1e1e1e'; ctx.fillRect(-30, -80, 60, 80);
+    ctx.fillStyle = '#2a2a2a'; ctx.beginPath(); ctx.arc(0, -100, 30, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#141414'; ctx.fillRect(-36, -140, 72, 30);
     ctx.restore();
 
     const lampLight = ctx.createRadialGradient(500, 400, 10, 500, 400, 300);
-    lampLight.addColorStop(0, 'rgba(100, 90, 60, 0.2)');
-    lampLight.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = lampLight;
-    ctx.fillRect(0, 0, WORLD.inside.width, WORLD.inside.height);
+    lampLight.addColorStop(0, 'rgba(100, 90, 60, 0.2)'); lampLight.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = lampLight; ctx.fillRect(0, 0, WORLD.inside.width, WORLD.inside.height);
+    ctx.fillStyle = '#141414'; ctx.fillRect(0, 500, 40, 200);
 
-    ctx.fillStyle = '#141414';
-    ctx.fillRect(0, 500, 40, 200);
-
-    drawHero(heroX, heroY, isWalking, heroDirection, walkTimer);
+    drawHero(heroX, heroY, isWalking, walkTimer);
   }
-
   ctx.restore();
 
   const vignette = ctx.createRadialGradient(
     gameCanvas.width/2, gameCanvas.height/2, 300,
     gameCanvas.width/2, gameCanvas.height/2, 900
   );
-  vignette.addColorStop(0, 'rgba(0,0,0,0)');
-  vignette.addColorStop(1, 'rgba(0,0,0,0.65)');
-  ctx.fillStyle = vignette;
-  ctx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
+  vignette.addColorStop(0, 'rgba(0,0,0,0)'); vignette.addColorStop(1, 'rgba(0,0,0,0.65)');
+  ctx.fillStyle = vignette; ctx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
 }
 
 /* ============ ЛОГИКА И ЦИКЛ ============ */
@@ -1006,8 +771,10 @@ function tick(now) {
   const dt = Math.min(0.05, (now - lastTime) / 1000);
   lastTime = now;
 
-  let dx = 0; let dy = 0;
-  if (!heroDead && !heroAction) {
+  let dx = 0, dy = 0;
+  
+  // Управление работает только если герой встал
+  if (isAwake && !heroDead && !heroAction) {
     if (keys.a) { dx -= 1; heroDirection = -1; heroFacing = 'left'; }
     if (keys.d) { dx += 1; heroDirection = 1; heroFacing = 'right'; }
     if (keys.w) { dy -= 1; if (!dx) heroFacing = 'up'; }
@@ -1017,11 +784,17 @@ function tick(now) {
   if (heroActionTimer > 0) {
     heroActionTimer = Math.max(0, heroActionTimer - dt);
     if (heroActionTimer === 0) {
-      if (heroAction === 'wake_up') playHeroAction('stand_up', 0.65);
-      else heroAction = null;
+      if (heroAction === 'wake_up') {
+        playHeroAction('stand_up', 0.65);
+      } else if (heroAction === 'stand_up') {
+        heroAction = null;
+        isAwake = true;
+        gameStarted = true;
+        say("Ты поднимаешься на ноги. Лес вокруг кажется мёртвым. Где-то впереди виднеется тусклый свет КПП.");
+      } else {
+        heroAction = null;
+      }
     }
-  } else if (!heroDead) {
-    heroAction = null;
   }
 
   if (dx !== 0 || dy !== 0) {
@@ -1040,10 +813,8 @@ function tick(now) {
 
   const targetCamX = heroX - gameCanvas.width / 2;
   const targetCamY = heroY - gameCanvas.height / 2;
-
   cameraX += (targetCamX - cameraX) * Math.min(1, dt * 5);
   cameraY += (targetCamY - cameraY) * Math.min(1, dt * 5);
-
   cameraX = Math.max(0, Math.min(zone.width - gameCanvas.width, cameraX));
   cameraY = Math.max(0, Math.min(zone.height - gameCanvas.height + 200, cameraY));
 
@@ -1054,15 +825,27 @@ function tick(now) {
 }
 
 /* ============ ВВОД ============ */
+// Пробуждение по клику или клавише
+function triggerWakeUp() {
+  if (!isAwake && heroAction !== 'wake_up' && heroAction !== 'stand_up') {
+    document.getElementById('textPanel').classList.remove('show');
+    playHeroAction('wake_up', 0.9);
+  }
+}
+
 window.addEventListener('keydown', (e) => {
+  if (!gameStarted) triggerWakeUp();
+
   const k = e.key.toLowerCase();
   if (k === 'w' || k === 'ц') keys.w = true;
   if (k === 'a' || k === 'ф') keys.a = true;
   if (k === 's' || k === 'ы') keys.s = true;
   if (k === 'd' || k === 'в') keys.d = true;
   if (k === 'c' || k === 'с') keys.c = true;
+  
   if (k === ' ' && !e.repeat) { e.preventDefault(); playHeroAction('jump', 0.65); }
   if (k === 'j' && !e.repeat) playHeroAction('attack', 0.42);
+  // Тестовые кнопки
   if (k === 'k' && !e.repeat) playHeroAction('knocked_out', 0.8);
   if (k === 'u' && !e.repeat) playHeroAction('wake_up', 0.9);
   if (k === 'i' && !e.repeat) playHeroAction('stand_up', 0.65);
@@ -1079,6 +862,8 @@ window.addEventListener('keyup', (e) => {
 });
 
 gameCanvas.addEventListener('click', (e) => {
+  if (!gameStarted) { triggerWakeUp(); return; }
+
   const rect = gameCanvas.getBoundingClientRect();
   const clickX = (e.clientX - rect.left) * (gameCanvas.width / rect.width) + cameraX;
   const clickY = (e.clientY - rect.top) * (gameCanvas.height / rect.height) + cameraY;
@@ -1137,14 +922,12 @@ const gameObjects = {
   horace_inside: {
     onClick: () => {
       if (state.flags.barrierOpen) { say("— Проходи, — говорит Гораций.", "Гораций"); return; }
-
       if (state.items.includes('note') && !state.flags.horaceTalked) {
         state.flags.horaceTalked = true; save();
         say("«О, ты нашёл мой пропуск? — Гораций облегчённо выдыхает. — А то я уже обыскался. Давай сюда». Он ставит печать. Шлагбаум поднимается.", "Гораций");
         state.flags.barrierOpen = true; save();
         return;
       }
-
       if (state.flags.horaceTalked) { say("— Пропуск нужен. Ищи в самом низу тропинки.", "Гораций"); return; }
       state.flags.horaceTalked = true; save();
       say("«Ещё один. Пропуск есть?» Ты мотаешь головой. «Я свой потерял. Обронил где-то внизу, на тропинке. Найдёшь — подниму шлагбаум».", "Гораций");
@@ -1181,7 +964,7 @@ const gameObjects = {
 
 /* ============ ИНВЕНТАРЬ ============ */
 const allItems = { 
-  keycard: { icon: '🗝', title: 'люч-карта', desc: 'Собственность КПП.' },
+  keycard: { icon: '🗝', title: 'Ключ-карта', desc: 'Собственность КПП.' },
   note: { icon: '📜', title: 'Записка', desc: '«Что надеется на прощенье Божье...» С печатью Горация.' }
 };
 function renderInventory() {
@@ -1191,14 +974,10 @@ function renderInventory() {
     const item = allItems[id]; if (!item) return;
     const el = document.createElement('div');
     el.className = 'item-icon'; el.textContent = item.icon; el.title = item.title;
-    el.addEventListener('click', () => {
-      say(`Предмет: ${item.title}. ${item.desc}`);
-    });
+    el.addEventListener('click', () => { say(`Предмет: ${item.title}. ${item.desc}`); });
     inv.appendChild(el);
   });
 }
-
 </script>
-
 </body>
 </html>
