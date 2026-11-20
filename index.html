@@ -232,13 +232,13 @@
     </div>
 
     <div id="inventory"></div>
-    <div id="heroControls" style="position:absolute;left:20px;bottom:20px;color:#806060;font-size:18px;background:rgba(5,2,2,.65);padding:8px 12px;border:1px solid #3a1010;border-radius:4px;">WASD — движение · Space — прыжок · J — атака</div>
+    <div id="heroControls" style="position:absolute;left:20px;bottom:20px;color:#806060;font-size:18px;background:rgba(5,2,2,.65);padding:8px 12px;border:1px solid #3a1010;border-radius:4px;">WASD — движение · Space — прыжок · J — атака · Клик по предмету — подобрать</div>
     <div id="textPanel"><span id="textContent"></span></div>
   </div>
   <div id="fadeOverlay"></div>
 </div>
 
-<!-- АУДИО ТЕГИ -->
+<!-- АУДИО ТЕГИ (убедись, что файлы .mp3 лежат в корне с HTML) -->
 <audio id="bgmIntro" src="intro.mp3" loop></audio>
 <audio id="bgmForest" src="forest_ambient.mp3" loop></audio>
 
@@ -253,12 +253,12 @@ let isAudioStarted = false;
 function playIntroMusic() {
   if (isAudioStarted) return;
   isAudioStarted = true;
-  audioIntro.play().catch(e => console.log("Аудио заблокировано"));
+  audioIntro.play().catch(e => console.log("Аудио заблокировано или файл не найден"));
 }
 function playForestMusic() {
   if (!audioIntro.paused) audioIntro.pause();
   audioForest.currentTime = 0;
-  audioForest.play().catch(e => console.log("Ошибка аудио"));
+  audioForest.play().catch(e => console.log("Ошибка аудио леса"));
 }
 
 const slider = document.getElementById('brightnessSlider');
@@ -365,7 +365,7 @@ const state = {
   seen: {}, items: [], flags: {}, cutsceneDone: false,
   hero: { x: 500, y: 1000 }
 };
-const SAVE_KEY = 'kto_ty_pixel_dante_v5';
+const SAVE_KEY = 'kto_ty_pixel_dante_v6';
 function save() { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }
 function load() {
   const raw = localStorage.getItem(SAVE_KEY);
@@ -448,7 +448,6 @@ const heroAnimationNames = [
   'walk_down','walk_up','walk_left','walk_right',
   'jump','attack','crouch','pickup_item','knocked_out','wake_up','stand_up','dead'
 ];
-// Количество кадров для каждой анимации (согласно твоей папке)
 const heroFrameCounts = {
   walk_down:4, walk_up:4, walk_left:4, walk_right:4,
   jump:2, attack:3, crouch:2, pickup_item:2,
@@ -459,8 +458,8 @@ heroAnimationNames.forEach(name => {
   heroAnimations[name] = [];
   for (let i = 1; i <= heroFrameCounts[name]; i++) {
     const frame = new Image();
-    // Формируем путь: assets/hero/walk_down/walk_down_01.png
-    frame.src = `assets/hero/${name}/${name}_${String(i).padStart(2,'0')}.png`;
+    // ИСПРАВЛЕННЫЙ ПУТЬ: теперь без подпапок
+    frame.src = `assets/hero/${name}_${String(i).padStart(2,'0')}.png`;
     heroAnimations[name].push(frame);
   }
 });
@@ -513,7 +512,7 @@ imgCharon.src = 'charon.png';
 imgTree.src = 'tree.png';
 
 let imagesLoaded = false, loadCount = 0;
-const totalImages = 2; // Герой грузится отдельно массивом
+const totalImages = 2;
 
 function processImage(img) {
   const tempCanvas = document.createElement('canvas');
@@ -541,11 +540,11 @@ let heroFacing = 'down';
 let heroAction = null;
 let heroActionTimer = 0;
 let heroDead = false;
-let isAwake = false; // Флаг для стартовой анимации
-let gameStarted = false; // Блокировка управления до пробуждения
+let isAwake = false;
+let gameStarted = false;
 
 function playHeroAction(name, duration = 0.7) {
-  if (!isAwake && name !== 'wake_up') return; // Нельзя действовать, пока лежим
+  if (!isAwake && name !== 'wake_up') return;
   if (heroDead && name !== 'wake_up' && name !== 'stand_up') return;
   
   heroAction = name;
@@ -567,11 +566,10 @@ function initGame() {
   
   renderInventory();
   
-  // Запускаем анимацию пробуждения
   isAwake = false;
   gameStarted = false;
-  heroAction = 'dead'; // Лежим без сознания
-  heroActionTimer = 999; // Держим кадр
+  heroAction = 'dead';
+  heroActionTimer = 999;
   document.getElementById('textContent').innerHTML = "Ты открываешь глаза... (Нажми любую клавишу или кликни, чтобы встать)";
   document.getElementById('textPanel').classList.add('show');
 
@@ -586,7 +584,6 @@ function drawHero(x, y, isWalking, walkTimer) {
   let animation = 'walk_down';
   let frameIndex = 0;
 
-  // Приоритет: стартовое пробуждение -> смерть -> действия -> ходьба
   if (!isAwake) {
     if (heroAction === 'wake_up') {
       animation = 'wake_up';
@@ -597,7 +594,6 @@ function drawHero(x, y, isWalking, walkTimer) {
       const elapsed = heroActionDuration('stand_up') - heroActionTimer;
       frameIndex = Math.min(1, Math.floor(elapsed * 4));
     } else {
-      // Лежит
       animation = 'dead';
       frameIndex = 0;
     }
@@ -620,7 +616,6 @@ function drawHero(x, y, isWalking, walkTimer) {
   const sprite = frames[frameIndex] || frames[0];
 
   if (sprite && sprite.complete && sprite.naturalWidth > 0) {
-    // Масштабируем спрайт, чтобы он был нормального размера в мире
     const maxW = 100;
     const maxH = 120;
     const scale = Math.min(maxW / sprite.naturalWidth, maxH / sprite.naturalHeight);
@@ -628,15 +623,11 @@ function drawHero(x, y, isWalking, walkTimer) {
     const h = sprite.naturalHeight * scale;
     
     ctx.imageSmoothingEnabled = false;
-    
-    // Если стоим/идём влево, спрайты в папке уже нарисованы правильно, 
-    // поэтому мы НЕ используем ctx.scale(-1, 1). 
-    // Отрисовываем как есть.
     ctx.drawImage(sprite, -w / 2, -h, w, h);
   } else {
-    // Заглушка
-    ctx.fillStyle = '#3a2a2a';
-    ctx.beginPath(); ctx.arc(0, -20, 20, 0, Math.PI * 2); ctx.fill();
+    // Красный квадрат-заглушка, если спрайт не загрузился
+    ctx.fillStyle = 'red';
+    ctx.fillRect(-15, -30, 30, 30);
   }
   ctx.restore();
 }
@@ -773,7 +764,6 @@ function tick(now) {
 
   let dx = 0, dy = 0;
   
-  // Управление работает только если герой встал
   if (isAwake && !heroDead && !heroAction) {
     if (keys.a) { dx -= 1; heroDirection = -1; heroFacing = 'left'; }
     if (keys.d) { dx += 1; heroDirection = 1; heroFacing = 'right'; }
@@ -825,7 +815,6 @@ function tick(now) {
 }
 
 /* ============ ВВОД ============ */
-// Пробуждение по клику или клавише
 function triggerWakeUp() {
   if (!isAwake && heroAction !== 'wake_up' && heroAction !== 'stand_up') {
     document.getElementById('textPanel').classList.remove('show');
@@ -845,7 +834,6 @@ window.addEventListener('keydown', (e) => {
   
   if (k === ' ' && !e.repeat) { e.preventDefault(); playHeroAction('jump', 0.65); }
   if (k === 'j' && !e.repeat) playHeroAction('attack', 0.42);
-  // Тестовые кнопки
   if (k === 'k' && !e.repeat) playHeroAction('knocked_out', 0.8);
   if (k === 'u' && !e.repeat) playHeroAction('wake_up', 0.9);
   if (k === 'i' && !e.repeat) playHeroAction('stand_up', 0.65);
