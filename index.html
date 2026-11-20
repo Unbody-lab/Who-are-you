@@ -373,7 +373,7 @@ const WORLD = {
 let heroX = 500, heroY = 1000;
 let heroSpeed = 180;
 let isWalking = false;
-let heroDirection = -1;   // -1 = влево (idle-спрайт hero.png смотрит влево), 1 = вправо
+let heroDirection = -1;
 let heroFacing = 'down';
 let walkTimer = 0;
 let cameraX = 0, cameraY = 0;
@@ -425,7 +425,7 @@ initTrees();
 const imgHero = new Image();
 const imgCharon = new Image();
 const imgTree = new Image();
-imgHero.src = 'hero.png';      // ← IDLE-спрайт: герой просто стоит (в корне проекта)
+imgHero.src = 'hero.png';
 imgCharon.src = 'charon.png';
 imgTree.src = 'tree.png';
 
@@ -452,7 +452,7 @@ imgTree.onerror = () => { console.error('Нет tree.png'); checkLoaded(); };
 
 let heroSprite = null, charonSprite = null, treeSprite = null;
 
-/* ============ СПРАЙТЫ ГЕРОЯ (assets/hero/*.png, плоско) ============ */
+/* ============ СПРАЙТЫ ГЕРОЯ ============ */
 const heroAnimations = {};
 const heroFrameCounts = {
   walk_down: 4, walk_up: 4, walk_left: 4, walk_right: 4,
@@ -466,7 +466,6 @@ Object.keys(heroFrameCounts).forEach(name => {
     const pad = String(i).padStart(2, '0');
     const img = new Image();
     img.onerror = () => {
-      // fallback на вариант с подпапкой, если вдруг файлы лежат в assets/hero/<name>/
       const alt = new Image();
       alt.src = `assets/hero/${name}/${name}_${pad}.png`;
       heroAnimations[name][i - 1] = alt;
@@ -476,11 +475,30 @@ Object.keys(heroFrameCounts).forEach(name => {
   }
 });
 
+// ===== ИСПРАВЛЕНИЕ: меняем местами walk_right_03 и walk_right_04, а также walk_left_03 и walk_left_04 =====
+function swapFrames(arr, i, j) {
+  if (arr[i] && arr[j]) {
+    const tmp = arr[i];
+    arr[i] = arr[j];
+    arr[j] = tmp;
+  }
+}
+if (heroAnimations.walk_right && heroAnimations.walk_right.length >= 4) {
+  swapFrames(heroAnimations.walk_right, 2, 3); // 03 ↔ 04
+}
+if (heroAnimations.walk_left && heroAnimations.walk_left.length >= 4) {
+  swapFrames(heroAnimations.walk_left, 2, 3);  // 03 ↔ 04
+}
+
 /* ===== РАЗМЕР И ОРИЕНТАЦИЯ ПЕРСОНАЖА ===== */
-const HERO_SCALE = 0.5;             // 1 = родной размер спрайта; 0.5 = вдвое меньше
-const SPRITE_BASE_H = 140;          // базовая высота (px) при HERO_SCALE = 1
-const SIDE_FRAMES_FACE_LEFT = true; // и hero.png, и walk_* нарисованы лицом ВЛЕВО.
-                                    // Если при ходьбе ВЛЕВО герой смотрит вправо — поставьте false.
+// Фиксированный bounding box для всех анимаций — чтобы герой не "скакал"
+const HERO_W = 60;   // фиксированная ширина спрайта на экране
+const HERO_H = 70;   // фиксированная высота спрайта на экране
+// Idle-спрайт (hero.png) рисуем крупнее, чтобы было видно
+const HERO_IDLE_W = 90;
+const HERO_IDLE_H = 105;
+
+const SIDE_FRAMES_FACE_LEFT = true;
 
 let heroAction = null;
 let heroActionTimer = 0;
@@ -499,6 +517,20 @@ function playHeroAction(name, duration = 0.7) {
   heroActionTimer = duration;
   if (name === 'dead') heroDead = true;
   if (name === 'wake_up') { heroDead = false; heroLying = false; }
+}
+
+// Рисует любой спрайт в фиксированном bounding box, центрируя по горизонтали и прижимая к низу
+function drawSpriteInBox(sprite, w, h, anchorBottom = true) {
+  if (!sprite || !sprite.complete || sprite.naturalWidth === 0) return false;
+  const sx = sprite.naturalWidth;
+  const sy = sprite.naturalHeight;
+  const scale = Math.min(w / sx, h / sy);
+  const dw = sx * scale;
+  const dh = sy * scale;
+  const dx = -dw / 2;
+  const dy = anchorBottom ? -dh : -dh / 2;
+  ctx.drawImage(sprite, dx, dy, dw, dh);
+  return true;
 }
 
 function drawHero(x, y) {
@@ -526,7 +558,7 @@ function drawHero(x, y) {
     animation = `walk_${heroFacing}`;
     frameIndex = Math.floor(walkTimer * 1.5) % 4;
   } else {
-    animation = 'idle';   // ← герой просто стоит: hero.png
+    animation = 'idle';
   }
 
   // дуга прыжка
@@ -547,11 +579,7 @@ function drawHero(x, y) {
     if (!heroSprite && imagesLoaded && imgHero.complete && imgHero.naturalWidth > 0) {
       heroSprite = processImage(imgHero);
     }
-    if (heroSprite) {
-      const h = SPRITE_BASE_H * HERO_SCALE;
-      const w = heroSprite.width * (h / heroSprite.height);
-      ctx.drawImage(heroSprite, -w / 2, -h, w, h);
-    } else {
+    if (!drawSpriteInBox(heroSprite, HERO_IDLE_W, HERO_IDLE_H, true)) {
       ctx.fillStyle = '#3a2a2a';
       ctx.beginPath(); ctx.arc(0, -14, 14, 0, Math.PI * 2); ctx.fill();
     }
@@ -566,22 +594,17 @@ function drawHero(x, y) {
   const frames = heroAnimations[animation] || [];
   const sprite = frames[frameIndex] || frames[0];
 
-  if (sprite && sprite.complete && sprite.naturalWidth > 0) {
-    const h = SPRITE_BASE_H * HERO_SCALE;
-    const w = sprite.naturalWidth * (h / sprite.naturalHeight);
-    if (animation === 'dead') {
-      ctx.drawImage(sprite, -w / 2, -h / 2, w, h);   // лёжа — по центру feet-точки
+  // Для dead (лёжа) — центрируем по вертикали, для остальных — прижимаем к низу
+  const anchorBottom = animation !== 'dead';
+  if (!drawSpriteInBox(sprite, HERO_W, HERO_H, anchorBottom)) {
+    // fallback: если кадр не загрузился, рисуем idle
+    if (heroSprite) {
+      flip(heroDirection);
+      drawSpriteInBox(heroSprite, HERO_IDLE_W, HERO_IDLE_H, true);
     } else {
-      ctx.drawImage(sprite, -w / 2, -h, w, h);        // стоя — ноги в точке (x, y)
+      ctx.fillStyle = '#3a2a2a';
+      ctx.beginPath(); ctx.arc(0, -14, 14, 0, Math.PI * 2); ctx.fill();
     }
-  } else if (heroSprite) {
-    // если нужный кадр не загрузился — показываем хотя бы idle-стойку
-    const h = SPRITE_BASE_H * HERO_SCALE;
-    const w = heroSprite.width * (h / heroSprite.height);
-    ctx.drawImage(heroSprite, -w / 2, -h, w, h);
-  } else {
-    ctx.fillStyle = '#3a2a2a';
-    ctx.beginPath(); ctx.arc(0, -14, 14, 0, Math.PI * 2); ctx.fill();
   }
   ctx.restore();
 }
