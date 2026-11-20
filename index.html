@@ -91,9 +91,21 @@
   #fadeOverlay { position: fixed; inset: 0; background: #000; opacity: 0;
     pointer-events: none; transition: opacity 0.8s; z-index: 200; }
   #fadeOverlay.active { opacity: 1; }
+
+  /* ===== ДИАГНОСТИКА АССЕТОВ ===== */
+  #assetReport {
+    position: fixed; left: 12px; top: 12px; z-index: 500; display: none;
+    background: rgba(10,2,2,0.92); border: 2px solid #6a2020; border-radius: 6px;
+    padding: 12px 16px; font-size: 18px; line-height: 1.35; color: #d0a0a0;
+    max-width: 520px; pointer-events: auto; white-space: pre-wrap;
+  }
+  #assetReport b { color: #ff8080; }
+  #assetReport .ok { color: #70b070; }
 </style>
 </head>
 <body>
+
+<div id="assetReport"></div>
 
 <div id="mainMenu">
   <h1>КТО ТЫ</h1>
@@ -421,36 +433,73 @@ function initTrees() {
 }
 initTrees();
 
-/* ============ ЗАГРУЗКА АССЕТОВ ============ */
-const imgHero = new Image();
-const imgCharon = new Image();
-const imgTree = new Image();
-imgHero.src = 'hero.png';
-imgCharon.src = 'charon.png';
-imgTree.src = 'tree.png';
+/* ============================================================
+   ЗАГРУЗКА АССЕТОВ — НЕУБИВАЕМАЯ ВЕРСИЯ
+   ============================================================ */
 
-let imagesLoaded = false, loadCount = 0;
-const totalImages = 3;
-function processImage(img) {
-  const tempCanvas = document.createElement('canvas');
-  tempCanvas.width = img.width; tempCanvas.height = img.height;
-  const tempCtx = tempCanvas.getContext('2d');
-  tempCtx.drawImage(img, 0, 0);
-  const imgData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
-  const data = imgData.data;
-  for (let i = 0; i < data.length; i += 4) {
-    if (data[i] > 230 && data[i+1] > 230 && data[i+2] > 230) data[i+3] = 0;
-  }
-  tempCtx.putImageData(imgData, 0, 0);
-  return tempCanvas;
+// Диагностика: что загрузилось, что нет, какие пути пробовались
+const assetReport = [];
+function logAsset(label, ok, tried, used) {
+  assetReport.push({ label, ok, tried, used });
+  if (!ok) console.warn('[ASSETS] НЕ НАЙДЕН:', label, 'пробовал:', tried.join(' | '));
+  else console.log('[ASSETS] OK:', label, '←', used);
 }
-function checkLoaded() { loadCount++; if (loadCount >= totalImages) imagesLoaded = true; }
-imgHero.onload = checkLoaded; imgCharon.onload = checkLoaded; imgTree.onload = checkLoaded;
-imgHero.onerror = () => { console.error('Нет hero.png'); checkLoaded(); };
-imgCharon.onerror = () => { console.error('Нет charon.png'); checkLoaded(); };
-imgTree.onerror = () => { console.error('Нет tree.png'); checkLoaded(); };
 
-let heroSprite = null, charonSprite = null, treeSprite = null;
+// Загрузка с цепочкой запасных путей. Возвращает Image; у img._ok = true/false
+function loadImageWithFallbacks(label, srcList) {
+  const img = new Image();
+  img._ok = false;
+  img._tried = [];
+  let idx = 0;
+  function tryNext() {
+    if (idx >= srcList.length) {
+      logAsset(label, false, img._tried, null);
+      return;
+    }
+    const src = srcList[idx++];
+    img._tried.push(src);
+    img.onload = () => { img._ok = true; logAsset(label, true, img._tried, src); };
+    img.onerror = () => { img.onload = null; tryNext(); };
+    img.src = src;
+  }
+  tryNext();
+  return img;
+}
+
+// Очистка белого фона (опционально). На file:// getImageData может упасть —
+// тогда просто возвращаем оригинал (PNG с альфой и так рисуется корректно).
+function prepSprite(img) {
+  if (!img) return null;
+  if (img._prepped !== undefined) return img._prepped;
+  if (!img.complete || !img.naturalWidth) return null;
+  try {
+    const c = document.createElement('canvas');
+    c.width = img.naturalWidth; c.height = img.naturalHeight;
+    const cx = c.getContext('2d');
+    cx.drawImage(img, 0, 0);
+    const d = cx.getImageData(0, 0, c.width, c.height);
+    const px = d.data;
+    for (let i = 0; i < px.length; i += 4) {
+      if (px[i] > 230 && px[i+1] > 230 && px[i+2] > 230) px[i+3] = 0;
+    }
+    cx.putImageData(d, 0, 0);
+    img._prepped = c;
+  } catch (e) {
+    img._prepped = img; // tainted canvas (file://) — рисуем оригинал напрямую
+  }
+  return img._prepped;
+}
+
+// Одиночные спрайты окружения
+const imgHero = loadImageWithFallbacks('hero.png (idle)', [
+  'hero.png', './hero.png', 'assets/hero/hero.png', 'assets/hero/Hero.png'
+]);
+const imgCharon = loadImageWithFallbacks('charon.png', [
+  'charon.png', './charon.png', 'assets/charon.png', 'assets/hero/charon.png'
+]);
+const imgTree = loadImageWithFallbacks('tree.png', [
+  'tree.png', './tree.png', 'assets/tree.png', 'assets/hero/tree.png'
+]);
 
 /* ============ СПРАЙТЫ ГЕРОЯ ============ */
 const heroAnimations = {};
@@ -460,57 +509,42 @@ const heroFrameCounts = {
   knocked_out: 2, wake_up: 3, stand_up: 2, dead: 2
 };
 
+let framesOk = 0, framesTotal = 0;
 Object.keys(heroFrameCounts).forEach(name => {
   heroAnimations[name] = [];
   for (let i = 1; i <= heroFrameCounts[name]; i++) {
+    framesTotal++;
     const pad = String(i).padStart(2, '0');
-    const img = new Image();
-    img.onerror = () => {
-      const alt = new Image();
-      alt.src = `assets/hero/${name}/${name}_${pad}.png`;
-      heroAnimations[name][i - 1] = alt;
-    };
-    img.src = `assets/hero/${name}_${pad}.png`;
+    const img = loadImageWithFallbacks(`${name}_${pad}.png`, [
+      `assets/hero/${name}_${pad}.png`,          // плоско (как у вас)
+      `./assets/hero/${name}_${pad}.png`,
+      `assets/hero/${name}/${name}_${pad}.png`,  // вариант с подпапкой
+      `assets/hero/${name}_${pad}.PNG`           // регистр расширения
+    ]);
+    img.addEventListener('load', () => { framesOk++; });
     heroAnimations[name].push(img);
   }
 });
 
-// ===== ИСПРАВЛЕНИЕ: меняем местами walk_right_03 и walk_right_04, а также walk_left_03 и walk_left_04 =====
+// ===== ИСПРАВЛЕНИЕ: кадры 03 и 04 в walk_left / walk_right перепутаны =====
 function swapFrames(arr, i, j) {
-  if (arr[i] && arr[j]) {
-    const tmp = arr[i];
-    arr[i] = arr[j];
-    arr[j] = tmp;
-  }
+  if (arr[i] && arr[j]) { const t = arr[i]; arr[i] = arr[j]; arr[j] = t; }
 }
-if (heroAnimations.walk_right && heroAnimations.walk_right.length >= 4) {
-  swapFrames(heroAnimations.walk_right, 2, 3); // 03 ↔ 04
-}
-if (heroAnimations.walk_left && heroAnimations.walk_left.length >= 4) {
-  swapFrames(heroAnimations.walk_left, 2, 3);  // 03 ↔ 04
-}
+swapFrames(heroAnimations.walk_right, 2, 3);
+swapFrames(heroAnimations.walk_left, 2, 3);
 
-/* ===== РАЗМЕР И ОРИЕНТАЦИЯ ПЕРСОНАЖА ===== */
-// Фиксированный bounding box для всех анимаций — чтобы герой не "скакал"
-const HERO_W = 60;   // фиксированная ширина спрайта на экране
-const HERO_H = 70;   // фиксированная высота спрайта на экране
-// Idle-спрайт (hero.png) рисуем крупнее, чтобы было видно
-const HERO_IDLE_W = 90;
-const HERO_IDLE_H = 105;
-
+/* ===== РАЗМЕР И ОРИЕНТАЦИЯ ===== */
+const HERO_W = 60, HERO_H = 70;          // все анимации — в один box (без «скачков»)
+const HERO_IDLE_W = 90, HERO_IDLE_H = 105;
 const SIDE_FRAMES_FACE_LEFT = true;
 
-let heroAction = null;
-let heroActionTimer = 0;
-let heroDead = false;
-let heroLying = false;
-let introActive = false;
+let heroAction = null, heroActionTimer = 0;
+let heroDead = false, heroLying = false, introActive = false;
 
 function heroActionDuration(name) {
   return ({ jump: 0.65, attack: 0.42, pickup_item: 0.65, knocked_out: 0.8,
     wake_up: 1.4, stand_up: 0.65, dead: 1.2, crouch: 0.3 })[name] || 0.7;
 }
-
 function playHeroAction(name, duration = 0.7) {
   if (heroDead && name !== 'wake_up' && name !== 'stand_up') return;
   heroAction = name;
@@ -519,17 +553,24 @@ function playHeroAction(name, duration = 0.7) {
   if (name === 'wake_up') { heroDead = false; heroLying = false; }
 }
 
-// Рисует любой спрайт в фиксированном bounding box, центрируя по горизонтали и прижимая к низу
-function drawSpriteInBox(sprite, w, h, anchorBottom = true) {
-  if (!sprite || !sprite.complete || sprite.naturalWidth === 0) return false;
-  const sx = sprite.naturalWidth;
-  const sy = sprite.naturalHeight;
-  const scale = Math.min(w / sx, h / sy);
-  const dw = sx * scale;
-  const dh = sy * scale;
-  const dx = -dw / 2;
-  const dy = anchorBottom ? -dh : -dh / 2;
-  ctx.drawImage(sprite, dx, dy, dw, dh);
+// Если hero.png отсутствует — берём стойку из первого загруженного кадра
+function getIdleFallback() {
+  for (const a of ['stand_up', 'walk_down', 'walk_left', 'walk_right']) {
+    const f = heroAnimations[a] && heroAnimations[a][0];
+    if (f && f._ok && f.complete && f.naturalWidth > 0) return { img: f, front: (a === 'walk_down') };
+  }
+  return null;
+}
+
+function drawSpriteInBox(src, w, h, anchorBottom) {
+  const s = prepSprite(src);
+  if (!s) return false;
+  const sw = s.width || s.naturalWidth;
+  const sh = s.height || s.naturalHeight;
+  if (!sw || !sh) return false;
+  const scale = Math.min(w / sw, h / sh);
+  const dw = sw * scale, dh = sh * scale;
+  ctx.drawImage(s, -dw / 2, anchorBottom ? -dh : -dh / 2, dw, dh);
   return true;
 }
 
@@ -561,61 +602,51 @@ function drawHero(x, y) {
     animation = 'idle';
   }
 
-  // дуга прыжка
   if (heroAction === 'jump' && heroActionTimer > 0) {
     const dur = heroActionDuration('jump');
     const p = 1 - heroActionTimer / dur;
     ctx.translate(0, -Math.sin(Math.PI * p) * 26);
   }
 
-  // Зеркалирование по направлению взгляда
   const flip = (dir) => {
     if (SIDE_FRAMES_FACE_LEFT && dir === 1) ctx.scale(-1, 1);
     if (!SIDE_FRAMES_FACE_LEFT && dir === -1) ctx.scale(-1, 1);
   };
 
   if (animation === 'idle') {
-    flip(heroDirection);
-    if (!heroSprite && imagesLoaded && imgHero.complete && imgHero.naturalWidth > 0) {
-      heroSprite = processImage(imgHero);
+    let drew = false;
+    if (imgHero._ok) { flip(heroDirection); drew = drawSpriteInBox(imgHero, HERO_IDLE_W, HERO_IDLE_H, true); }
+    if (!drew) {
+      const fb = getIdleFallback();
+      if (fb) { if (!fb.front) flip(heroDirection); drew = drawSpriteInBox(fb.img, HERO_IDLE_W, HERO_IDLE_H, true); }
     }
-    if (!drawSpriteInBox(heroSprite, HERO_IDLE_W, HERO_IDLE_H, true)) {
-      ctx.fillStyle = '#3a2a2a';
-      ctx.beginPath(); ctx.arc(0, -14, 14, 0, Math.PI * 2); ctx.fill();
-    }
+    if (!drew) { ctx.fillStyle = '#3a2a2a'; ctx.beginPath(); ctx.arc(0, -14, 14, 0, Math.PI * 2); ctx.fill(); }
     ctx.restore();
     return;
   }
 
-  // боковые анимации зеркалим по heroFacing; up/down/dead/wake_up — не трогаем
   const sideAnim = ['walk_left', 'walk_right', 'jump', 'attack', 'pickup_item', 'knocked_out'].includes(animation);
   if (sideAnim) flip(heroFacing === 'right' ? 1 : -1);
 
   const frames = heroAnimations[animation] || [];
   const sprite = frames[frameIndex] || frames[0];
 
-  // Для dead (лёжа) — центрируем по вертикали, для остальных — прижимаем к низу
-  const anchorBottom = animation !== 'dead';
-  if (!drawSpriteInBox(sprite, HERO_W, HERO_H, anchorBottom)) {
-    // fallback: если кадр не загрузился, рисуем idle
-    if (heroSprite) {
-      flip(heroDirection);
-      drawSpriteInBox(heroSprite, HERO_IDLE_W, HERO_IDLE_H, true);
-    } else {
-      ctx.fillStyle = '#3a2a2a';
-      ctx.beginPath(); ctx.arc(0, -14, 14, 0, Math.PI * 2); ctx.fill();
-    }
+  let drew = drawSpriteInBox(sprite, HERO_W, HERO_H, animation !== 'dead');
+  if (!drew) {
+    const fb = getIdleFallback();
+    if (fb) drew = drawSpriteInBox(fb.img, HERO_W, HERO_H, true);
   }
+  if (!drew) { ctx.fillStyle = '#3a2a2a'; ctx.beginPath(); ctx.arc(0, -14, 14, 0, Math.PI * 2); ctx.fill(); }
+
   ctx.restore();
 }
 
 function drawCharon(x, y) {
-  if (imagesLoaded && imgCharon.complete && !charonSprite) charonSprite = processImage(imgCharon);
   ctx.save();
   ctx.translate(x, y);
-  if (charonSprite) {
+  if (imgCharon._ok) {
     ctx.shadowColor = 'rgba(180,180,180,0.35)'; ctx.shadowBlur = 18;
-    ctx.drawImage(charonSprite, -65, -150, 130, 150);
+    drawSpriteInBox(imgCharon, 130, 150, true);
   } else {
     ctx.fillStyle = '#d0d0d0'; ctx.beginPath(); ctx.arc(0, -20, 20, 0, Math.PI * 2); ctx.fill();
   }
@@ -623,22 +654,24 @@ function drawCharon(x, y) {
 }
 
 function drawTreeAsset(tx, ty, scale = 1, seed = 0) {
-  if (imagesLoaded && imgTree.complete && !treeSprite) treeSprite = processImage(imgTree);
-  if (treeSprite) {
-    const w = treeSprite.width * scale, h = treeSprite.height * scale;
-    ctx.save();
-    ctx.translate(tx, ty);
-    ctx.rotate(Math.sin(Date.now() * 0.001 + seed) * 0.01);
-    ctx.drawImage(treeSprite, -w / 2, -h, w, h);
-    ctx.restore();
-  } else {
-    ctx.fillStyle = '#0d120c';
-    ctx.beginPath();
-    ctx.moveTo(tx, ty - 100 * scale);
-    ctx.lineTo(tx + 30 * scale, ty);
-    ctx.lineTo(tx - 30 * scale, ty);
-    ctx.fill();
+  if (imgTree._ok) {
+    const s = prepSprite(imgTree);
+    if (s) {
+      const w = s.width * scale, h = s.height * scale;
+      ctx.save();
+      ctx.translate(tx, ty);
+      ctx.rotate(Math.sin(Date.now() * 0.001 + seed) * 0.01);
+      ctx.drawImage(s, -w / 2, -h, w, h);
+      ctx.restore();
+      return;
+    }
   }
+  ctx.fillStyle = '#0d120c';
+  ctx.beginPath();
+  ctx.moveTo(tx, ty - 100 * scale);
+  ctx.lineTo(tx + 30 * scale, ty);
+  ctx.lineTo(tx - 30 * scale, ty);
+  ctx.fill();
 }
 
 /* ============ ОТРИСОВКА МИРА ============ */
@@ -982,6 +1015,33 @@ function initGame() {
   renderInventory();
   startWakeUpIntro();
   requestAnimationFrame(tick);
+
+  // Через 2 секунды показываем отчёт, если что-то не загрузилось
+  setTimeout(showAssetReport, 2000);
+}
+
+function showAssetReport() {
+  const missing = assetReport.filter(a => !a.ok);
+  const framesMissing = framesTotal - framesOk;
+  const el = document.getElementById('assetReport');
+
+  if (missing.length === 0 && framesMissing === 0) {
+    console.log(`[ASSETS] Всё загружено: кадров ${framesOk}/${framesTotal}`);
+    return; // всё ок — ничего не показываем
+  }
+
+  let html = `<b>⚠ Проблемы с ассетами</b>\n`;
+  html += `Загружено кадров героя: <b>${framesOk}/${framesTotal}</b>\n`;
+  if (location.protocol === 'file:') {
+    html += `<b>Внимание:</b> страница открыта через file:// — браузер может блокировать загрузку. Запустите локальный сервер (Live Server в VS Code или python -m http.server).\n`;
+  }
+  html += `URL страницы: ${location.href}\n\n`;
+  if (framesMissing > 0) html += `Не найдено кадров из assets/hero/ (проверьте точное имя папки и файлов, регистр букв!).\n`;
+  missing.forEach(m => {
+    html += `<b>${m.label}</b> — пробовал: ${m.tried.join('  →  ')}\n`;
+  });
+  el.innerHTML = html;
+  el.style.display = 'block';
 }
 </script>
 
