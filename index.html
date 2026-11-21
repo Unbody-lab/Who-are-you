@@ -72,7 +72,7 @@
   #uiOverlay { position: absolute; inset: 0; pointer-events: none;
     display: flex; flex-direction: column; justify-content: space-between; padding: 20px; }
   #topBar { display: flex; justify-content: space-between; background: rgba(10,5,5,0.85);
-    border: 2px solid #3a1010; border-radius: 8px; padding: 10px 20px; color: #a08080; font-size: 22px; }
+    border: 2px solid #3a1010; border-radius: 8px; padding: 10px 20px; color: #a08080; font-size: 22px; pointer-events: auto; }
   #textPanel { pointer-events: none; min-height: 80px; background: rgba(5,2,2,0.9);
     border: 2px solid #4a1515; padding: 20px 30px; font-size: 28px; line-height: 1.3;
     color: #b0a0a0; margin-top: auto; max-width: 800px; align-self: center; width: 100%;
@@ -92,7 +92,52 @@
     pointer-events: none; transition: opacity 0.8s; z-index: 200; }
   #fadeOverlay.active { opacity: 1; }
 
-  /* ===== ДИАГНОСТИКА АССЕТОВ ===== */
+  /* ===== НОВЫЕ ЭЛЕМЕНТЫ UI ===== */
+  #questLog {
+    position: fixed; right: 20px; top: 80px; z-index: 100;
+    background: rgba(10,5,5,0.9); border: 2px solid #3a1010; border-radius: 8px;
+    padding: 15px; width: 260px; display: none; pointer-events: auto;
+  }
+  #questLog h3 { color: #d08080; font-size: 24px; margin-bottom: 10px; border-bottom: 1px solid #3a1010; padding-bottom: 5px; }
+  #questList { list-style: none; padding: 0; margin: 0; font-size: 20px; color: #a08080; line-height: 1.4; }
+  
+  #interactionIcons { position: absolute; inset: 0; pointer-events: none; z-index: 50; }
+  .world-icon {
+    position: absolute; transform: translate(-50%, -100%); cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; pointer-events: auto;
+  }
+  .icon-bubble {
+    width: 36px; height: 36px; background: rgba(10, 5, 5, 0.85); border: 2px solid #8a3030;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-size: 20px; box-shadow: 0 0 10px rgba(138, 48, 48, 0.6);
+    animation: bounce 1.5s infinite ease-in-out;
+  }
+  .icon-label {
+    background: rgba(0,0,0,0.8); color: #c0a060; font-size: 18px; padding: 2px 8px;
+    border-radius: 4px; margin-top: 4px; white-space: nowrap; border: 1px solid #3a1010;
+  }
+  @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+
+  #actionMenu {
+    position: fixed; z-index: 500; background: rgba(10, 5, 5, 0.95);
+    border: 2px solid #4a2020; border-radius: 8px; padding: 15px;
+    display: none; flex-direction: column; align-items: center;
+    box-shadow: 0 0 20px rgba(0,0,0,0.8); transform: translate(-50%, -100%); margin-top: -20px;
+  }
+  #actionMenuTitle { color: #d08080; font-size: 24px; margin-bottom: 10px; border-bottom: 1px solid #3a1010; padding-bottom: 5px; width: 100%; text-align: center; }
+  #actionMenuButtons { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+
+  #itemModal {
+    position: fixed; inset: 0; z-index: 600; background: rgba(0,0,0,0.85);
+    display: none; align-items: center; justify-content: center; pointer-events: auto;
+  }
+  #itemModalContent {
+    background: #1a1010; border: 2px solid #4a2020; padding: 30px; max-width: 500px;
+    color: #c0a0a0; font-size: 24px; line-height: 1.5; white-space: pre-wrap;
+    text-align: center; box-shadow: 0 0 30px #000; border-radius: 8px;
+  }
+  #itemModalTitle { color: #d08080; margin-bottom: 15px; font-size: 28px; }
+
   #assetReport {
     position: fixed; left: 12px; top: 12px; z-index: 500; display: none;
     background: rgba(10,2,2,0.92); border: 2px solid #6a2020; border-radius: 6px;
@@ -100,7 +145,6 @@
     max-width: 520px; pointer-events: auto; white-space: pre-wrap;
   }
   #assetReport b { color: #ff8080; }
-  #assetReport .ok { color: #70b070; }
 </style>
 </head>
 <body>
@@ -142,10 +186,32 @@
       <div id="locGoal">Сумрачный лес</div>
     </div>
     <div id="inventory"></div>
-    <div id="heroControls" style="position:absolute;left:20px;bottom:20px;color:#806060;font-size:18px;background:rgba(5,2,2,.65);padding:8px 12px;border:1px solid #3a1010;border-radius:4px;">WASD — движение · Space — прыжок · J — атака · C — присесть · E — подобрать</div>
+    <div id="heroControls" style="position:absolute;left:20px;bottom:20px;color:#806060;font-size:18px;background:rgba(5,2,2,.65);padding:8px 12px;border:1px solid #3a1010;border-radius:4px;pointer-events:auto;">WASD — движение · Space — прыжок · J — атака · C — присесть · Q — задания</div>
     <div id="hint"></div>
     <div id="textPanel"><span id="textContent"></span></div>
   </div>
+  
+  <!-- Новые UI элементы -->
+  <div id="questLog">
+    <h3>Задания</h3>
+    <ul id="questList"></ul>
+  </div>
+  
+  <div id="interactionIcons"></div>
+  
+  <div id="actionMenu">
+    <div id="actionMenuTitle"></div>
+    <div id="actionMenuButtons"></div>
+  </div>
+
+  <div id="itemModal">
+    <div id="itemModalContent">
+      <div id="itemModalTitle"></div>
+      <div id="itemModalText"></div>
+      <button class="menu-btn" style="width:150px;margin-top:20px;font-size:24px;" id="closeItemModalBtn">Закрыть</button>
+    </div>
+  </div>
+
   <div id="fadeOverlay"></div>
 </div>
 
@@ -205,54 +271,10 @@ const chaptersData = [
     { title: '???', desc: 'В разработке', available: false, img: null }
   ]},
   { title: '1 Круг · Лимб', locked: true, locations: [
-    { title: '???', desc: 'В разработке', available: false, img: null },
-    { title: '???', desc: 'В разработке', available: false, img: null },
-    { title: '???', desc: 'В разработке', available: false, img: null },
-    { title: '???', desc: 'В разработке', available: false, img: null }
-  ]},
-  { title: '2 Круг · Похоть', locked: true, locations: [
-    { title: '???', desc: 'В разработке', available: false, img: null },
-    { title: '???', desc: 'В разработке', available: false, img: null },
-    { title: '???', desc: 'В разработке', available: false, img: null },
-    { title: '???', desc: 'В разработке', available: false, img: null }
-  ]},
-  { title: '3 Круг · Чревоугодие', locked: true, locations: [
-    { title: '???', desc: 'В разработке', available: false, img: null },
-    { title: '???', desc: 'В разработке', available: false, img: null },
-    { title: '???', desc: 'В разработке', available: false, img: null }
-  ]},
-  { title: '4 Круг · Жадность', locked: true, locations: [
-    { title: '???', desc: 'В разработке', available: false, img: null },
-    { title: '???', desc: 'В разработке', available: false, img: null },
-    { title: '???', desc: 'В разработке', available: false, img: null },
-    { title: '???', desc: 'В разработке', available: false, img: null }
-  ]},
-  { title: '5 Круг · Гнев', locked: true, locations: [
-    { title: '???', desc: 'В разработке', available: false, img: null },
-    { title: '???', desc: 'В разработке', available: false, img: null },
-    { title: '???', desc: 'В разработке', available: false, img: null }
-  ]},
-  { title: '6 Круг · Ересь', locked: true, locations: [
-    { title: '???', desc: 'В разработке', available: false, img: null },
-    { title: '???', desc: 'В разработке', available: false, img: null },
-    { title: '???', desc: 'В разработке', available: false, img: null }
-  ]},
-  { title: '7 Круг · Насилие', locked: true, locations: [
-    { title: '???', desc: 'В разработке', available: false, img: null },
-    { title: '???', desc: 'В разработке', available: false, img: null },
-    { title: '???', desc: 'В разработке', available: false, img: null }
-  ]},
-  { title: '8 Круг · Обман', locked: true, locations: [
-    { title: '???', desc: 'В разработке', available: false, img: null },
-    { title: '???', desc: 'В разработке', available: false, img: null },
     { title: '???', desc: 'В разработке', available: false, img: null }
   ]},
   { title: '9 Круг · Предательство', locked: true, locations: [
-    { title: '???', desc: 'Замороженное озеро.', available: false, img: null },
-    { title: '???', desc: 'В разработке', available: false, img: null },
-    { title: '???', desc: 'В разработке', available: false, img: null },
-    { title: '???', desc: 'В разработке', available: false, img: null },
-    { title: '???', desc: 'В разработке', available: false, img: null }
+    { title: '???', desc: 'Замороженное озеро.', available: false, img: null }
   ]}
 ];
 
@@ -306,13 +328,40 @@ function renderChapters() {
   });
 }
 
-/* ============ СОСТОЯНИЕ ============ */
+/* ============ СОСТОЯНИЕ И ЗАДАНИЯ ============ */
 const state = { seen: {}, items: [], flags: {}, cutsceneDone: false, hero: { x: 500, y: 1000 } };
-const SAVE_KEY = 'kto_ty_pixel_dante_v3';
+const SAVE_KEY = 'kto_ty_pixel_dante_v4';
 function save() { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }
 function load() {
   const raw = localStorage.getItem(SAVE_KEY);
   if (raw) { try { Object.assign(state, JSON.parse(raw)); } catch(e) {} }
+}
+
+const quests = [
+  { id: 'q1', text: 'Осмотреться в лесу', done: false },
+  { id: 'q2', text: 'Найти пропуск (Ключ-карту или Записку)', done: false },
+  { id: 'q3', text: 'Поговорить с Горацием', done: false },
+  { id: 'q4', text: 'Пройти через шлагбаум', done: false }
+];
+
+function addQuestProgress(qText) {
+  const q = quests.find(x => x.text.includes(qText) || qText.includes(x.text));
+  if (q && !q.done) {
+    q.done = true;
+    renderQuests();
+    say(`Задание выполнено: ${q.text}`);
+  }
+}
+
+function renderQuests() {
+  const list = document.getElementById('questList');
+  list.innerHTML = '';
+  quests.forEach(q => {
+    const li = document.createElement('li');
+    li.textContent = (q.done ? '✅ ' : '⬜ ') + q.text;
+    li.style.color = q.done ? '#5a805a' : '#a08080';
+    list.appendChild(li);
+  });
 }
 
 /* ============ ТЕКСТ ============ */
@@ -434,10 +483,8 @@ function initTrees() {
 initTrees();
 
 /* ============================================================
-   ЗАГРУЗКА АССЕТОВ — НЕУБИВАЕМАЯ ВЕРСИЯ
+   ЗАГРУЗКА АССЕТОВ
    ============================================================ */
-
-// Диагностика: что загрузилось, что нет, какие пути пробовались
 const assetReport = [];
 function logAsset(label, ok, tried, used) {
   assetReport.push({ label, ok, tried, used });
@@ -445,7 +492,6 @@ function logAsset(label, ok, tried, used) {
   else console.log('[ASSETS] OK:', label, '←', used);
 }
 
-// Загрузка с цепочкой запасных путей. Возвращает Image; у img._ok = true/false
 function loadImageWithFallbacks(label, srcList) {
   const img = new Image();
   img._ok = false;
@@ -466,8 +512,6 @@ function loadImageWithFallbacks(label, srcList) {
   return img;
 }
 
-// Очистка белого фона (опционально). На file:// getImageData может упасть —
-// тогда просто возвращаем оригинал (PNG с альфой и так рисуется корректно).
 function prepSprite(img) {
   if (!img) return null;
   if (img._prepped !== undefined) return img._prepped;
@@ -485,24 +529,20 @@ function prepSprite(img) {
     cx.putImageData(d, 0, 0);
     img._prepped = c;
   } catch (e) {
-    img._prepped = img; // tainted canvas (file://) — рисуем оригинал напрямую
+    img._prepped = img;
   }
   return img._prepped;
 }
 
-// Одиночные спрайты окружения
-const imgHero = loadImageWithFallbacks('hero.png (idle)', [
-  'hero.png', './hero.png', 'assets/hero/hero.png', 'assets/hero/Hero.png'
-]);
-const imgCharon = loadImageWithFallbacks('charon.png', [
-  'charon.png', './charon.png', 'assets/charon.png', 'assets/hero/charon.png'
-]);
+const imgHero = loadImageWithFallbacks('hero.png', ['hero.png', './hero.png', 'assets/hero/hero.png']);
 const horaceFrames = [1,2,3,4,5].map(i => loadImageWithFallbacks(`horace_${String(i).padStart(2,'0')}.png`, [
   `assets/horace_${String(i).padStart(2,'0')}.png`, `horace_${String(i).padStart(2,'0')}.png`
 ]));
-const imgTree = loadImageWithFallbacks('tree.png', [
-  'tree.png', './tree.png', 'assets/tree.png', 'assets/hero/tree.png'
-]);
+const imgTree = loadImageWithFallbacks('tree.png', ['tree.png', './tree.png', 'assets/tree.png']);
+
+// Новые спрайты для травы и тропинки
+const imgGrass = loadImageWithFallbacks('grass.png', ['grass.png', './grass.png', 'assets/grass.png']);
+const imgPath = loadImageWithFallbacks('path.png', ['path.png', './path.png', 'assets/path.png']);
 
 /* ============ СПРАЙТЫ ГЕРОЯ ============ */
 const heroAnimations = {};
@@ -519,21 +559,15 @@ Object.keys(heroFrameCounts).forEach(name => {
     framesTotal++;
     const pad = String(i).padStart(2, '0');
     const img = loadImageWithFallbacks(`${name}_${pad}.png`, [
-      `assets/hero/${name}_${pad}.png`,          // плоско (как у вас)
-      `./assets/hero/${name}_${pad}.png`,
-      `assets/hero/${name}/${name}_${pad}.png`,  // вариант с подпапкой
-      `assets/hero/${name}_${pad}.PNG`           // регистр расширения
+      `assets/hero/${name}_${pad}.png`, `./assets/hero/${name}_${pad}.png`,
+      `assets/hero/${name}/${name}_${pad}.png`, `assets/hero/${name}_${pad}.PNG`
     ]);
     img.addEventListener('load', () => { framesOk++; });
     heroAnimations[name].push(img);
   }
 });
 
-// Кадры ходьбы идут в исходном порядке; walk_right_04 исправлен в самом PNG.
-
-/* ===== РАЗМЕР И ОРИЕНТАЦИЯ ===== */
-const HERO_W = 96, HERO_H = 126;          // единый увеличенный box для всех кадров
-const HERO_IDLE_W = 96, HERO_IDLE_H = 126;
+const HERO_W = 96, HERO_H = 126;
 const SIDE_FRAMES_FACE_LEFT = true;
 
 let heroAction = null, heroActionTimer = 0;
@@ -551,7 +585,6 @@ function playHeroAction(name, duration = 0.7) {
   if (name === 'wake_up') { heroDead = false; heroLying = false; }
 }
 
-// Если hero.png отсутствует — берём стойку из первого загруженного кадра
 function getIdleFallback() {
   for (const a of ['stand_up', 'walk_down', 'walk_left', 'walk_right']) {
     const f = heroAnimations[a] && heroAnimations[a][0];
@@ -612,7 +645,6 @@ function drawHero(x, y) {
   };
 
   if (animation === 'idle') {
-    // 4-step loop (1-2-3-2) makes breathing look softer than a hard frame jump.
     const idleLoop = [0, 1, 2, 1];
     const idleIndex = idleLoop[Math.floor(Date.now() / 240) % idleLoop.length];
     const idleFrames = heroAnimations.idle || [];
@@ -633,10 +665,6 @@ function drawHero(x, y) {
     return;
   }
 
-  const sideAnim = ['walk_left', 'walk_right', 'crouch_left', 'crouch_right', 'jump', 'attack', 'pickup_item', 'knocked_out'].includes(animation);
-  // walk_left / walk_right — уже отдельные направленные наборы кадров.
-  // Не зеркалим их повторно: это и разворачивало персонажа не в ту сторону.
-  // Для однонаправленных действий (прыжок, атака, подбор) сохраняем разворот по heroFacing.
   if (['jump', 'attack', 'pickup_item', 'knocked_out'].includes(animation)) {
     flip(heroFacing === 'left' ? 1 : -1);
   }
@@ -654,24 +682,11 @@ function drawHero(x, y) {
   ctx.restore();
 }
 
-function drawCharon(x, y) {
-  ctx.save();
-  ctx.translate(x, y);
-  if (imgCharon._ok) {
-    ctx.shadowColor = 'rgba(180,180,180,0.35)'; ctx.shadowBlur = 18;
-    drawSpriteInBox(imgCharon, 130, 150, true);
-  } else {
-    ctx.fillStyle = '#d0d0d0'; ctx.beginPath(); ctx.arc(0, -20, 20, 0, Math.PI * 2); ctx.fill();
-  }
-  ctx.restore();
-}
-
 function drawHorace(x, y, patrol = false) {
   ctx.save();
   ctx.translate(Math.round(x), Math.round(y));
   ctx.imageSmoothingEnabled = false;
   const t = Date.now();
-  // Patrol steps outside; breathing/blinking loop when guarding the booth.
   const frameIndex = patrol ? (Math.floor(t / 210) % 3) + 2 : [0,1,0,0,1,0][Math.floor(t / 320) % 6];
   const sprite = horaceFrames[frameIndex] || horaceFrames[0];
   ctx.shadowColor = 'rgba(35,255,90,0.28)';
@@ -722,28 +737,59 @@ function drawWorld() {
   ctx.translate(-Math.floor(cameraX), -Math.floor(cameraY));
 
   if (currentZone === 'outside') {
-    ctx.fillStyle = '#1e1e1e';
-    ctx.fillRect(0, WORLD.outside.minY, WORLD.outside.width, WORLD.outside.height);
+    // Трава спрайтом или fallback
+    if (imgGrass._ok && imgGrass.complete && imgGrass.naturalWidth > 0) {
+      const tileSize = 64;
+      const startX = Math.floor(cameraX / tileSize) * tileSize;
+      const startY = Math.floor(cameraY / tileSize) * tileSize;
+      for (let x = startX; x < cameraX + gameCanvas.width + tileSize; x += tileSize) {
+        for (let y = startY; y < cameraY + gameCanvas.height + tileSize; y += tileSize) {
+          if (y > WORLD.outside.minY - 64) {
+            ctx.drawImage(imgGrass, x, y, tileSize, tileSize);
+          }
+        }
+      }
+    } else {
+      ctx.fillStyle = '#1e2e1e';
+      ctx.fillRect(0, WORLD.outside.minY, WORLD.outside.width, WORLD.outside.height);
+    }
 
-    ctx.fillStyle = '#2a2a2a';
-    ctx.beginPath();
-    ctx.moveTo(300, 1950);
-    ctx.quadraticCurveTo(1600, 1500, 2900, 1200);
-    ctx.quadraticCurveTo(3400, 1100, 3700, 900);
-    ctx.lineTo(3800, 980);
-    ctx.quadraticCurveTo(3450, 1180, 2950, 1290);
-    ctx.quadraticCurveTo(1650, 1600, 420, 1980);
-    ctx.fill();
-
-    ctx.fillStyle = '#2c2c2c';
-    ctx.beginPath();
-    ctx.moveTo(600, 1850);
-    ctx.quadraticCurveTo(1800, 1400, 2600, 1250);
-    ctx.quadraticCurveTo(3200, 1150, 3400, 1000);
-    ctx.lineTo(3450, 1080);
-    ctx.quadraticCurveTo(3250, 1250, 2650, 1350);
-    ctx.quadraticCurveTo(1850, 1500, 700, 1900);
-    ctx.fill();
+    // Тропинка спрайтом (паттерн) или fallback
+    if (imgPath._ok && imgPath.complete && imgPath.naturalWidth > 0) {
+      try {
+        const pathPattern = ctx.createPattern(imgPath, 'repeat');
+        ctx.fillStyle = pathPattern;
+        ctx.beginPath();
+        ctx.moveTo(300, 1950);
+        ctx.quadraticCurveTo(1600, 1500, 2900, 1200);
+        ctx.quadraticCurveTo(3400, 1100, 3700, 900);
+        ctx.lineTo(3800, 980);
+        ctx.quadraticCurveTo(3450, 1180, 2950, 1290);
+        ctx.quadraticCurveTo(1650, 1600, 420, 1980);
+        ctx.fill();
+      } catch(e) {
+        // Fallback если tainted canvas
+        ctx.fillStyle = '#2a2a2a';
+        ctx.beginPath();
+        ctx.moveTo(300, 1950);
+        ctx.quadraticCurveTo(1600, 1500, 2900, 1200);
+        ctx.quadraticCurveTo(3400, 1100, 3700, 900);
+        ctx.lineTo(3800, 980);
+        ctx.quadraticCurveTo(3450, 1180, 2950, 1290);
+        ctx.quadraticCurveTo(1650, 1600, 420, 1980);
+        ctx.fill();
+      }
+    } else {
+      ctx.fillStyle = '#2a2a2a';
+      ctx.beginPath();
+      ctx.moveTo(300, 1950);
+      ctx.quadraticCurveTo(1600, 1500, 2900, 1200);
+      ctx.quadraticCurveTo(3400, 1100, 3700, 900);
+      ctx.lineTo(3800, 980);
+      ctx.quadraticCurveTo(3450, 1180, 2950, 1290);
+      ctx.quadraticCurveTo(1650, 1600, 420, 1980);
+      ctx.fill();
+    }
 
     ctx.fillStyle = '#1e1e1e'; ctx.fillRect(2900, 700, 150, 250);
     ctx.fillStyle = '#141414'; ctx.fillRect(2880, 680, 190, 20);
@@ -758,24 +804,13 @@ function drawWorld() {
       else ctx.fillRect(3100 + i * 30, 820, 30, 12);
     }
 
-    if (!state.items.includes('keycard')) {
-      ctx.fillStyle = '#4a7a5a'; ctx.fillRect(2400, 1000, 20, 12);
-      ctx.shadowColor = '#4a7a5a'; ctx.shadowBlur = 10;
-      ctx.strokeRect(2400, 1000, 20, 12); ctx.shadowBlur = 0;
-    }
-    if (!state.items.includes('note')) {
-      ctx.fillStyle = '#c0c8c4'; ctx.fillRect(560, 1850, 15, 20);
-      ctx.shadowColor = '#c0c8c4'; ctx.shadowBlur = 10;
-      ctx.strokeRect(560, 1850, 15, 20); ctx.shadowBlur = 0;
-    }
-
     trees.forEach(tree => drawTreeAsset(tree.x, tree.y, tree.scale, tree.seed));
 
     const fog = ctx.createLinearGradient(0, 900, 0, 1600);
     fog.addColorStop(0, 'rgba(60,65,70,0)'); fog.addColorStop(1, 'rgba(60,65,70,0.3)');
     ctx.fillStyle = fog;
     ctx.fillRect(cameraX, 900, gameCanvas.width, 700);
-    drawCharon(3300, 850);
+    
     drawHero(heroX, heroY);
   } else {
     ctx.fillStyle = '#141414'; ctx.fillRect(0, 0, WORLD.inside.width, WORLD.inside.height);
@@ -829,6 +864,195 @@ function startWakeUpIntro() {
   }, 5900);
 }
 
+/* ============ ВЗАИМОДЕЙСТВИЕ И ИКОНКИ ============ */
+function dist(ax, ay, bx, by) { return Math.hypot(ax - bx, ay - by); }
+
+function createIcon(wx, wy, type, title, actions) {
+  const sx = wx - cameraX;
+  const sy = wy - cameraY;
+  if (sx < -50 || sx > gameCanvas.width + 50 || sy < -50 || sy > gameCanvas.height + 50) return;
+  
+  const el = document.createElement('div');
+  el.className = 'world-icon';
+  el.style.left = sx + 'px';
+  el.style.top = sy + 'px';
+  el.innerHTML = `<div class="icon-bubble">${type === 'pickup' ? '✋' : '👁️'}</div><div class="icon-label">${title}</div>`;
+  
+  el.addEventListener('click', (e) => {
+    e.stopPropagation();
+    showActionMenu(title, actions, e.clientX, e.clientY);
+  });
+  
+  document.getElementById('interactionIcons').appendChild(el);
+}
+
+function showActionMenu(title, actions, cx, cy) {
+  const menu = document.getElementById('actionMenu');
+  menu.style.display = 'flex';
+  
+  let left = cx;
+  const menuWidth = 320;
+  if (cx + menuWidth/2 > window.innerWidth) left = window.innerWidth - menuWidth/2 - 10;
+  if (cx - menuWidth/2 < 0) left = menuWidth/2 + 10;
+  
+  menu.style.left = left + 'px';
+  menu.style.top = (cy - 20) + 'px';
+  
+  document.getElementById('actionMenuTitle').textContent = title;
+  const btns = document.getElementById('actionMenuButtons');
+  btns.innerHTML = '';
+  actions.forEach(act => {
+    const btn = document.createElement('button');
+    btn.className = 'menu-btn';
+    btn.style.width = '140px';
+    btn.style.fontSize = '22px';
+    btn.style.padding = '8px';
+    btn.style.margin = '5px';
+    btn.textContent = act.label;
+    btn.onclick = () => {
+      act.action();
+      menu.style.display = 'none';
+    };
+    btns.appendChild(btn);
+  });
+}
+
+function updateInteractionIcons() {
+  const container = document.getElementById('interactionIcons');
+  container.innerHTML = '';
+  
+  if (currentZone === 'outside') {
+    if (dist(heroX, heroY, 1000, 1200) < 200) {
+      createIcon(1000, 1200, 'inspect', 'Мрачный лес', [
+        { label: 'Осмотреть', action: () => { say("Густой, мрачный лес. Деревья нависают, словно стражи. Воздух спёртый, пахнет прелой листвой."); addQuestProgress('Осмотреться в лесу'); } }
+      ]);
+    }
+    if (dist(heroX, heroY, 2950, 850) < 200) {
+      createIcon(2950, 850, 'inspect', 'КПП', [
+        { label: 'Осмотреть', action: () => say("Маленькая будка с тусклым светом. Внутри виден силуэт дежурного.") },
+        { label: 'Войти', action: enterBooth }
+      ]);
+    }
+    if (dist(heroX, heroY, 3100, 820) < 200) {
+      createIcon(3100, 820, 'inspect', 'Шлагбаум', [
+        { label: 'Осмотреть', action: () => say(state.flags.barrierOpen ? "Шлагбаум поднят. Путь открыт." : "Шлагбаум опущен. Нужен пропуск.") },
+        { label: state.flags.barrierOpen ? 'Пройти' : 'Открыть', action: () => {
+            if (state.flags.barrierOpen) { say("Вы проходите дальше..."); }
+            else if (state.items.includes('keycard') || state.items.includes('note')) {
+              state.flags.barrierOpen = true; save();
+              say("Вы прикладываете пропуск. Шлагбаум со скрипом поднимается.");
+              addQuestProgress('Пройти через шлагбаум');
+            } else {
+              say("Нужен пропуск. Без него шлагбаум не открыть.");
+            }
+          }
+        }
+      ]);
+    }
+    if (!state.items.includes('keycard') && dist(heroX, heroY, 2400, 1000) < 150) {
+      createIcon(2400, 1000, 'pickup', 'Ключ-карта', [
+        { label: 'Осмотреть', action: () => say("Пластиковая карта с выцветшей надписью «КПП». Лежит в грязи.") },
+        { label: 'Подобрать', action: () => {
+            state.items.push('keycard'); save(); renderInventory();
+            playHeroAction('pickup_item', heroActionDuration('pickup_item'));
+            say("Вы подобрали ключ-карту.");
+            addQuestProgress('Найти пропуск');
+          }
+        }
+      ]);
+    }
+    if (!state.items.includes('note') && dist(heroX, heroY, 560, 1850) < 150) {
+      createIcon(560, 1850, 'pickup', 'Записка', [
+        { label: 'Осмотреть', action: () => say("Старая, помятая записка с печатью.") },
+        { label: 'Подобрать', action: () => {
+            state.items.push('note'); save(); renderInventory();
+            playHeroAction('pickup_item', heroActionDuration('pickup_item'));
+            say("Вы подобрали записку.");
+            addQuestProgress('Найти пропуск');
+          }
+        }
+      ]);
+    }
+  } else {
+    if (dist(heroX, heroY, 200, 650) < 150) {
+      createIcon(200, 650, 'inspect', 'Дверь', [
+        { label: 'Выйти', action: exitBooth }
+      ]);
+    }
+    if (dist(heroX, heroY, 500, 610) < 150) {
+      createIcon(500, 610, 'inspect', 'Гораций', [
+        { label: 'Осмотреть', action: () => say("Усталый смотритель в помятой форме.") },
+        { label: 'Говорить', action: () => {
+            if (state.flags.barrierOpen) { say("— Проходи, — бурчит Гораций.", "Гораций"); return; }
+            if (state.items.includes('note') && !state.flags.horaceTalked) {
+              state.flags.horaceTalked = true; save();
+              say("«О, ты нашёл мой пропуск? — Гораций облегчённо выдыхает. — Давай сюда». Он ставит печать. Шлагбаум поднимается.", "Гораций");
+              state.flags.barrierOpen = true; save();
+              addQuestProgress('Поговорить с Горацием');
+              return;
+            }
+            if (state.flags.horaceTalked) { say("— Пропуск нужен. Ищи внизу тропинки.", "Гораций"); return; }
+            state.flags.horaceTalked = true; save();
+            say("«Ещё один. Пропуск есть?» Ты мотаешь головой. «Я свой потерял. Обронил где-то внизу, на тропинке. Найдёшь — подниму шлагбаум».", "Гораций");
+            addQuestProgress('Поговорить с Горацием');
+          }
+        }
+      ]);
+    }
+  }
+}
+
+/* ============ ПЕРЕХОДЫ ============ */
+function enterBooth() {
+  const fade = document.getElementById('fadeOverlay');
+  fade.classList.add('active');
+  setTimeout(() => {
+    currentZone = 'inside';
+    heroX = 200; heroY = 650;
+    document.getElementById('locName').innerText = 'Внутри КПП';
+    document.getElementById('locGoal').innerText = 'Поговорить с Горацием';
+    fade.classList.remove('active');
+    say("Внутри будки темно. Единственный свет — от настольной лампы. Гораций сидит за столом.");
+  }, 800);
+}
+function exitBooth() {
+  const fade = document.getElementById('fadeOverlay');
+  fade.classList.add('active');
+  setTimeout(() => {
+    currentZone = 'outside';
+    heroX = 2910; heroY = 980;
+    document.getElementById('locName').innerText = 'Пролог';
+    document.getElementById('locGoal').innerText = 'Сумрачный лес';
+    fade.classList.remove('active');
+  }, 800);
+}
+
+/* ============ ИНВЕНТАРЬ ============ */
+const allItems = {
+  keycard: { icon: '🗝', title: 'Ключ-карта', desc: 'Собственность КПП. Потёртая пластиковая карта с магнитной полосой. На обратной стороне выгравировано: «Не терять».' },
+  note:    { icon: '📜', title: 'Записка', desc: '«Что надеется на прощенье Божье...\nТот должен быть готов отдать всё.»\n\nС обратной стороны: печать Горация и пометка «Пропуск №44». Это и есть пропуск!' }
+};
+
+function renderInventory() {
+  const inv = document.getElementById('inventory');
+  inv.innerHTML = '';
+  state.items.forEach(id => {
+    const item = allItems[id]; if (!item) return;
+    const el = document.createElement('div');
+    el.className = 'item-icon'; el.textContent = item.icon; el.title = 'Нажмите, чтобы прочитать';
+    el.addEventListener('click', () => {
+      document.getElementById('itemModal').style.display = 'flex';
+      document.getElementById('itemModalTitle').textContent = item.title;
+      document.getElementById('itemModalText').textContent = item.desc;
+    });
+    inv.appendChild(el);
+  });
+}
+
+document.getElementById('closeItemModalBtn').addEventListener('click', () => {
+  document.getElementById('itemModal').style.display = 'none';
+});
+
 /* ============ ЦИКЛ ============ */
 function tick(now) {
   const dt = Math.min(0.05, (now - lastTime) / 1000);
@@ -876,20 +1100,9 @@ function tick(now) {
 
   if (state.hero) { state.hero.x = heroX; state.hero.y = heroY; }
 
-  updateHint();
+  updateInteractionIcons();
   drawWorld();
   requestAnimationFrame(tick);
-}
-
-/* ============ ПОДСКАЗКА «E — подобрать» ============ */
-const hintEl = document.getElementById('hint');
-function dist(ax, ay, bx, by) { return Math.hypot(ax - bx, ay - by); }
-function nearKeycard() { return currentZone === 'outside' && !state.items.includes('keycard') && dist(heroX, heroY, 2410, 1006) < 110; }
-function nearNote()    { return currentZone === 'outside' && !state.items.includes('note')    && dist(heroX, heroY, 567, 1860)  < 110; }
-function updateHint() {
-  const show = !introActive && (nearKeycard() || nearNote());
-  hintEl.textContent = 'E — подобрать';
-  hintEl.classList.toggle('show', show);
 }
 
 /* ============ ВВОД ============ */
@@ -901,6 +1114,12 @@ window.addEventListener('keydown', (e) => {
   if (k === 'd' || k === 'в') keys.d = true;
   if (k === 'c' || k === 'с') keys.c = true;
 
+  if (k === 'q' || k === 'й' || e.key === 'Tab') {
+    e.preventDefault();
+    const ql = document.getElementById('questLog');
+    ql.style.display = ql.style.display === 'none' ? 'block' : 'none';
+  }
+
   if (introActive || heroDead) return;
 
   if (k === ' ' && !e.repeat) { e.preventDefault(); if (!heroAction) playHeroAction('jump', heroActionDuration('jump')); }
@@ -909,10 +1128,6 @@ window.addEventListener('keydown', (e) => {
   if (k === 'u' && !e.repeat) playHeroAction('wake_up', heroActionDuration('wake_up'));
   if (k === 'i' && !e.repeat) playHeroAction('stand_up', heroActionDuration('stand_up'));
   if (k === 'r' && !e.repeat) playHeroAction('dead', heroActionDuration('dead'));
-  if (k === 'e' || k === 'у') {
-    if (nearKeycard()) interact('keycard');
-    else if (nearNote()) interact('note');
-  }
 });
 
 window.addEventListener('keyup', (e) => {
@@ -924,112 +1139,6 @@ window.addEventListener('keyup', (e) => {
   if (k === 'c' || k === 'с') keys.c = false;
 });
 
-gameCanvas.addEventListener('click', (e) => {
-  const rect = gameCanvas.getBoundingClientRect();
-  const clickX = (e.clientX - rect.left) * (gameCanvas.width / rect.width) + cameraX;
-  const clickY = (e.clientY - rect.top) * (gameCanvas.height / rect.height) + cameraY;
-
-  if (currentZone === 'outside') {
-    if (clickX >= 2910 && clickX <= 2960 && clickY >= 850 && clickY <= 950) { enterBooth(); return; }
-    if (clickX >= 2930 && clickX <= 3020 && clickY >= 750 && clickY <= 820) { interact('horace_outside'); return; }
-    if (clickX >= 3220 && clickX <= 3380 && clickY >= 650 && clickY <= 850) { interact('charon'); return; }
-    if (!state.items.includes('keycard') && clickX >= 2400 && clickX <= 2420 && clickY >= 1000 && clickY <= 1012) { interact('keycard'); return; }
-    if (!state.items.includes('note') && clickX >= 560 && clickX <= 575 && clickY >= 1850 && clickY <= 1870) { interact('note'); return; }
-    if (clickX >= 3080 && clickX <= 3300 && clickY >= 780 && clickY <= 830) { interact('barrier'); return; }
-  } else {
-    if (clickX >= 0 && clickX <= 50 && clickY >= 500 && clickY <= 700) { exitBooth(); return; }
-    if (clickX >= 440 && clickX <= 560 && clickY >= 380 && clickY <= 550) { interact('horace_inside'); return; }
-  }
-});
-
-/* ============ ПЕРЕХОДЫ И ВЗАИМОДЕЙСТВИЕ ============ */
-function enterBooth() {
-  const fade = document.getElementById('fadeOverlay');
-  fade.classList.add('active');
-  setTimeout(() => {
-    currentZone = 'inside';
-    heroX = 200; heroY = 650;
-    document.getElementById('locName').innerText = 'Внутри КПП';
-    document.getElementById('locGoal').innerText = 'Поговорить с Горацием';
-    fade.classList.remove('active');
-    say("Внутри будки темно. Единственный свет — от настольной лампы. Гораций сидит за столом.");
-  }, 800);
-}
-function exitBooth() {
-  const fade = document.getElementById('fadeOverlay');
-  fade.classList.add('active');
-  setTimeout(() => {
-    currentZone = 'outside';
-    heroX = 2910; heroY = 980;
-    document.getElementById('locName').innerText = 'Пролог';
-    document.getElementById('locGoal').innerText = 'Сумрачный лес';
-    fade.classList.remove('active');
-  }, 800);
-}
-function interact(id) {
-  const obj = gameObjects[id];
-  if (!obj) return;
-  if (obj.onClick) { obj.onClick(); return; }
-  if (typeof obj.text === 'function') { say(obj.text()); return; }
-  say(obj.text);
-}
-
-const gameObjects = {
-  horace_outside: { onClick: () => say("Гораций смотрит на тебя через мутное стекло и стучит пальцем по вывеске: «Зайди».", "Гораций") },
-  horace_inside: { onClick: () => {
-    if (state.flags.barrierOpen) { say("— Проходи, — говорит Гораций.", "Гораций"); return; }
-    if (state.items.includes('note') && !state.flags.horaceTalked) {
-      state.flags.horaceTalked = true; save();
-      say("«О, ты нашёл мой пропуск? — Гораций облегчённо выдыхает. — А то я уже обыскался. Давай сюда». Он ставит печать. Шлагбаум поднимается.", "Гораций");
-      state.flags.barrierOpen = true; save();
-      return;
-    }
-    if (state.flags.horaceTalked) { say("— Пропуск нужен. Ищи в самом низу тропинки.", "Гораций"); return; }
-    state.flags.horaceTalked = true; save();
-    say("«Ещё один. Пропуск есть?» Ты мотаешь головой. «Я свой потерял. Обронил где-то внизу, на тропинке. Найдёшь — подниму шлагбаум».", "Гораций");
-  }},
-  charon: { onClick: () => {
-    if (!state.flags.charonTalked) {
-      state.flags.charonTalked = true; save();
-      say("«Ещё одна заблудшая душа. Привет. Я — Харон. Шлагбаум закрыт, Гораций потерял пропуск. Поищи внизу тропинки».", "Харон");
-    } else {
-      say("— Я жду внизу, у реки. Как найдёшь пропуск — приходи.", "Харон");
-    }
-  }},
-  keycard: { onClick: () => {
-    if (state.items.includes('keycard')) return;
-    state.items.push('keycard');
-    playHeroAction('pickup_item', heroActionDuration('pickup_item'));
-    save(); renderInventory();
-    say("Ты подобрал ключ-карту. Она холодная. На обратной стороне: «Собственность КПП. Не терять».");
-  }},
-  note: { onClick: () => {
-    if (state.items.includes('note')) return;
-    state.items.push('note');
-    playHeroAction('pickup_item', heroActionDuration('pickup_item'));
-    save(); renderInventory();
-    say("Старая записка. «Что надеется на прощенье Божье...» — дальше не разобрать. С обратной стороны печать Горация. Это его пропуск!");
-  }},
-  barrier: { text: () => state.flags.barrierOpen ? "Шлагбаум поднят." : "Шлагбаум опущен. Нужен пропуск Горация." }
-};
-
-/* ============ ИНВЕНТАРЬ ============ */
-const allItems = {
-  keycard: { icon: '🗝', title: 'Ключ-карта', desc: 'Собственность КПП.' },
-  note:    { icon: '📜', title: 'Записка', desc: '«Что надеется на прощенье Божье...» С печатью Горация.' }
-};
-function renderInventory() {
-  const inv = document.getElementById('inventory');
-  inv.innerHTML = '';
-  state.items.forEach(id => {
-    const item = allItems[id]; if (!item) return;
-    const el = document.createElement('div');
-    el.className = 'item-icon'; el.textContent = item.icon; el.title = item.title;
-    el.addEventListener('click', () => say(`Предмет: ${item.title}. ${item.desc}`));
-    inv.appendChild(el);
-  });
-}
-
 /* ============ СТАРТ ИГРЫ ============ */
 function initGame() {
   load();
@@ -1039,11 +1148,11 @@ function initGame() {
   gameCanvas.width = 1280;
   gameCanvas.height = 720;
 
+  renderQuests();
   renderInventory();
   startWakeUpIntro();
   requestAnimationFrame(tick);
 
-  // Через 2 секунды показываем отчёт, если что-то не загрузилось
   setTimeout(showAssetReport, 2000);
 }
 
@@ -1054,7 +1163,7 @@ function showAssetReport() {
 
   if (missing.length === 0 && framesMissing === 0) {
     console.log(`[ASSETS] Всё загружено: кадров ${framesOk}/${framesTotal}`);
-    return; // всё ок — ничего не показываем
+    return;
   }
 
   let html = `<b>⚠ Проблемы с ассетами</b>\n`;
