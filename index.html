@@ -497,15 +497,18 @@ const imgHero = loadImageWithFallbacks('hero.png (idle)', [
 const imgCharon = loadImageWithFallbacks('charon.png', [
   'charon.png', './charon.png', 'assets/charon.png', 'assets/hero/charon.png'
 ]);
+const horaceFrames = [1,2,3,4,5].map(i => loadImageWithFallbacks(`horace_${String(i).padStart(2,'0')}.png`, [
+  `assets/horace_${String(i).padStart(2,'0')}.png`, `horace_${String(i).padStart(2,'0')}.png`
+]));
 const imgTree = loadImageWithFallbacks('tree.png', [
   'tree.png', './tree.png', 'assets/tree.png', 'assets/hero/tree.png'
 ]);
 
 /* ============ СПРАЙТЫ ГЕРОЯ ============ */
 const heroAnimations = {};
-const heroFrameCounts = {
+const heroFrameCounts = { idle: 3, pickup_item_left: 2, pickup_item_right: 2,
   walk_down: 4, walk_up: 4, walk_left: 4, walk_right: 4,
-  jump: 2, attack: 3, crouch: 2, pickup_item: 2,
+  jump: 2, attack: 3, crouch: 2, crouch_left: 2, crouch_right: 2, crouch_up: 2, crouch_down: 2, pickup_item: 2,
   knocked_out: 2, wake_up: 3, stand_up: 2, dead: 2
 };
 
@@ -526,16 +529,11 @@ Object.keys(heroFrameCounts).forEach(name => {
   }
 });
 
-// ===== ИСПРАВЛЕНИЕ: кадры 03 и 04 в walk_left / walk_right перепутаны =====
-function swapFrames(arr, i, j) {
-  if (arr[i] && arr[j]) { const t = arr[i]; arr[i] = arr[j]; arr[j] = t; }
-}
-swapFrames(heroAnimations.walk_right, 2, 3);
-swapFrames(heroAnimations.walk_left, 2, 3);
+// Кадры ходьбы идут в исходном порядке; walk_right_04 исправлен в самом PNG.
 
 /* ===== РАЗМЕР И ОРИЕНТАЦИЯ ===== */
-const HERO_W = 60, HERO_H = 70;          // все анимации — в один box (без «скачков»)
-const HERO_IDLE_W = 90, HERO_IDLE_H = 105;
+const HERO_W = 96, HERO_H = 126;          // единый увеличенный box для всех кадров
+const HERO_IDLE_W = 96, HERO_IDLE_H = 126;
 const SIDE_FRAMES_FACE_LEFT = true;
 
 let heroAction = null, heroActionTimer = 0;
@@ -587,13 +585,13 @@ function drawHero(x, y) {
     animation = 'dead';
     frameIndex = Math.max(0, (heroAnimations.dead || []).length - 1);
   } else if (heroAction && heroActionTimer > 0) {
-    animation = heroAction;
+    animation = heroAction === 'pickup_item' ? `pickup_item_${heroFacing}` : heroAction;
     const frames = heroAnimations[animation] || [];
     const dur = heroActionDuration(animation);
     const elapsed = Math.max(0, dur - heroActionTimer);
     frameIndex = Math.min(frames.length - 1, Math.floor((elapsed / dur) * frames.length));
   } else if (keys.c && !heroDead) {
-    animation = 'crouch';
+    animation = `crouch_${heroFacing}`;
     frameIndex = Math.floor(Date.now() / 260) % 2;
   } else if (isWalking) {
     animation = `walk_${heroFacing}`;
@@ -614,19 +612,34 @@ function drawHero(x, y) {
   };
 
   if (animation === 'idle') {
+    // 4-step loop (1-2-3-2) makes breathing look softer than a hard frame jump.
+    const idleLoop = [0, 1, 2, 1];
+    const idleIndex = idleLoop[Math.floor(Date.now() / 240) % idleLoop.length];
+    const idleFrames = heroAnimations.idle || [];
+    const idleSprite = idleFrames[idleIndex] || idleFrames[0];
     let drew = false;
-    if (imgHero._ok) { flip(heroDirection); drew = drawSpriteInBox(imgHero, HERO_IDLE_W, HERO_IDLE_H, true); }
+    if (idleSprite && idleSprite._ok) {
+      flip(-heroDirection);
+      const breath = Math.sin(Date.now() * 0.0025) * 1.2;
+      ctx.translate(0, breath);
+      drew = drawSpriteInBox(idleSprite, HERO_W, HERO_H, true);
+    }
     if (!drew) {
       const fb = getIdleFallback();
-      if (fb) { if (!fb.front) flip(heroDirection); drew = drawSpriteInBox(fb.img, HERO_IDLE_W, HERO_IDLE_H, true); }
+      if (fb) { if (!fb.front) flip(-heroDirection); drew = drawSpriteInBox(fb.img, HERO_W, HERO_H, true); }
     }
     if (!drew) { ctx.fillStyle = '#3a2a2a'; ctx.beginPath(); ctx.arc(0, -14, 14, 0, Math.PI * 2); ctx.fill(); }
     ctx.restore();
     return;
   }
 
-  const sideAnim = ['walk_left', 'walk_right', 'jump', 'attack', 'pickup_item', 'knocked_out'].includes(animation);
-  if (sideAnim) flip(heroFacing === 'right' ? 1 : -1);
+  const sideAnim = ['walk_left', 'walk_right', 'crouch_left', 'crouch_right', 'jump', 'attack', 'pickup_item', 'knocked_out'].includes(animation);
+  // walk_left / walk_right — уже отдельные направленные наборы кадров.
+  // Не зеркалим их повторно: это и разворачивало персонажа не в ту сторону.
+  // Для однонаправленных действий (прыжок, атака, подбор) сохраняем разворот по heroFacing.
+  if (['jump', 'attack', 'pickup_item', 'knocked_out'].includes(animation)) {
+    flip(heroFacing === 'left' ? 1 : -1);
+  }
 
   const frames = heroAnimations[animation] || [];
   const sprite = frames[frameIndex] || frames[0];
@@ -650,6 +663,20 @@ function drawCharon(x, y) {
   } else {
     ctx.fillStyle = '#d0d0d0'; ctx.beginPath(); ctx.arc(0, -20, 20, 0, Math.PI * 2); ctx.fill();
   }
+  ctx.restore();
+}
+
+function drawHorace(x, y, patrol = false) {
+  ctx.save();
+  ctx.translate(Math.round(x), Math.round(y));
+  ctx.imageSmoothingEnabled = false;
+  const t = Date.now();
+  // Patrol steps outside; breathing/blinking loop when guarding the booth.
+  const frameIndex = patrol ? (Math.floor(t / 210) % 3) + 2 : [0,1,0,0,1,0][Math.floor(t / 320) % 6];
+  const sprite = horaceFrames[frameIndex] || horaceFrames[0];
+  ctx.shadowColor = 'rgba(35,255,90,0.28)';
+  ctx.shadowBlur = 10 + Math.sin(t * 0.004) * 3;
+  if (sprite && sprite._ok) drawSpriteInBox(sprite, 68, 94, true);
   ctx.restore();
 }
 
@@ -748,7 +775,6 @@ function drawWorld() {
     fog.addColorStop(0, 'rgba(60,65,70,0)'); fog.addColorStop(1, 'rgba(60,65,70,0.3)');
     ctx.fillStyle = fog;
     ctx.fillRect(cameraX, 900, gameCanvas.width, 700);
-
     drawCharon(3300, 850);
     drawHero(heroX, heroY);
   } else {
@@ -766,6 +792,7 @@ function drawWorld() {
     lampLight.addColorStop(0, 'rgba(100,90,60,0.2)'); lampLight.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = lampLight; ctx.fillRect(0, 0, WORLD.inside.width, WORLD.inside.height);
     ctx.fillStyle = '#141414'; ctx.fillRect(0, 500, 40, 200);
+    drawHorace(500, 610, false);
     drawHero(heroX, heroY);
   }
 
