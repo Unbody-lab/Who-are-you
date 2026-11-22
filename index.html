@@ -18,7 +18,7 @@
   #mainMenu { 
     position: fixed; inset: 0; z-index: 400; 
     /* Сначала градиент затемнения, потом картинка. Если картинки нет, будет просто градиент и цвет #050202 */
-    background: linear-gradient(rgba(5, 2, 2, 0.75), rgba(5, 2, 2, 0.9)), url('menu_bg.png');
+    background: linear-gradient(rgba(5, 2, 2, 0.75), rgba(5, 2, 2, 0.9)), url('menu.jpg');
     background-size: cover;
     background-position: center;
     background-color: #050202;
@@ -459,15 +459,15 @@ function typeInto(el, text, speed = 40, cb) {
 
 /* ============ КАТСЦЕНА (9 СЛАЙДОВ) ============ */
 const cutsceneData = [
-  { img: 'intro_1.png', bg: 'radial-gradient(circle at 50% 40%, #1a1010 0%, #000 70%)', text: 'Ты не помнишь своего имени. Никто здесь его не помнит. Имени больше нет — есть только «ты».' },
-  { img: 'intro_2.png', bg: 'radial-gradient(circle at 50% 30%, #2a1010 0%, #000 70%)', text: 'Ты жил. Как все: дышал, забывал, обещал. Кому-то — важное. Кому-то — пустое.' },
-  { img: 'intro_3.png', bg: 'radial-gradient(circle at 50% 50%, #3a0505 0%, #000 70%)', text: 'А потом — тишина. Не тьма, не свет. Просто тишина, в которой ты перестал быть.' },
-  { img: 'intro_4.png', bg: 'radial-gradient(circle at 50% 60%, #2a0505 0%, #000 70%)', text: 'И вот ты здесь. Внизу. Там, где начинается всё, что ты откладывал.' },
-  { img: 'intro_5.png', bg: 'radial-gradient(circle at 50% 50%, #1a0a0a 0%, #000 70%)', text: 'Холод пробирает до костей. Земля пахнет прелой листвой и старой кровью.' },
-  { img: 'intro_6.png', bg: 'radial-gradient(circle at 50% 40%, #0f1a0f 0%, #000 70%)', text: 'Ветви деревьев сплетаются, как пальцы мёртвых, закрывая небо.' },
-  { img: 'intro_7.png', bg: 'radial-gradient(circle at 50% 50%, #1a1510 0%, #000 70%)', text: 'Вдали виднеется тусклый свет. Единственный ориентир в этой глуши.' },
-  { img: 'intro_8.png', bg: 'radial-gradient(circle at 50% 60%, #2a1515 0%, #000 70%)', text: 'Контрольно-пропускной пункт. Последний рубеж перед тем, что ждёт дальше.' },
-  { img: 'intro_9.png', bg: 'radial-gradient(circle at 50% 50%, #0a0a0a 0%, #000 70%)', text: 'Сумрачный лес. КПП. Начало.' }
+  { img: 'intro_1.jpg', bg: 'radial-gradient(circle at 50% 40%, #1a1010 0%, #000 70%)', text: 'Ты не помнишь своего имени. Никто здесь его не помнит. Имени больше нет — есть только «ты».' },
+  { img: 'intro_2.jpg', bg: 'radial-gradient(circle at 50% 30%, #2a1010 0%, #000 70%)', text: 'Ты жил. Как все: дышал, забывал, обещал. Кому-то — важное. Кому-то — пустое.' },
+  { img: 'intro_3.jpg', bg: 'radial-gradient(circle at 50% 50%, #3a0505 0%, #000 70%)', text: 'А потом — тишина. Не тьма, не свет. Просто тишина, в которой ты перестал быть.' },
+  { img: 'intro_4.jpg', bg: 'radial-gradient(circle at 50% 60%, #2a0505 0%, #000 70%)', text: 'И вот ты здесь. Внизу. Там, где начинается всё, что ты откладывал.' },
+  { img: 'intro_5.jpg', bg: 'radial-gradient(circle at 50% 50%, #1a0a0a 0%, #000 70%)', text: 'Холод пробирает до костей. Земля пахнет прелой листвой и старой кровью.' },
+  { img: 'intro_6.jpg', bg: 'radial-gradient(circle at 50% 40%, #0f1a0f 0%, #000 70%)', text: 'Ветви деревьев сплетаются, как пальцы мёртвых, закрывая небо.' },
+  { img: 'intro_7.jpg', bg: 'radial-gradient(circle at 50% 50%, #1a1510 0%, #000 70%)', text: 'Вдали виднеется тусклый свет. Единственный ориентир в этой глуши.' },
+  { img: 'intro_8.jpg', bg: 'radial-gradient(circle at 50% 60%, #2a1515 0%, #000 70%)', text: 'Контрольно-пропускной пункт. Последний рубеж перед тем, что ждёт дальше.' },
+  { img: 'intro_9.jpg', bg: 'radial-gradient(circle at 50% 50%, #0a0a0a 0%, #000 70%)', text: 'Сумрачный лес. КПП. Начало.' }
 ];
 
 let csIndex = 0;
