@@ -22,9 +22,6 @@
     padding: 15px 40px; font-size: 32px; font-family: 'VT323', monospace;
     cursor: pointer; margin: 10px; width: 300px; transition: all 0.2s; }
   .menu-btn:hover { background: #3a1010; color: #fff; box-shadow: 0 0 15px #8a3030; }
-  
-  #btnEditor { display: none; border-color: #206020; color: #80a080; }
-  #btnEditor:hover { background: #206020; color: #fff; box-shadow: 0 0 15px #40a040; }
 
   #chapterSelect { position: fixed; inset: 0; z-index: 350; background: #050202;
     display: none; flex-direction: column; align-items: center; padding: 40px; overflow-y: auto; }
@@ -42,6 +39,7 @@
   .location-card.locked { cursor: not-allowed; border-color: #222; }
   .loc-img { width: 100%; height: 140px; object-fit: cover; border-bottom: 2px solid #3a1010;
     background: #111; display: flex; align-items: center; justify-content: center; color: #444; font-size: 20px; }
+  .location-card.active .loc-img { background: #1a1010; }
   .loc-info { padding: 15px; display: flex; flex-direction: column; gap: 5px; }
   .loc-title { font-size: 24px; color: #d08080; }
   .loc-desc { font-size: 18px; color: #a08080; font-style: italic; }
@@ -55,18 +53,23 @@
 
   #cutscene { position: fixed; inset: 0; z-index: 300; background: #000;
     display: none; align-items: center; justify-content: center; transition: opacity 1.5s; }
-  #csBg { position: absolute; inset: 0; transition: background 1.2s; background: #0a0a0a; }
+  #cutscene.hidden { opacity: 0; pointer-events: none; }
+  #csBg { position: absolute; inset: 0; transition: background 1.2s, background-image 1s ease-in-out; 
+    background-size: cover; background-position: center; background: #0a0a0a; }
   #csText { position: absolute; bottom: 0; left: 0; right: 0; min-height: 200px;
     background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.95) 40%);
     padding: 50px 80px; font-size: 32px; line-height: 1.4; color: #a0a0a0;
     display: flex; align-items: flex-end; z-index: 2; }
+  #csText span { max-width: 900px; }
   #csNext { position: absolute; bottom: 30px; right: 60px; color: #5a2020; font-size: 24px;
     font-style: italic; cursor: pointer; z-index: 3; animation: blink 1.8s infinite; }
   @keyframes blink { 0%,100%{opacity:0.3;} 50%{opacity:1;} }
 
   #game { position: fixed; inset: 0; opacity: 1; transition: opacity 1.5s;
     overflow: hidden; display: none; align-items: center; justify-content: center; background: #000; }
-  #gameCanvas { display: block; width: 100vw; height: 100vh; image-rendering: pixelated; }
+  #game.hidden { opacity: 0; pointer-events: none; }
+  #gameCanvas { display: block; width: 100vw; height: 100vh;
+    image-rendering: pixelated; image-rendering: crisp-edges; }
   #uiOverlay { position: absolute; inset: 0; pointer-events: none;
     display: flex; flex-direction: column; justify-content: space-between; padding: 20px; }
   #topBar { display: flex; justify-content: space-between; background: rgba(10,5,5,0.85);
@@ -77,76 +80,72 @@
     border-radius: 6px; transition: opacity 0.5s; opacity: 0; }
   #textPanel.show { opacity: 1; }
   #textPanel .speaker { color: #8a3030; font-style: italic; }
-  #inventory { position: absolute; top: 80px; right: 20px; display: flex; flex-direction: column; gap: 8px; pointer-events: auto; }
+  #hint { position: absolute; bottom: 120px; left: 50%; transform: translateX(-50%);
+    color: #c0a060; font-size: 24px; text-shadow: 0 0 8px #000; opacity: 0; transition: opacity 0.3s; }
+  #hint.show { opacity: 1; }
+  #inventory { position: absolute; top: 80px; right: 20px; display: flex; flex-direction: column;
+    gap: 8px; pointer-events: auto; }
   .item-icon { width: 48px; height: 48px; background: #1a1010; border: 2px solid #4a2020;
     border-radius: 4px; display: flex; align-items: center; justify-content: center;
     cursor: pointer; font-size: 24px; transition: all 0.2s; }
   .item-icon:hover { border-color: #8a3030; box-shadow: 0 0 12px rgba(138,48,48,0.5); }
-  #fadeOverlay { position: fixed; inset: 0; background: #000; opacity: 0; pointer-events: none; transition: opacity 0.8s; z-index: 200; }
+  #fadeOverlay { position: fixed; inset: 0; background: #000; opacity: 0;
+    pointer-events: none; transition: opacity 0.8s; z-index: 200; }
   #fadeOverlay.active { opacity: 1; }
 
-  /* ===== UI ЗАДАНИЙ И ВЗАИМОДЕЙСТВИЯ ===== */
-  #questLog { position: fixed; right: 20px; top: 80px; z-index: 100; background: rgba(10,5,5,0.9);
-    border: 2px solid #3a1010; border-radius: 8px; padding: 15px; width: 280px; display: none; pointer-events: auto; }
+  /* ===== НОВЫЕ ЭЛЕМЕНТЫ UI ===== */
+  #questLog {
+    position: fixed; right: 20px; top: 80px; z-index: 100;
+    background: rgba(10,5,5,0.9); border: 2px solid #3a1010; border-radius: 8px;
+    padding: 15px; width: 280px; display: none; pointer-events: auto;
+  }
   #questLog h3 { color: #d08080; font-size: 24px; margin-bottom: 10px; border-bottom: 1px solid #3a1010; padding-bottom: 5px; }
   #questList { list-style: none; padding: 0; margin: 0; font-size: 20px; color: #a08080; line-height: 1.4; }
   
   #interactionIcons { position: absolute; inset: 0; pointer-events: none; z-index: 200; }
-  .world-icon { position: absolute; transform: translate(-50%, -100%); cursor: pointer;
-    display: flex; flex-direction: column; align-items: center; pointer-events: auto; }
-  .icon-bubble { width: 40px; height: 40px; background: rgba(10, 5, 5, 0.9); border: 2px solid #8a3030;
+  .world-icon {
+    position: absolute; transform: translate(-50%, -100%); cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; pointer-events: auto;
+  }
+  .icon-bubble {
+    width: 44px; height: 44px; background: rgba(10, 5, 5, 0.9); border: 2px solid #8a3030;
     border-radius: 50%; display: flex; align-items: center; justify-content: center;
-    font-size: 22px; box-shadow: 0 0 12px rgba(138, 48, 48, 0.8); animation: bounce 1.5s infinite ease-in-out; }
-  .icon-label { background: rgba(0,0,0,0.85); color: #c0a060; font-size: 18px; padding: 3px 10px;
-    border-radius: 4px; margin-top: 6px; white-space: nowrap; border: 1px solid #3a1010; }
+    font-size: 22px; box-shadow: 0 0 12px rgba(138, 48, 48, 0.8);
+    animation: bounce 1.5s infinite ease-in-out;
+  }
+  .icon-bubble img { width: 26px; height: 26px; object-fit: contain; image-rendering: pixelated; }
+  .icon-label {
+    background: rgba(0,0,0,0.85); color: #c0a060; font-size: 18px; padding: 3px 10px;
+    border-radius: 4px; margin-top: 6px; white-space: nowrap; border: 1px solid #3a1010;
+  }
   @keyframes bounce { 0%, 100% { transform: translate(-50%, -100%) translateY(0); } 50% { transform: translate(-50%, -100%) translateY(-8px); } }
 
-  #actionMenu { position: fixed; z-index: 1000; background: rgba(10, 5, 5, 0.95);
-    border: 2px solid #4a2020; border-radius: 8px; padding: 15px; display: none;
-    flex-direction: column; align-items: center; box-shadow: 0 0 30px rgba(0,0,0,0.9); pointer-events: auto; }
+  #actionMenu {
+    position: fixed; z-index: 1000; background: rgba(10, 5, 5, 0.95);
+    border: 2px solid #4a2020; border-radius: 8px; padding: 15px;
+    display: none; flex-direction: column; align-items: center;
+    box-shadow: 0 0 30px rgba(0,0,0,0.9); pointer-events: auto;
+  }
   #actionMenuTitle { color: #d08080; font-size: 24px; margin-bottom: 12px; border-bottom: 1px solid #3a1010; padding-bottom: 5px; width: 100%; text-align: center; }
   #actionMenuButtons { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
 
-  #itemModal { position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,0.85);
-    display: none; align-items: center; justify-content: center; pointer-events: auto; }
-  #itemModalContent { background: #1a1010; border: 2px solid #4a2020; padding: 30px; max-width: 500px; width: 90%;
-    color: #c0a0a0; font-size: 24px; line-height: 1.5; white-space: pre-wrap; text-align: center; box-shadow: 0 0 30px #000; border-radius: 8px; }
+  #itemModal {
+    position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,0.85);
+    display: none; align-items: center; justify-content: center; pointer-events: auto;
+  }
+  #itemModalContent {
+    background: #1a1010; border: 2px solid #4a2020; padding: 30px; max-width: 500px; width: 90%;
+    color: #c0a0a0; font-size: 24px; line-height: 1.5; white-space: pre-wrap;
+    text-align: center; box-shadow: 0 0 30px #000; border-radius: 8px;
+  }
   #itemModalTitle { color: #d08080; margin-bottom: 15px; font-size: 28px; }
 
-  /* ===== РЕДАКТОР УРОВНЕЙ ===== */
-  #editorUI { position: fixed; inset: 0; z-index: 500; background: rgba(0,0,0,0.8); display: none; pointer-events: none; }
-  #editorUI.active { display: block; pointer-events: auto; }
-  #editorPanel {
-    position: absolute; left: 20px; top: 20px; width: 280px; background: rgba(10, 5, 5, 0.95);
-    border: 2px solid #4a2020; border-radius: 8px; padding: 15px; pointer-events: auto;
-  }
-  #editorPanel h3 { color: #d08080; font-size: 26px; margin-bottom: 10px; text-align: center; }
-  .editor-section { margin-bottom: 15px; border-bottom: 1px solid #3a1010; padding-bottom: 10px; }
-  .editor-section:last-child { border-bottom: none; }
-  .editor-btn {
-    width: 100%; padding: 8px; margin-bottom: 5px; background: #1a1010; border: 1px solid #4a2020;
-    color: #a08080; font-family: 'VT323', monospace; font-size: 20px; cursor: pointer; text-align: left;
-  }
-  .editor-btn:hover { background: #3a1010; color: #fff; }
-  .editor-btn.active { background: #4a2020; color: #fff; border-color: #8a3030; }
-  .asset-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
-  .asset-btn {
-    aspect-ratio: 1; background: #111; border: 2px solid #333; cursor: pointer;
-    display: flex; align-items: center; justify-content: center; font-size: 28px;
-  }
-  .asset-btn:hover { border-color: #8a3030; }
-  .asset-btn.active { border-color: #ff4040; background: #2a1010; }
-  
-  #editorHint {
-    position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
-    background: rgba(0,0,0,0.8); color: #c0a060; padding: 10px 20px; border-radius: 4px;
-    border: 1px solid #4a2020; font-size: 20px; pointer-events: none;
-  }
-
-  #assetReport { position: fixed; left: 12px; top: 12px; z-index: 600; display: none;
+  #assetReport {
+    position: fixed; left: 12px; top: 12px; z-index: 500; display: none;
     background: rgba(10,2,2,0.92); border: 2px solid #6a2020; border-radius: 6px;
     padding: 12px 16px; font-size: 18px; line-height: 1.35; color: #d0a0a0;
-    max-width: 520px; pointer-events: auto; white-space: pre-wrap; }
+    max-width: 520px; pointer-events: auto; white-space: pre-wrap;
+  }
   #assetReport b { color: #ff8080; }
 </style>
 </head>
@@ -158,7 +157,6 @@
   <h1>КТО ТЫ</h1>
   <button class="menu-btn" id="btnPlay">Играть</button>
   <button class="menu-btn" id="btnSettings">Настройки</button>
-  <button class="menu-btn" id="btnEditor">🛠 Редактор уровней</button>
 </div>
 
 <div id="chapterSelect">
@@ -190,11 +188,16 @@
       <div id="locGoal">Сумрачный лес</div>
     </div>
     <div id="inventory"></div>
-    <div id="heroControls" style="position:absolute;left:20px;bottom:20px;color:#806060;font-size:18px;background:rgba(5,2,2,.65);padding:8px 12px;border:1px solid #3a1010;border-radius:4px;pointer-events:auto;">WASD — движение · Space — прыжок · J — атака · Q — задания · ESC — выход из редактора</div>
+    <div id="heroControls" style="position:absolute;left:20px;bottom:20px;color:#806060;font-size:18px;background:rgba(5,2,2,.65);padding:8px 12px;border:1px solid #3a1010;border-radius:4px;pointer-events:auto;">WASD — движение · Space — прыжок · J — атака · C — присесть · Q — задания</div>
+    <div id="hint"></div>
     <div id="textPanel"><span id="textContent"></span></div>
   </div>
   
-  <div id="questLog"><h3>Задания</h3><ul id="questList"></ul></div>
+  <div id="questLog">
+    <h3>Задания</h3>
+    <ul id="questList"></ul>
+  </div>
+  
   <div id="interactionIcons"></div>
   
   <div id="actionMenu">
@@ -210,36 +213,6 @@
     </div>
   </div>
 
-  <!-- РЕДАКТОР -->
-  <div id="editorUI">
-    <div id="editorPanel">
-      <h3>🛠 Редактор</h3>
-      <div class="editor-section">
-        <div style="color:#a08080; margin-bottom:5px; font-size:20px;">Инструмент:</div>
-        <button class="editor-btn active" data-tool="place" onclick="setEditorTool('place')">✏️ Строить</button>
-        <button class="editor-btn" data-tool="move" onclick="setEditorTool('move')">✋ Перемещать</button>
-        <button class="editor-btn" data-tool="delete" onclick="setEditorTool('delete')">❌ Удалять</button>
-      </div>
-      <div class="editor-section">
-        <div style="color:#a08080; margin-bottom:5px; font-size:20px;">Ассеты:</div>
-        <div class="asset-grid">
-          <div class="asset-btn active" data-asset="tree" onclick="setEditorAsset('tree')" title="Дерево">🌲</div>
-          <div class="asset-btn" data-asset="rock" onclick="setEditorAsset('rock')" title="Камень">🪨</div>
-          <div class="asset-btn" data-asset="wall" onclick="setEditorAsset('wall')" title="Стена">🧱</div>
-          <div class="asset-btn" data-asset="bush" onclick="setEditorAsset('bush')" title="Куст">🌿</div>
-          <div class="asset-btn" data-asset="flower" onclick="setEditorAsset('flower')" title="Цветы">🌸</div>
-          <div class="asset-btn" data-asset="lamp" onclick="setEditorAsset('lamp')" title="Фонарь">🏮</div>
-        </div>
-      </div>
-      <div class="editor-section">
-        <button class="editor-btn" onclick="saveLevelData()" style="text-align:center; color:#70b070;">💾 Сохранить уровень</button>
-        <button class="editor-btn" onclick="clearLevelData()" style="text-align:center; color:#b07070;">🗑 Очистить всё</button>
-        <button class="editor-btn" onclick="toggleEditor()" style="text-align:center; margin-top:10px;">🚪 Выйти в меню</button>
-      </div>
-    </div>
-    <div id="editorHint">Колесико мыши: изменить размер · ЛКМ: действие · ESC: выход</div>
-  </div>
-
   <div id="fadeOverlay"></div>
 </div>
 
@@ -247,20 +220,17 @@
 <audio id="bgmForest" src="forest_ambient.mp3" loop></audio>
 
 <script>
-/* ============ СЕКРЕТНЫЙ КОД ============ */
-let keyBuffer = "";
-window.addEventListener('keydown', (e) => {
-  if (document.getElementById('mainMenu').style.display !== 'none' && 
-      document.getElementById('chapterSelect').style.display === 'none') {
-    keyBuffer += e.key;
-    if (keyBuffer.length > 4) keyBuffer = keyBuffer.slice(-4);
-    if (keyBuffer === "2143") {
-      document.getElementById('btnEditor').style.display = 'block';
-      keyBuffer = "";
-      say("Секретный режим разблокирован.");
-    }
-  }
-});
+/* ==========================================================================
+   ИНСТРУКЦИЯ ПО ДОБАВЛЕНИЮ ВАШИХ КАРТИНОК:
+   1. Для интро (9 картинок): положите в папку с файлом HTML изображения:
+      intro_1.png, intro_2.png, ..., intro_9.png
+      (Поддерживаются также .jpg, но лучше использовать .png для пиксель-арта)
+   2. Для иконок взаимодействия: положите в папку:
+      icon_inspect.png (иконка глаза / осмотра)
+      icon_pickup.png  (иконка руки / подбора)
+   Если файлы не будут найдены, игра автоматически покажет красивые градиенты 
+   и эмодзи (👁️ / ✋) в качестве запасного варианта.
+   ========================================================================== */
 
 /* ============ АУДИО И НАСТРОЙКИ ============ */
 const audioIntro = document.getElementById('bgmIntro');
@@ -293,11 +263,6 @@ document.getElementById('btnPlay').addEventListener('click', () => {
 document.getElementById('btnSettings').addEventListener('click', showSettings);
 document.getElementById('btnBackFromChapters').addEventListener('click', hideChapters);
 document.getElementById('btnBackFromSettings').addEventListener('click', hideSettings);
-document.getElementById('btnEditor').addEventListener('click', () => {
-  document.getElementById('mainMenu').style.display = 'none';
-  document.getElementById('game').style.display = 'flex';
-  initGame(true); // true = editor mode
-});
 
 function hideChapters() {
   document.getElementById('chapterSelect').style.display = 'none';
@@ -315,10 +280,59 @@ function hideSettings() {
 /* ============ СПИСОК ГЛАВ ============ */
 const chaptersData = [
   { title: 'Пролог', locked: false, locations: [
-    { title: 'Сумрачный лес', desc: 'Вы очутились в странном лесу...', available: true, img: 'Prologue_Forest.jpg' }
+    { title: 'Сумрачный лес', desc: 'Вы очутились в странном лесу, вы ничего не помните из прошлой жизни, ни имени, ни кем вы были, всё что вам остаётся это идти вперёд в надежде, что впереди что-то есть...', available: true, img: 'Prologue_Forest.jpg' },
+    { title: '???', desc: 'В разработке', available: false, img: null }
   ]},
-  { title: '1 Круг · Лимб', locked: true, locations: [{ title: '???', desc: 'В разработке', available: false, img: null }] },
-  { title: '9 Круг · Предательство', locked: true, locations: [{ title: '???', desc: 'Замороженное озеро.', available: false, img: null }] }
+  { title: '1 Круг · Лимб', locked: true, locations: [
+    { title: '???', desc: 'В разработке', available: false, img: null },
+    { title: '???', desc: 'В разработке', available: false, img: null },
+    { title: '???', desc: 'В разработке', available: false, img: null },
+    { title: '???', desc: 'В разработке', available: false, img: null }
+  ]},
+  { title: '2 Круг · Похоть', locked: true, locations: [
+    { title: '???', desc: 'В разработке', available: false, img: null },
+    { title: '???', desc: 'В разработке', available: false, img: null },
+    { title: '???', desc: 'В разработке', available: false, img: null },
+    { title: '???', desc: 'В разработке', available: false, img: null }
+  ]},
+  { title: '3 Круг · Чревоугодие', locked: true, locations: [
+    { title: '???', desc: 'В разработке', available: false, img: null },
+    { title: '???', desc: 'В разработке', available: false, img: null },
+    { title: '???', desc: 'В разработке', available: false, img: null }
+  ]},
+  { title: '4 Круг · Жадность', locked: true, locations: [
+    { title: '???', desc: 'В разработке', available: false, img: null },
+    { title: '???', desc: 'В разработке', available: false, img: null },
+    { title: '???', desc: 'В разработке', available: false, img: null },
+    { title: '???', desc: 'В разработке', available: false, img: null }
+  ]},
+  { title: '5 Круг · Гнев', locked: true, locations: [
+    { title: '???', desc: 'В разработке', available: false, img: null },
+    { title: '???', desc: 'В разработке', available: false, img: null },
+    { title: '???', desc: 'В разработке', available: false, img: null }
+  ]},
+  { title: '6 Круг · Ересь', locked: true, locations: [
+    { title: '???', desc: 'В разработке', available: false, img: null },
+    { title: '???', desc: 'В разработке', available: false, img: null },
+    { title: '???', desc: 'В разработке', available: false, img: null }
+  ]},
+  { title: '7 Круг · Насилие', locked: true, locations: [
+    { title: '???', desc: 'В разработке', available: false, img: null },
+    { title: '???', desc: 'В разработке', available: false, img: null },
+    { title: '???', desc: 'В разработке', available: false, img: null }
+  ]},
+  { title: '8 Круг · Обман', locked: true, locations: [
+    { title: '???', desc: 'В разработке', available: false, img: null },
+    { title: '???', desc: 'В разработке', available: false, img: null },
+    { title: '???', desc: 'В разработке', available: false, img: null }
+  ]},
+  { title: '9 Круг · Предательство', locked: true, locations: [
+    { title: '???', desc: 'Замороженное озеро.', available: false, img: null },
+    { title: '???', desc: 'В разработке', available: false, img: null },
+    { title: '???', desc: 'В разработке', available: false, img: null },
+    { title: '???', desc: 'В разработке', available: false, img: null },
+    { title: '???', desc: 'В разработке', available: false, img: null }
+  ]}
 ];
 
 function renderChapters() {
@@ -347,7 +361,14 @@ function renderChapters() {
       } else imgDiv.textContent = '???';
       const infoDiv = document.createElement('div');
       infoDiv.className = 'loc-info';
-      infoDiv.innerHTML = `<div class="loc-title">${loc.title}</div><div class="loc-desc">${loc.desc}</div><div class="loc-status">${loc.available ? 'Доступно' : 'В разработке'}</div>`;
+      const locTitle = document.createElement('div');
+      locTitle.className = 'loc-title'; locTitle.textContent = loc.title;
+      const locDesc = document.createElement('div');
+      locDesc.className = 'loc-desc'; locDesc.textContent = loc.desc;
+      const locStatus = document.createElement('div');
+      locStatus.className = 'loc-status';
+      locStatus.textContent = loc.available ? 'Доступно' : 'В разработке';
+      infoDiv.appendChild(locTitle); infoDiv.appendChild(locDesc); infoDiv.appendChild(locStatus);
       card.appendChild(imgDiv); card.appendChild(infoDiv);
       if (loc.available) {
         card.addEventListener('click', () => {
@@ -365,7 +386,7 @@ function renderChapters() {
 }
 
 /* ============ СОСТОЯНИЕ И ЗАДАНИЯ ============ */
-const state = { seen: {}, items: [], flags: {}, cutsceneDone: false, hero: { x: 500, y: 1000 }, levelData: [] };
+const state = { seen: {}, items: [], flags: {}, cutsceneDone: false, hero: { x: 500, y: 1000 } };
 const SAVE_KEY = 'kto_ty_pixel_dante_v6';
 function save() { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }
 function load() {
@@ -375,7 +396,7 @@ function load() {
 
 const quests = [
   { id: 'q1', text: 'Осмотреться в лесу', done: false },
-  { id: 'q2', text: 'Найти пропуск', done: false },
+  { id: 'q2', text: 'Найти пропуск (Ключ-карту или Записку)', done: false },
   { id: 'q3', text: 'Поговорить с Горацием', done: false },
   { id: 'q4', text: 'Пройти через шлагбаум', done: false }
 ];
@@ -426,20 +447,45 @@ function typeInto(el, text, speed = 40, cb) {
   }, speed);
 }
 
-/* ============ КАТСЦЕНА ============ */
+/* ============ КАТСЦЕНА (9 СЛАЙДОВ) ============ */
 const cutsceneData = [
-  { bg: 'radial-gradient(circle at 50% 40%, #1a1010 0%, #000 70%)', text: 'Ты не помнишь своего имени. Никто здесь его не помнит.' },
-  { bg: 'radial-gradient(circle at 50% 50%, #0a0a0a 0%, #000 70%)', text: 'Сумрачный лес. КПП. Начало.' },
+  { img: 'intro_1.png', bg: 'radial-gradient(circle at 50% 40%, #1a1010 0%, #000 70%)', text: 'Ты не помнишь своего имени. Никто здесь его не помнит. Имени больше нет — есть только «ты».' },
+  { img: 'intro_2.png', bg: 'radial-gradient(circle at 50% 30%, #2a1010 0%, #000 70%)', text: 'Ты жил. Как все: дышал, забывал, обещал. Кому-то — важное. Кому-то — пустое.' },
+  { img: 'intro_3.png', bg: 'radial-gradient(circle at 50% 50%, #3a0505 0%, #000 70%)', text: 'А потом — тишина. Не тьма, не свет. Просто тишина, в которой ты перестал быть.' },
+  { img: 'intro_4.png', bg: 'radial-gradient(circle at 50% 60%, #2a0505 0%, #000 70%)', text: 'И вот ты здесь. Внизу. Там, где начинается всё, что ты откладывал.' },
+  { img: 'intro_5.png', bg: 'radial-gradient(circle at 50% 50%, #1a0a0a 0%, #000 70%)', text: 'Холод пробирает до костей. Земля пахнет прелой листвой и старой кровью.' },
+  { img: 'intro_6.png', bg: 'radial-gradient(circle at 50% 40%, #0f1a0f 0%, #000 70%)', text: 'Ветви деревьев сплетаются, как пальцы мёртвых, закрывая небо.' },
+  { img: 'intro_7.png', bg: 'radial-gradient(circle at 50% 50%, #1a1510 0%, #000 70%)', text: 'Вдали виднеется тусклый свет. Единственный ориентир в этой глуши.' },
+  { img: 'intro_8.png', bg: 'radial-gradient(circle at 50% 60%, #2a1515 0%, #000 70%)', text: 'Контрольно-пропускной пункт. Последний рубеж перед тем, что ждёт дальше.' },
+  { img: 'intro_9.png', bg: 'radial-gradient(circle at 50% 50%, #0a0a0a 0%, #000 70%)', text: 'Сумрачный лес. КПП. Начало.' }
 ];
+
 let csIndex = 0;
+const csBg = document.getElementById('csBg');
+const csTextContent = document.getElementById('csTextContent');
+const csNext = document.getElementById('csNext');
+
 function showCutscene() { csIndex = 0; renderCsSlide(); }
 function renderCsSlide() {
   const slide = cutsceneData[csIndex];
-  document.getElementById('csBg').style.background = slide.bg;
-  document.getElementById('csNext').style.display = 'none';
-  typeInto(document.getElementById('csTextContent'), slide.text, 40, () => { document.getElementById('csNext').style.display = 'block'; });
+  
+  // Устанавливаем фоновый градиент как fallback
+  csBg.style.background = slide.bg;
+  
+  // Пытаемся установить картинку, если она есть в данных
+  if (slide.img) {
+    csBg.style.backgroundImage = `url('${slide.img}')`;
+    csBg.style.backgroundSize = 'cover';
+    csBg.style.backgroundPosition = 'center';
+  } else {
+    csBg.style.backgroundImage = 'none';
+  }
+  
+  csNext.style.display = 'none';
+  typeInto(csTextContent, slide.text, 40, () => { csNext.style.display = 'block'; });
 }
-document.getElementById('csNext').addEventListener('click', (e) => {
+
+csNext.addEventListener('click', (e) => {
   e.stopPropagation();
   if (csIndex < cutsceneData.length - 1) { csIndex++; renderCsSlide(); }
   else {
@@ -447,7 +493,7 @@ document.getElementById('csNext').addEventListener('click', (e) => {
     document.getElementById('game').style.display = 'flex';
     state.cutsceneDone = true; save();
     playForestMusic();
-    initGame(false);
+    initGame();
   }
 });
 
@@ -456,36 +502,85 @@ const gameCanvas = document.getElementById('gameCanvas');
 const ctx = gameCanvas.getContext('2d');
 
 let currentZone = 'outside';
-const WORLD = { outside: { width: 6000, height: 2000, minY: 820, maxY: 1900 }, inside: { width: 1200, height: 800, minY: 500, maxY: 750 } };
+const WORLD = {
+  outside: { width: 6000, height: 2000, minY: 820, maxY: 1900 },
+  inside:  { width: 1200, height: 800, minY: 500, maxY: 750 }
+};
 
 let heroX = 500, heroY = 1000;
 let heroSpeed = 180;
-let isWalking = false, heroDirection = -1, heroFacing = 'down', walkTimer = 0;
+let isWalking = false;
+let heroDirection = -1;
+let heroFacing = 'down';
+let walkTimer = 0;
 let cameraX = 0, cameraY = 0;
 let lastTime = performance.now();
 const keys = { w: false, a: false, s: false, d: false, c: false };
 
-// Редактор
-let isEditorMode = false;
-let editorTool = 'place'; // place, move, delete
-let editorAsset = 'tree';
-let editorSelectedIdx = -1;
-let isDragging = false;
-let dragOffsetX = 0, dragOffsetY = 0;
-let mouseX = 0, mouseY = 0;
-let worldMouseX = 0, worldMouseY = 0;
+/* ============ ЗВЁЗДЫ ============ */
+const stars = [];
+function initStars() {
+  stars.length = 0;
+  for (let i = 0; i < 150; i++) {
+    stars.push({
+      x: Math.random() * WORLD.outside.width,
+      y: Math.random() * 500,
+      size: Math.random() * 2 + 1,
+      baseAlpha: Math.random() * 0.6 + 0.2,
+      twinkleSpeed: Math.random() * 2 + 0.5,
+      phase: Math.random() * Math.PI * 2
+    });
+  }
+}
+initStars();
 
-/* ============ ЗАГРУЗКА АССЕТОВ ============ */
+/* ============ ДЕРЕВЬЯ ============ */
+const trees = [];
+function initTrees() {
+  trees.length = 0;
+  const pathLeft = 1700, pathRight = 4300;
+  for (let i = 0; i < 35; i++) {
+    const isLeft = Math.random() > 0.5;
+    const x = isLeft ? Math.random() * pathLeft : pathRight + Math.random() * (WORLD.outside.width - pathRight);
+    trees.push({ x, y: 850 + Math.random() * 250, scale: 0.35, seed: i });
+  }
+  for (let i = 0; i < 28; i++) {
+    const isLeft = Math.random() > 0.5;
+    const x = isLeft ? Math.random() * (pathLeft + 200) : (pathRight - 200) + Math.random() * (WORLD.outside.width - pathRight + 200);
+    trees.push({ x, y: 950 + Math.random() * 350, scale: 0.6, seed: i + 100 });
+  }
+  for (let i = 0; i < 18; i++) {
+    const isLeft = Math.random() > 0.5;
+    const x = isLeft ? Math.random() * (pathLeft - 100) : (pathRight + 100) + Math.random() * (WORLD.outside.width - pathRight - 100);
+    trees.push({ x, y: 1100 + Math.random() * 450, scale: 0.85, seed: i + 200 });
+  }
+  trees.sort((a, b) => a.y - b.y);
+}
+initTrees();
+
+/* ============================================================
+   ЗАГРУЗКА АССЕТОВ
+   ============================================================ */
 const assetReport = [];
+function logAsset(label, ok, tried, used) {
+  assetReport.push({ label, ok, tried, used });
+  if (!ok) console.warn('[ASSETS] НЕ НАЙДЕН:', label, 'пробовал:', tried.join(' | '));
+  else console.log('[ASSETS] OK:', label, '←', used);
+}
+
 function loadImageWithFallbacks(label, srcList) {
   const img = new Image();
-  img._ok = false; img._tried = [];
+  img._ok = false;
+  img._tried = [];
   let idx = 0;
   function tryNext() {
-    if (idx >= srcList.length) { assetReport.push({label, ok:false, tried:img._tried}); return; }
+    if (idx >= srcList.length) {
+      logAsset(label, false, img._tried, null);
+      return;
+    }
     const src = srcList[idx++];
     img._tried.push(src);
-    img.onload = () => { img._ok = true; assetReport.push({label, ok:true, used:src}); };
+    img.onload = () => { img._ok = true; logAsset(label, true, img._tried, src); };
     img.onerror = () => { img.onload = null; tryNext(); };
     img.src = src;
   }
@@ -493,40 +588,99 @@ function loadImageWithFallbacks(label, srcList) {
   return img;
 }
 
+function prepSprite(img) {
+  if (!img) return null;
+  if (img._prepped !== undefined) return img._prepped;
+  if (!img.complete || !img.naturalWidth) return null;
+  try {
+    const c = document.createElement('canvas');
+    c.width = img.naturalWidth; c.height = img.naturalHeight;
+    const cx = c.getContext('2d');
+    cx.drawImage(img, 0, 0);
+    const d = cx.getImageData(0, 0, c.width, c.height);
+    const px = d.data;
+    for (let i = 0; i < px.length; i += 4) {
+      if (px[i] > 230 && px[i+1] > 230 && px[i+2] > 230) px[i+3] = 0;
+    }
+    cx.putImageData(d, 0, 0);
+    img._prepped = c;
+  } catch (e) {
+    img._prepped = img;
+  }
+  return img._prepped;
+}
+
+// Основные игровые ассеты
 const imgHero = loadImageWithFallbacks('hero.png', ['hero.png', './hero.png', 'assets/hero/hero.png']);
+const horaceFrames = [1,2,3,4,5].map(i => loadImageWithFallbacks(`horace_${String(i).padStart(2,'0')}.png`, [
+  `assets/horace_${String(i).padStart(2,'0')}.png`, `horace_${String(i).padStart(2,'0')}.png`
+]));
 const imgTree = loadImageWithFallbacks('tree.png', ['tree.png', './tree.png', 'assets/tree.png']);
 const imgGrass = loadImageWithFallbacks('grass.png', ['grass.png', './grass.png', 'assets/grass.png']);
 const imgPath = loadImageWithFallbacks('path.png', ['path.png', './path.png', 'assets/path.png']);
 
+// НОВЫЕ АССЕТЫ: Иконки взаимодействия
+const imgIconInspect = loadImageWithFallbacks('icon_inspect.png', ['icon_inspect.png', './icon_inspect.png', 'assets/ui/icon_inspect.png']);
+const imgIconPickup = loadImageWithFallbacks('icon_pickup.png', ['icon_pickup.png', './icon_pickup.png', 'assets/ui/icon_pickup.png']);
+
+/* ============ СПРАЙТЫ ГЕРОЯ ============ */
 const heroAnimations = {};
-const heroFrameCounts = { idle: 3, walk_down: 4, walk_up: 4, walk_left: 4, walk_right: 4, pickup_item: 2, wake_up: 3, stand_up: 2, dead: 2 };
+const heroFrameCounts = { idle: 3, pickup_item_left: 2, pickup_item_right: 2,
+  walk_down: 4, walk_up: 4, walk_left: 4, walk_right: 4,
+  jump: 2, attack: 3, crouch: 2, crouch_left: 2, crouch_right: 2, crouch_up: 2, crouch_down: 2, pickup_item: 2,
+  knocked_out: 2, wake_up: 3, stand_up: 2, dead: 2
+};
+
 let framesOk = 0, framesTotal = 0;
 Object.keys(heroFrameCounts).forEach(name => {
   heroAnimations[name] = [];
   for (let i = 1; i <= heroFrameCounts[name]; i++) {
     framesTotal++;
-    const img = loadImageWithFallbacks(`${name}_${String(i).padStart(2,'0')}.png`, [`assets/hero/${name}_${String(i).padStart(2,'0')}.png`]);
+    const pad = String(i).padStart(2, '0');
+    const img = loadImageWithFallbacks(`${name}_${pad}.png`, [
+      `assets/hero/${name}_${pad}.png`, `./assets/hero/${name}_${pad}.png`,
+      `assets/hero/${name}/${name}_${pad}.png`, `assets/hero/${name}_${pad}.PNG`
+    ]);
     img.addEventListener('load', () => { framesOk++; });
     heroAnimations[name].push(img);
   }
 });
 
+const HERO_W = 96, HERO_H = 126;
+const SIDE_FRAMES_FACE_LEFT = true;
+
 let heroAction = null, heroActionTimer = 0;
 let heroDead = false, heroLying = false, introActive = false;
 
-function heroActionDuration(name) { return ({ jump: 0.65, pickup_item: 0.65, wake_up: 1.4, stand_up: 0.65, dead: 1.2 })[name] || 0.7; }
+function heroActionDuration(name) {
+  return ({ jump: 0.65, attack: 0.42, pickup_item: 0.65, knocked_out: 0.8,
+    wake_up: 1.4, stand_up: 0.65, dead: 1.2, crouch: 0.3 })[name] || 0.7;
+}
 function playHeroAction(name, duration = 0.7) {
   if (heroDead && name !== 'wake_up' && name !== 'stand_up') return;
-  heroAction = name; heroActionTimer = duration;
+  heroAction = name;
+  heroActionTimer = duration;
   if (name === 'dead') heroDead = true;
   if (name === 'wake_up') { heroDead = false; heroLying = false; }
 }
 
+function getIdleFallback() {
+  for (const a of ['stand_up', 'walk_down', 'walk_left', 'walk_right']) {
+    const f = heroAnimations[a] && heroAnimations[a][0];
+    if (f && f._ok && f.complete && f.naturalWidth > 0) return { img: f, front: (a === 'walk_down') };
+  }
+  return null;
+}
+
 function drawSpriteInBox(src, w, h, anchorBottom) {
-  if (!src || !src._ok || !src.complete || !src.naturalWidth) return false;
-  const scale = Math.min(w / src.naturalWidth, h / src.naturalHeight);
-  const dw = src.naturalWidth * scale, dh = src.naturalHeight * scale;
-  ctx.drawImage(src, -dw / 2, anchorBottom ? -dh : -dh / 2, dw, dh);
+  const s = prepSprite(src);
+  if (!s) return false;
+  const sw = s.width || s.naturalWidth;
+  const sh = s.height || s.naturalHeight;
+  if (!sw || !sh) return false;
+  const scale = Math.min(w / sw, h / sh);
+  const dw = sw * scale, dh = sh * scale;
+  ctx.drawImage(s, -dw / 2, anchorBottom ? -dh : -dh / 2, dw, dh);
   return true;
 }
 
@@ -535,321 +689,511 @@ function drawHero(x, y) {
   ctx.translate(Math.round(x), Math.round(y));
   ctx.imageSmoothingEnabled = false;
 
-  let animation = 'idle', frameIndex = 0;
-  if (heroLying) { animation = 'dead'; frameIndex = 0; }
-  else if (heroDead && (!heroAction || heroActionTimer <= 0)) { animation = 'dead'; frameIndex = Math.max(0, (heroAnimations.dead||[]).length - 1); }
-  else if (heroAction && heroActionTimer > 0) {
-    animation = heroAction;
+  let animation, frameIndex = 0;
+
+  if (heroLying) {
+    animation = 'dead'; frameIndex = 0;
+  } else if (heroDead && (!heroAction || heroActionTimer <= 0)) {
+    animation = 'dead';
+    frameIndex = Math.max(0, (heroAnimations.dead || []).length - 1);
+  } else if (heroAction && heroActionTimer > 0) {
+    animation = heroAction === 'pickup_item' ? `pickup_item_${heroFacing}` : heroAction;
     const frames = heroAnimations[animation] || [];
     const dur = heroActionDuration(animation);
-    frameIndex = Math.min(frames.length - 1, Math.floor(((dur - heroActionTimer) / dur) * frames.length));
-  } else if (keys.c && !heroDead) { animation = 'idle'; } // crouch fallback
-  else if (isWalking) { animation = `walk_${heroFacing}`; frameIndex = Math.floor(walkTimer * 1.5) % 4; }
+    const elapsed = Math.max(0, dur - heroActionTimer);
+    frameIndex = Math.min(frames.length - 1, Math.floor((elapsed / dur) * frames.length));
+  } else if (keys.c && !heroDead) {
+    animation = `crouch_${heroFacing}`;
+    frameIndex = Math.floor(Date.now() / 260) % 2;
+  } else if (isWalking) {
+    animation = `walk_${heroFacing}`;
+    frameIndex = Math.floor(walkTimer * 1.5) % 4;
+  } else {
+    animation = 'idle';
+  }
+
+  if (heroAction === 'jump' && heroActionTimer > 0) {
+    const dur = heroActionDuration('jump');
+    const p = 1 - heroActionTimer / dur;
+    ctx.translate(0, -Math.sin(Math.PI * p) * 26);
+  }
+
+  const flip = (dir) => {
+    if (SIDE_FRAMES_FACE_LEFT && dir === 1) ctx.scale(-1, 1);
+    if (!SIDE_FRAMES_FACE_LEFT && dir === -1) ctx.scale(-1, 1);
+  };
 
   if (animation === 'idle') {
+    const idleLoop = [0, 1, 2, 1];
+    const idleIndex = idleLoop[Math.floor(Date.now() / 240) % idleLoop.length];
     const idleFrames = heroAnimations.idle || [];
-    const sprite = idleFrames[Math.floor(Date.now() / 240) % Math.max(1, idleFrames.length)] || idleFrames[0];
-    if (heroDirection === 1) ctx.scale(-1, 1);
-    if (!drawSpriteInBox(sprite, 96, 126, true)) {
-      ctx.fillStyle = '#3a2a2a'; ctx.beginPath(); ctx.arc(0, -14, 14, 0, Math.PI * 2); ctx.fill();
+    const idleSprite = idleFrames[idleIndex] || idleFrames[0];
+    let drew = false;
+    if (idleSprite && idleSprite._ok) {
+      flip(-heroDirection);
+      const breath = Math.sin(Date.now() * 0.0025) * 1.2;
+      ctx.translate(0, breath);
+      drew = drawSpriteInBox(idleSprite, HERO_W, HERO_H, true);
     }
-  } else {
-    const frames = heroAnimations[animation] || [];
-    const sprite = frames[frameIndex] || frames[0];
-    if (['walk_left', 'pickup_item'].includes(animation) || (animation.includes('walk') && heroDirection === 1)) {
-       // Simple flip logic for demonstration
-       if (heroDirection === 1 && animation === 'walk_left') ctx.scale(-1, 1);
-       if (heroDirection === -1 && animation === 'walk_right') ctx.scale(-1, 1);
+    if (!drew) {
+      const fb = getIdleFallback();
+      if (fb) { if (!fb.front) flip(-heroDirection); drew = drawSpriteInBox(fb.img, HERO_W, HERO_H, true); }
     }
-    if (!drawSpriteInBox(sprite, 96, 126, animation !== 'dead')) {
-      ctx.fillStyle = '#3a2a2a'; ctx.beginPath(); ctx.arc(0, -14, 14, 0, Math.PI * 2); ctx.fill();
-    }
+    if (!drew) { ctx.fillStyle = '#3a2a2a'; ctx.beginPath(); ctx.arc(0, -14, 14, 0, Math.PI * 2); ctx.fill(); }
+    ctx.restore();
+    return;
   }
+
+  if (['jump', 'attack', 'pickup_item', 'knocked_out'].includes(animation)) {
+    flip(heroFacing === 'left' ? 1 : -1);
+  }
+
+  const frames = heroAnimations[animation] || [];
+  const sprite = frames[frameIndex] || frames[0];
+
+  let drew = drawSpriteInBox(sprite, HERO_W, HERO_H, animation !== 'dead');
+  if (!drew) {
+    const fb = getIdleFallback();
+    if (fb) drew = drawSpriteInBox(fb.img, HERO_W, HERO_H, true);
+  }
+  if (!drew) { ctx.fillStyle = '#3a2a2a'; ctx.beginPath(); ctx.arc(0, -14, 14, 0, Math.PI * 2); ctx.fill(); }
+
   ctx.restore();
 }
 
-/* ============ ОТРИСОВКА МИРА (Y-СОРТИРОВКА КАК В STARDEW VALLEY) ============ */
+function drawHorace(x, y, patrol = false) {
+  ctx.save();
+  ctx.translate(Math.round(x), Math.round(y));
+  ctx.imageSmoothingEnabled = false;
+  const t = Date.now();
+  const frameIndex = patrol ? (Math.floor(t / 210) % 3) + 2 : [0,1,0,0,1,0][Math.floor(t / 320) % 6];
+  const sprite = horaceFrames[frameIndex] || horaceFrames[0];
+  ctx.shadowColor = 'rgba(35,255,90,0.28)';
+  ctx.shadowBlur = 10 + Math.sin(t * 0.004) * 3;
+  if (sprite && sprite._ok) drawSpriteInBox(sprite, 68, 94, true);
+  ctx.restore();
+}
+
+function drawTreeAsset(tx, ty, scale = 1, seed = 0) {
+  if (imgTree._ok) {
+    const s = prepSprite(imgTree);
+    if (s) {
+      const w = s.width * scale, h = s.height * scale;
+      ctx.save();
+      ctx.translate(tx, ty);
+      ctx.rotate(Math.sin(Date.now() * 0.001 + seed) * 0.01);
+      ctx.drawImage(s, -w / 2, -h, w, h);
+      ctx.restore();
+      return;
+    }
+  }
+  ctx.fillStyle = '#0d120c';
+  ctx.beginPath();
+  ctx.moveTo(tx, ty - 100 * scale);
+  ctx.lineTo(tx + 30 * scale, ty);
+  ctx.lineTo(tx - 30 * scale, ty);
+  ctx.fill();
+}
+
+/* ============ ОТРИСОВКА МИРА ============ */
 function drawWorld() {
-  // Небо
   const skyGrad = ctx.createLinearGradient(0, 0, 0, gameCanvas.height);
-  skyGrad.addColorStop(0, '#04060a'); skyGrad.addColorStop(1, '#1a2028');
+  skyGrad.addColorStop(0, '#04060a'); skyGrad.addColorStop(0.4, '#0a1018');
+  skyGrad.addColorStop(0.7, '#141a22'); skyGrad.addColorStop(1, '#1a2028');
   ctx.fillStyle = skyGrad;
   ctx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
+
+  const starParallax = cameraX * 0.1;
+  stars.forEach(star => {
+    const sx = (star.x - starParallax) % WORLD.outside.width;
+    if (sx < -50 || sx > gameCanvas.width + 50) return;
+    const alpha = star.baseAlpha + Math.sin(Date.now() * 0.001 * star.twinkleSpeed + star.phase) * 0.3;
+    ctx.fillStyle = `rgba(200,210,230,${Math.max(0.1, Math.min(1, alpha))})`;
+    ctx.fillRect(sx, star.y, star.size, star.size);
+  });
 
   ctx.save();
   ctx.translate(-Math.floor(cameraX), -Math.floor(cameraY));
 
-  // Сетка редактора
-  if (isEditorMode) {
-    ctx.strokeStyle = 'rgba(138, 48, 48, 0.3)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    for (let x = 0; x <= WORLD.outside.width; x += 64) { ctx.moveTo(x, 0); ctx.lineTo(x, WORLD.outside.height); }
-    for (let y = 0; y <= WORLD.outside.height; y += 64) { ctx.moveTo(0, y); ctx.lineTo(WORLD.outside.width, y); }
-    ctx.stroke();
-    
-    // Курсор редактора
-    ctx.strokeStyle = '#ff4040';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(worldMouseX - 32, worldMouseY - 32, 64, 64);
-  }
-
   if (currentZone === 'outside') {
-    // Земля
-    ctx.fillStyle = '#1e2e1e';
-    ctx.fillRect(0, WORLD.outside.minY, WORLD.outside.width, WORLD.outside.height);
-
-    // Тропинка
-    ctx.fillStyle = '#2a2a2a';
-    ctx.beginPath();
-    ctx.moveTo(300, 1950); ctx.quadraticCurveTo(1600, 1500, 2900, 1200);
-    ctx.quadraticCurveTo(3400, 1100, 3700, 900); ctx.lineTo(3800, 980);
-    ctx.quadraticCurveTo(3450, 1180, 2950, 1290); ctx.quadraticCurveTo(1650, 1600, 420, 1980);
-    ctx.fill();
-
-    // === Y-СОРТИРОВКА ОБЪЕКТОВ (Stardew Valley Style) ===
-    let renderList = [];
-
-    // 1. Статические деревья
-    for (let i = 0; i < 20; i++) {
-      renderList.push({ type: 'tree', y: 900 + (i * 40), x: 1000 + (i * 150), scale: 0.8, seed: i });
-    }
-
-    // 2. Объекты из редактора
-    state.levelData.forEach((obj, index) => {
-      renderList.push({ type: 'editor', y: obj.y, data: obj, index: index });
-    });
-
-    // 3. Герой
-    renderList.push({ type: 'hero', y: heroY, data: { x: heroX, y: heroY } });
-
-    // 4. КПП и шлагбаум (статические, но участвуют в сортировке)
-    renderList.push({ type: 'booth', y: 850, data: { x: 2900, y: 850 } });
-    renderList.push({ type: 'barrier', y: 820, data: { x: 3100, y: 820 } });
-
-    // Сортировка по Y (чем больше Y, тем ближе к камере, рисуется последним)
-    renderList.sort((a, b) => a.y - b.y);
-
-    // Отрисовка отсортированного списка
-    renderList.forEach(entity => {
-      if (entity.type === 'tree') {
-        ctx.fillStyle = '#0d120c';
-        ctx.beginPath();
-        ctx.moveTo(entity.x, entity.y - 80 * entity.scale);
-        ctx.lineTo(entity.x + 25 * entity.scale, entity.y);
-        ctx.lineTo(entity.x - 25 * entity.scale, entity.y);
-        ctx.fill();
-      } 
-      else if (entity.type === 'editor') {
-        drawEditorAsset(entity.data, entity.index === editorSelectedIdx);
-      }
-      else if (entity.type === 'hero') {
-        drawHero(entity.data.x, entity.data.y);
-      }
-      else if (entity.type === 'booth') {
-        ctx.fillStyle = '#1e1e1e'; ctx.fillRect(entity.data.x, entity.data.y - 150, 150, 150);
-        ctx.fillStyle = '#5a5030'; ctx.fillRect(entity.data.x + 30, entity.data.y - 100, 90, 70);
-      }
-      else if (entity.type === 'barrier') {
-        ctx.fillStyle = '#1e1e1e'; ctx.fillRect(entity.data.x, entity.data.y - 100, 15, 100);
-        ctx.fillStyle = state.flags.barrierOpen ? '#552222' : '#555';
-        for(let i=0; i<8; i++) {
-          if(state.flags.barrierOpen) ctx.fillRect(entity.data.x + 5, entity.data.y - 100 + i*12, 12, 12);
-          else ctx.fillRect(entity.data.x + 15 + i*25, entity.data.y - 20, 25, 12);
+    if (imgGrass._ok && imgGrass.complete && imgGrass.naturalWidth > 0) {
+      const tileSize = 64;
+      const startX = Math.floor(cameraX / tileSize) * tileSize;
+      const startY = Math.floor(cameraY / tileSize) * tileSize;
+      for (let x = startX; x < cameraX + gameCanvas.width + tileSize; x += tileSize) {
+        for (let y = startY; y < cameraY + gameCanvas.height + tileSize; y += tileSize) {
+          if (y > WORLD.outside.minY - 64) {
+            ctx.drawImage(imgGrass, x, y, tileSize, tileSize);
+          }
         }
       }
-    });
+    } else {
+      ctx.fillStyle = '#1e2e1e';
+      ctx.fillRect(0, WORLD.outside.minY, WORLD.outside.width, WORLD.outside.height);
+    }
 
-    // Туман поверх всего
+    if (imgPath._ok && imgPath.complete && imgPath.naturalWidth > 0) {
+      try {
+        const pathPattern = ctx.createPattern(imgPath, 'repeat');
+        ctx.fillStyle = pathPattern;
+        ctx.beginPath();
+        ctx.moveTo(300, 1950);
+        ctx.quadraticCurveTo(1600, 1500, 2900, 1200);
+        ctx.quadraticCurveTo(3400, 1100, 3700, 900);
+        ctx.lineTo(3800, 980);
+        ctx.quadraticCurveTo(3450, 1180, 2950, 1290);
+        ctx.quadraticCurveTo(1650, 1600, 420, 1980);
+        ctx.fill();
+      } catch(e) {
+        ctx.fillStyle = '#2a2a2a';
+        ctx.beginPath();
+        ctx.moveTo(300, 1950);
+        ctx.quadraticCurveTo(1600, 1500, 2900, 1200);
+        ctx.quadraticCurveTo(3400, 1100, 3700, 900);
+        ctx.lineTo(3800, 980);
+        ctx.quadraticCurveTo(3450, 1180, 2950, 1290);
+        ctx.quadraticCurveTo(1650, 1600, 420, 1980);
+        ctx.fill();
+      }
+    } else {
+      ctx.fillStyle = '#2a2a2a';
+      ctx.beginPath();
+      ctx.moveTo(300, 1950);
+      ctx.quadraticCurveTo(1600, 1500, 2900, 1200);
+      ctx.quadraticCurveTo(3400, 1100, 3700, 900);
+      ctx.lineTo(3800, 980);
+      ctx.quadraticCurveTo(3450, 1180, 2950, 1290);
+      ctx.quadraticCurveTo(1650, 1600, 420, 1980);
+      ctx.fill();
+    }
+
+    ctx.fillStyle = '#1e1e1e'; ctx.fillRect(2900, 700, 150, 250);
+    ctx.fillStyle = '#141414'; ctx.fillRect(2880, 680, 190, 20);
+    ctx.fillStyle = '#5a5030'; ctx.fillRect(2930, 750, 90, 70);
+    ctx.fillStyle = '#141414'; ctx.fillRect(2910, 850, 50, 100);
+    ctx.fillStyle = '#444';    ctx.fillRect(2940, 900, 6, 6);
+
+    ctx.fillStyle = '#1e1e1e'; ctx.fillRect(3080, 780, 15, 170);
+    for (let i = 0; i < 8; i++) {
+      ctx.fillStyle = i % 2 === 0 ? '#552222' : '#555';
+      if (state.flags.barrierOpen) ctx.fillRect(3085, 780 - i * 15, 12, 15);
+      else ctx.fillRect(3100 + i * 30, 820, 30, 12);
+    }
+
+    trees.forEach(tree => drawTreeAsset(tree.x, tree.y, tree.scale, tree.seed));
+
     const fog = ctx.createLinearGradient(0, 900, 0, 1600);
     fog.addColorStop(0, 'rgba(60,65,70,0)'); fog.addColorStop(1, 'rgba(60,65,70,0.3)');
     ctx.fillStyle = fog;
     ctx.fillRect(cameraX, 900, gameCanvas.width, 700);
+    
+    drawHero(heroX, heroY);
+  } else {
+    ctx.fillStyle = '#141414'; ctx.fillRect(0, 0, WORLD.inside.width, WORLD.inside.height);
+    ctx.fillStyle = '#1e1e1e'; ctx.fillRect(0, WORLD.inside.minY, WORLD.inside.width, WORLD.inside.height);
+    ctx.fillStyle = '#2a2a2a'; ctx.fillRect(400, 480, 200, 40);
+    ctx.fillStyle = '#141414'; ctx.fillRect(420, 520, 10, 80); ctx.fillRect(570, 520, 10, 80);
+    ctx.save();
+    ctx.translate(500, 520);
+    ctx.fillStyle = '#1e1e1e'; ctx.fillRect(-30, -80, 60, 80);
+    ctx.fillStyle = '#2a2a2a'; ctx.beginPath(); ctx.arc(0, -100, 30, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#141414'; ctx.fillRect(-36, -140, 72, 30);
+    ctx.restore();
+    const lampLight = ctx.createRadialGradient(500, 400, 10, 500, 400, 300);
+    lampLight.addColorStop(0, 'rgba(100,90,60,0.2)'); lampLight.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = lampLight; ctx.fillRect(0, 0, WORLD.inside.width, WORLD.inside.height);
+    ctx.fillStyle = '#141414'; ctx.fillRect(0, 500, 40, 200);
+    drawHorace(500, 610, false);
+    drawHero(heroX, heroY);
   }
 
   ctx.restore();
 
-  // Виньетка
-  const vignette = ctx.createRadialGradient(gameCanvas.width/2, gameCanvas.height/2, 300, gameCanvas.width/2, gameCanvas.height/2, 900);
+  const vignette = ctx.createRadialGradient(
+    gameCanvas.width / 2, gameCanvas.height / 2, 300,
+    gameCanvas.width / 2, gameCanvas.height / 2, 900);
   vignette.addColorStop(0, 'rgba(0,0,0,0)'); vignette.addColorStop(1, 'rgba(0,0,0,0.65)');
   ctx.fillStyle = vignette;
   ctx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
 }
 
-function drawEditorAsset(obj, isSelected) {
-  ctx.save();
-  ctx.translate(obj.x, obj.y);
-  if (isSelected) {
-    ctx.shadowColor = '#ff4040';
-    ctx.shadowBlur = 15;
+/* ============ ИНТРО: ПРОБУЖДЕНИЕ В ЛЕСУ ============ */
+function startWakeUpIntro() {
+  introActive = true;
+  heroLying = true;
+  heroDead = false;
+  heroFacing = 'down';
+  heroAction = null; heroActionTimer = 0;
+
+  say("Ты приходишь в себя. Холодная земля, запах прелых листьев... Голова гудит. Ты не помнишь, как здесь оказался.");
+
+  setTimeout(() => {
+    if (!introActive) return;
+    playHeroAction('wake_up', heroActionDuration('wake_up'));
+  }, 3400);
+
+  setTimeout(() => {
+    if (!introActive) return;
+    introActive = false;
+    heroLying = false;
+    say("Сумрачный лес. Впереди — КПП, единственный островок света. Нужно идти.");
+  }, 5900);
+}
+
+/* ============ ВЗАИМОДЕЙСТВИЕ И ИКОНКИ ============ */
+function dist(ax, ay, bx, by) { return Math.hypot(ax - bx, ay - by); }
+
+function createIcon(wx, wy, type, title, actions) {
+  const sx = wx - cameraX;
+  const sy = wy - cameraY;
+  if (sx < -50 || sx > gameCanvas.width + 50 || sy < -50 || sy > gameCanvas.height + 50) return;
+  
+  const el = document.createElement('div');
+  el.className = 'world-icon';
+  el.style.left = sx + 'px';
+  el.style.top = sy + 'px';
+  
+  // Логика выбора иконки: если картинка загрузилась (_ok === true), используем её, иначе эмодзи
+  let iconHtml = '';
+  if (type === 'pickup' && imgIconPickup._ok) {
+    iconHtml = `<img src="${imgIconPickup.src}" alt="Подобрать">`;
+  } else if (type === 'inspect' && imgIconInspect._ok) {
+    iconHtml = `<img src="${imgIconInspect.src}" alt="Осмотреть">`;
+  } else {
+    iconHtml = type === 'pickup' ? '✋' : '👁️';
   }
   
-  const s = obj.scale || 1;
-  if (obj.type === 'tree') {
-    ctx.fillStyle = '#1a3a1a';
-    ctx.beginPath(); ctx.moveTo(0, -90*s); ctx.lineTo(30*s, 0); ctx.lineTo(-30*s, 0); ctx.fill();
-    ctx.fillStyle = '#3a2a1a'; ctx.fillRect(-8*s, 0, 16*s, 20*s);
-  } else if (obj.type === 'rock') {
-    ctx.fillStyle = '#5a5a5a';
-    ctx.beginPath(); ctx.arc(0, -15*s, 25*s, 0, Math.PI*2); ctx.fill();
-  } else if (obj.type === 'wall') {
-    ctx.fillStyle = '#4a3030'; ctx.fillRect(-40*s, -60*s, 80*s, 60*s);
-    ctx.strokeStyle = '#2a1010'; ctx.lineWidth = 2; ctx.strokeRect(-40*s, -60*s, 80*s, 60*s);
-  } else if (obj.type === 'bush') {
-    ctx.fillStyle = '#2a5a2a';
-    ctx.beginPath(); ctx.arc(0, -15*s, 20*s, 0, Math.PI*2); ctx.fill();
-  } else if (obj.type === 'flower') {
-    ctx.fillStyle = '#6a4a6a'; ctx.beginPath(); ctx.arc(-10*s, -10*s, 8*s, 0, Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#6a6a4a'; ctx.beginPath(); ctx.arc(10*s, -5*s, 8*s, 0, Math.PI*2); ctx.fill();
-  } else if (obj.type === 'lamp') {
-    ctx.fillStyle = '#333'; ctx.fillRect(-4*s, -80*s, 8*s, 80*s);
-    ctx.fillStyle = '#a08040'; ctx.beginPath(); ctx.arc(0, -80*s, 12*s, 0, Math.PI*2); ctx.fill();
-  }
+  el.innerHTML = `<div class="icon-bubble">${iconHtml}</div><div class="icon-label">${title}</div>`;
   
-  ctx.restore();
+  el.addEventListener('pointerdown', (e) => {
+    e.stopPropagation();
+    showActionMenu(title, actions, e.clientX, e.clientY);
+  });
+  
+  document.getElementById('interactionIcons').appendChild(el);
 }
 
-/* ============ РЕДАКТОР: ЛОГИКА ============ */
-function setEditorTool(tool) {
-  editorTool = tool;
-  editorSelectedIdx = -1;
-  document.querySelectorAll('.editor-btn[data-tool]').forEach(b => b.classList.remove('active'));
-  document.querySelector(`.editor-btn[data-tool="${tool}"]`).classList.add('active');
+function showActionMenu(title, actions, cx, cy) {
+  const menu = document.getElementById('actionMenu');
+  menu.style.display = 'flex';
+  
+  menu.style.left = cx + 'px';
+  menu.style.top = (cy - 80) + 'px';
+  
+  document.getElementById('actionMenuTitle').textContent = title;
+  const btns = document.getElementById('actionMenuButtons');
+  btns.innerHTML = '';
+  
+  actions.forEach(act => {
+    const btn = document.createElement('button');
+    btn.className = 'menu-btn';
+    btn.style.width = '160px';
+    btn.style.fontSize = '22px';
+    btn.style.padding = '10px';
+    btn.style.margin = '5px';
+    btn.textContent = act.label;
+    btn.style.pointerEvents = 'auto';
+    
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      act.action();
+      menu.style.display = 'none';
+    });
+    btns.appendChild(btn);
+  });
 }
 
-function setEditorAsset(asset) {
-  editorAsset = asset;
-  editorTool = 'place';
-  setEditorTool('place');
-  document.querySelectorAll('.asset-btn').forEach(b => b.classList.remove('active'));
-  document.querySelector(`.asset-btn[data-asset="${asset}"]`).classList.add('active');
-}
-
-function toggleEditor() {
-  isEditorMode = !isEditorMode;
-  document.getElementById('editorUI').classList.toggle('active', isEditorMode);
-  if (!isEditorMode) {
-    document.getElementById('mainMenu').style.display = 'flex';
-    document.getElementById('game').style.display = 'none';
-  }
-}
-
-function saveLevelData() {
-  state.levelData = state.levelData.map(obj => ({...obj})); // clone
-  save();
-  say("Уровень сохранён в памяти браузера!");
-}
-
-function clearLevelData() {
-  if (confirm("Удалить все объекты с карты?")) {
-    state.levelData = [];
-    editorSelectedIdx = -1;
-    save();
-  }
-}
-
-// Мышь в редакторе
-gameCanvas.addEventListener('mousemove', (e) => {
-  if (!isEditorMode) return;
-  const rect = gameCanvas.getBoundingClientRect();
-  mouseX = e.clientX - rect.left;
-  mouseY = e.clientY - rect.top;
-  worldMouseX = mouseX + cameraX;
-  worldMouseY = mouseY + cameraY;
-
-  if (isDragging && editorSelectedIdx !== -1) {
-    state.levelData[editorSelectedIdx].x = worldMouseX + dragOffsetX;
-    state.levelData[editorSelectedIdx].y = worldMouseY + dragOffsetY;
+document.addEventListener('pointerdown', (e) => {
+  const menu = document.getElementById('actionMenu');
+  if (menu.style.display === 'flex' && !menu.contains(e.target)) {
+    menu.style.display = 'none';
   }
 });
 
-gameCanvas.addEventListener('mousedown', (e) => {
-  if (!isEditorMode || e.button !== 0) return; // Только ЛКМ
+function updateInteractionIcons() {
+  const container = document.getElementById('interactionIcons');
+  container.innerHTML = '';
   
-  // Поиск объекта под курсором (с конца, чтобы брать верхний)
-  let clickedIdx = -1;
-  for (let i = state.levelData.length - 1; i >= 0; i--) {
-    const obj = state.levelData[i];
-    const dist = Math.hypot(worldMouseX - obj.x, worldMouseY - (obj.y - 20)); // примерный центр
-    if (dist < 40 * (obj.scale || 1)) {
-      clickedIdx = i;
-      break;
+  if (currentZone === 'outside') {
+    if (dist(heroX, heroY, 1000, 1200) < 250) {
+      createIcon(1000, 1200, 'inspect', 'Мрачный лес', [
+        { label: 'Осмотреть', action: () => { say("Густой, мрачный лес. Деревья нависают, словно стражи. Воздух спёртый, пахнет прелой листвой."); addQuestProgress('Осмотреться в лесу'); } }
+      ]);
+    }
+    if (dist(heroX, heroY, 2950, 850) < 250) {
+      createIcon(2950, 850, 'inspect', 'КПП', [
+        { label: 'Осмотреть', action: () => say("Маленькая будка с тусклым светом. Внутри виден силуэт дежурного.") },
+        { label: 'Войти', action: enterBooth }
+      ]);
+    }
+    if (dist(heroX, heroY, 3100, 820) < 250) {
+      createIcon(3100, 820, 'inspect', 'Шлагбаум', [
+        { label: 'Осмотреть', action: () => say(state.flags.barrierOpen ? "Шлагбаум поднят. Путь открыт." : "Шлагбаум опущен. Нужен пропуск.") },
+        { label: state.flags.barrierOpen ? 'Пройти' : 'Открыть', action: () => {
+            if (state.flags.barrierOpen) { say("Вы проходите дальше..."); }
+            else if (state.items.includes('keycard') || state.items.includes('note')) {
+              state.flags.barrierOpen = true; save();
+              say("Вы прикладываете пропуск. Шлагбаум со скрипом поднимается.");
+              addQuestProgress('Пройти через шлагбаум');
+            } else {
+              say("Нужен пропуск. Без него шлагбаум не открыть.");
+            }
+          }
+        }
+      ]);
+    }
+    if (!state.items.includes('keycard') && dist(heroX, heroY, 2400, 1000) < 150) {
+      createIcon(2400, 1000, 'pickup', 'Ключ-карта', [
+        { label: 'Осмотреть', action: () => say("Пластиковая карта с выцветшей надписью «КПП». Лежит в грязи.") },
+        { label: 'Подобрать', action: () => {
+            state.items.push('keycard'); save(); renderInventory();
+            playHeroAction('pickup_item', heroActionDuration('pickup_item'));
+            say("Вы подобрали ключ-карту.");
+            addQuestProgress('Найти пропуск');
+          }
+        }
+      ]);
+    }
+    if (!state.items.includes('note') && dist(heroX, heroY, 560, 1850) < 150) {
+      createIcon(560, 1850, 'pickup', 'Записка', [
+        { label: 'Осмотреть', action: () => say("Старая, помятая записка с печатью.") },
+        { label: 'Подобрать', action: () => {
+            state.items.push('note'); save(); renderInventory();
+            playHeroAction('pickup_item', heroActionDuration('pickup_item'));
+            say("Вы подобрали записку.");
+            addQuestProgress('Найти пропуск');
+          }
+        }
+      ]);
+    }
+  } else {
+    if (dist(heroX, heroY, 200, 650) < 150) {
+      createIcon(200, 650, 'inspect', 'Дверь', [
+        { label: 'Выйти', action: exitBooth }
+      ]);
+    }
+    if (dist(heroX, heroY, 500, 610) < 150) {
+      createIcon(500, 610, 'inspect', 'Гораций', [
+        { label: 'Осмотреть', action: () => say("Усталый смотритель в помятой форме.") },
+        { label: 'Говорить', action: () => {
+            if (state.flags.barrierOpen) { say("— Проходи, — бурчит Гораций.", "Гораций"); return; }
+            if (state.items.includes('note') && !state.flags.horaceTalked) {
+              state.flags.horaceTalked = true; save();
+              say("«О, ты нашёл мой пропуск? — Гораций облегчённо выдыхает. — Давай сюда». Он ставит печать. Шлагбаум поднимается.", "Гораций");
+              state.flags.barrierOpen = true; save();
+              addQuestProgress('Поговорить с Горацием');
+              return;
+            }
+            if (state.flags.horaceTalked) { say("— Пропуск нужен. Ищи внизу тропинки.", "Гораций"); return; }
+            state.flags.horaceTalked = true; save();
+            say("«Ещё один. Пропуск есть?» Ты мотаешь головой. «Я свой потерял. Обронил где-то внизу, на тропинке. Найдёшь — подниму шлагбаум».", "Гораций");
+            addQuestProgress('Поговорить с Горацием');
+          }
+        }
+      ]);
     }
   }
+}
 
-  if (editorTool === 'place') {
-    state.levelData.push({ type: editorAsset, x: worldMouseX, y: worldMouseY, scale: 1.0 });
-  } else if (editorTool === 'delete') {
-    if (clickedIdx !== -1) {
-      state.levelData.splice(clickedIdx, 1);
-      editorSelectedIdx = -1;
-    }
-  } else if (editorTool === 'move') {
-    editorSelectedIdx = clickedIdx;
-    if (clickedIdx !== -1) {
-      isDragging = true;
-      dragOffsetX = state.levelData[clickedIdx].x - worldMouseX;
-      dragOffsetY = state.levelData[clickedIdx].y - worldMouseY;
-    }
-  }
+/* ============ ПЕРЕХОДЫ ============ */
+function enterBooth() {
+  const fade = document.getElementById('fadeOverlay');
+  fade.classList.add('active');
+  setTimeout(() => {
+    currentZone = 'inside';
+    heroX = 200; heroY = 650;
+    document.getElementById('locName').innerText = 'Внутри КПП';
+    document.getElementById('locGoal').innerText = 'Поговорить с Горацием';
+    fade.classList.remove('active');
+    say("Внутри будки темно. Единственный свет — от настольной лампы. Гораций сидит за столом.");
+  }, 800);
+}
+function exitBooth() {
+  const fade = document.getElementById('fadeOverlay');
+  fade.classList.add('active');
+  setTimeout(() => {
+    currentZone = 'outside';
+    heroX = 2910; heroY = 980;
+    document.getElementById('locName').innerText = 'Пролог';
+    document.getElementById('locGoal').innerText = 'Сумрачный лес';
+    fade.classList.remove('active');
+  }, 800);
+}
+
+/* ============ ИНВЕНТАРЬ ============ */
+const allItems = {
+  keycard: { icon: '🗝', title: 'Ключ-карта', desc: 'Собственность КПП. Потёртая пластиковая карта с магнитной полосой. На обратной стороне выгравировано: «Не терять».' },
+  note:    { icon: '📜', title: 'Записка', desc: '«Что надеется на прощенье Божье...\nТот должен быть готов отдать всё.»\n\nС обратной стороны: печать Горация и пометка «Пропуск №44». Это и есть пропуск!' }
+};
+
+function renderInventory() {
+  const inv = document.getElementById('inventory');
+  inv.innerHTML = '';
+  state.items.forEach(id => {
+    const item = allItems[id]; if (!item) return;
+    const el = document.createElement('div');
+    el.className = 'item-icon'; el.textContent = item.icon; el.title = 'Нажмите, чтобы прочитать';
+    el.addEventListener('click', () => {
+      document.getElementById('itemModal').style.display = 'flex';
+      document.getElementById('itemModalTitle').textContent = item.title;
+      document.getElementById('itemModalText').textContent = item.desc;
+    });
+    inv.appendChild(el);
+  });
+}
+
+document.getElementById('closeItemModalBtn').addEventListener('click', () => {
+  document.getElementById('itemModal').style.display = 'none';
 });
 
-gameCanvas.addEventListener('mouseup', () => { isDragging = false; });
-
-gameCanvas.addEventListener('wheel', (e) => {
-  if (!isEditorMode || editorSelectedIdx === -1) return;
-  e.preventDefault();
-  const delta = e.deltaY > 0 ? -0.1 : 0.1;
-  state.levelData[editorSelectedIdx].scale = Math.max(0.2, Math.min(3.0, (state.levelData[editorSelectedIdx].scale || 1) + delta));
-}, { passive: false });
-
-/* ============ ИГРОВОЙ ЦИКЛ ============ */
+/* ============ ЦИКЛ ============ */
 function tick(now) {
   const dt = Math.min(0.05, (now - lastTime) / 1000);
   lastTime = now;
 
-  if (!isEditorMode) {
-    let dx = 0, dy = 0;
-    const canMove = !introActive && !heroDead && (!heroAction || heroAction === 'jump');
-    if (canMove) {
-      if (keys.a) { dx -= 1; heroDirection = -1; heroFacing = 'left'; }
-      if (keys.d) { dx += 1; heroDirection = 1;  heroFacing = 'right'; }
-      if (keys.w) { dy -= 1; if (!dx) heroFacing = 'up'; }
-      if (keys.s) { dy += 1; if (!dx) heroFacing = 'down'; }
-    }
-
-    if (heroActionTimer > 0) {
-      heroActionTimer = Math.max(0, heroActionTimer - dt);
-      if (heroActionTimer === 0) {
-        if (heroAction === 'wake_up') playHeroAction('stand_up', heroActionDuration('stand_up'));
-        else heroAction = null;
-      }
-    } else if (!heroDead) { heroAction = null; }
-
-    if (dx !== 0 || dy !== 0) {
-      const length = Math.sqrt(dx * dx + dy * dy);
-      heroX += (dx / length) * heroSpeed * dt;
-      heroY += (dy / length) * heroSpeed * dt;
-      isWalking = true;
-      walkTimer += dt * 12;
-    } else {
-      isWalking = false;
-    }
-
-    const zone = WORLD[currentZone];
-    heroX = Math.max(50, Math.min(zone.width - 50, heroX));
-    heroY = Math.max(zone.minY, Math.min(zone.maxY, heroY));
-
-    const targetCamX = heroX - gameCanvas.width / 2;
-    const targetCamY = heroY - gameCanvas.height / 2;
-    cameraX += (targetCamX - cameraX) * Math.min(1, dt * 5);
-    cameraY += (targetCamY - cameraY) * Math.min(1, dt * 5);
-    cameraX = Math.max(0, Math.min(zone.width - gameCanvas.width, cameraX));
-    cameraY = Math.max(0, Math.min(zone.height - gameCanvas.height + 200, cameraY));
-
-    if (state.hero) { state.hero.x = heroX; state.hero.y = heroY; }
+  let dx = 0, dy = 0;
+  const canMove = !introActive && !heroDead && (!heroAction || heroAction === 'jump');
+  if (canMove) {
+    if (keys.a) { dx -= 1; heroDirection = -1; heroFacing = 'left'; }
+    if (keys.d) { dx += 1; heroDirection = 1;  heroFacing = 'right'; }
+    if (keys.w) { dy -= 1; if (!dx) heroFacing = 'up'; }
+    if (keys.s) { dy += 1; if (!dx) heroFacing = 'down'; }
   }
 
+  if (heroActionTimer > 0) {
+    heroActionTimer = Math.max(0, heroActionTimer - dt);
+    if (heroActionTimer === 0) {
+      if (heroAction === 'wake_up') playHeroAction('stand_up', heroActionDuration('stand_up'));
+      else heroAction = null;
+    }
+  } else if (!heroDead) {
+    heroAction = null;
+  }
+
+  if (dx !== 0 || dy !== 0) {
+    const length = Math.sqrt(dx * dx + dy * dy);
+    heroX += (dx / length) * heroSpeed * dt;
+    heroY += (dy / length) * heroSpeed * dt;
+    isWalking = true;
+    walkTimer += dt * 12;
+  } else {
+    isWalking = false;
+  }
+
+  const zone = WORLD[currentZone];
+  heroX = Math.max(50, Math.min(zone.width - 50, heroX));
+  heroY = Math.max(zone.minY, Math.min(zone.maxY, heroY));
+
+  const targetCamX = heroX - gameCanvas.width / 2;
+  const targetCamY = heroY - gameCanvas.height / 2;
+  cameraX += (targetCamX - cameraX) * Math.min(1, dt * 5);
+  cameraY += (targetCamY - cameraY) * Math.min(1, dt * 5);
+  cameraX = Math.max(0, Math.min(zone.width - gameCanvas.width, cameraX));
+  cameraY = Math.max(0, Math.min(zone.height - gameCanvas.height + 200, cameraY));
+
+  if (state.hero) { state.hero.x = heroX; state.hero.y = heroY; }
+
+  updateInteractionIcons();
   drawWorld();
   requestAnimationFrame(tick);
 }
@@ -868,14 +1212,15 @@ window.addEventListener('keydown', (e) => {
     const ql = document.getElementById('questLog');
     ql.style.display = ql.style.display === 'none' ? 'block' : 'none';
   }
-  
-  if (e.key === 'Escape' && isEditorMode) {
-    toggleEditor();
-  }
 
-  if (isEditorMode || introActive || heroDead) return;
+  if (introActive || heroDead) return;
 
   if (k === ' ' && !e.repeat) { e.preventDefault(); if (!heroAction) playHeroAction('jump', heroActionDuration('jump')); }
+  if (k === 'j' && !e.repeat) playHeroAction('attack', heroActionDuration('attack'));
+  if (k === 'k' && !e.repeat) playHeroAction('knocked_out', heroActionDuration('knocked_out'));
+  if (k === 'u' && !e.repeat) playHeroAction('wake_up', heroActionDuration('wake_up'));
+  if (k === 'i' && !e.repeat) playHeroAction('stand_up', heroActionDuration('stand_up'));
+  if (k === 'r' && !e.repeat) playHeroAction('dead', heroActionDuration('dead'));
 });
 
 window.addEventListener('keyup', (e) => {
@@ -887,41 +1232,47 @@ window.addEventListener('keyup', (e) => {
   if (k === 'c' || k === 'с') keys.c = false;
 });
 
-/* ============ СТАРТ ============ */
-function initGame(editorMode = false) {
+/* ============ СТАРТ ИГРЫ ============ */
+function initGame() {
   load();
   heroX = state.hero?.x ?? 500;
   heroY = state.hero?.y ?? 1000;
-  gameCanvas.width = window.innerWidth;
-  gameCanvas.height = window.innerHeight;
 
-  isEditorMode = editorMode;
-  if (isEditorMode) {
-    document.getElementById('editorUI').classList.add('active');
-    document.getElementById('heroControls').style.display = 'none';
-  } else {
-    document.getElementById('heroControls').style.display = 'block';
-    renderQuests();
-    startWakeUpIntro();
-  }
-  
+  gameCanvas.width = 1280;
+  gameCanvas.height = 720;
+
+  renderQuests();
+  renderInventory();
+  startWakeUpIntro();
   requestAnimationFrame(tick);
+
+  setTimeout(showAssetReport, 2000);
 }
 
-function startWakeUpIntro() {
-  introActive = true; heroLying = true;
-  say("Ты приходишь в себя. Холодная земля, запах прелых листьев...");
-  setTimeout(() => { if (introActive) playHeroAction('wake_up', heroActionDuration('wake_up')); }, 2000);
-  setTimeout(() => {
-    introActive = false; heroLying = false;
-    say("Сумрачный лес. Впереди — КПП. Нужно идти.");
-  }, 4000);
-}
+function showAssetReport() {
+  const missing = assetReport.filter(a => !a.ok);
+  const framesMissing = framesTotal - framesOk;
+  const el = document.getElementById('assetReport');
 
-window.addEventListener('resize', () => {
-  gameCanvas.width = window.innerWidth;
-  gameCanvas.height = window.innerHeight;
-});
+  if (missing.length === 0 && framesMissing === 0) {
+    console.log(`[ASSETS] Всё загружено: кадров ${framesOk}/${framesTotal}`);
+    return;
+  }
+
+  let html = `<b>⚠ Проблемы с ассетами</b>\n`;
+  html += `Загружено кадров героя: <b>${framesOk}/${framesTotal}</b>\n`;
+  if (location.protocol === 'file:') {
+    html += `<b>Внимание:</b> страница открыта через file:// — браузер может блокировать загрузку. Запустите локальный сервер (Live Server в VS Code или python -m http.server).\n`;
+  }
+  html += `URL страницы: ${location.href}\n\n`;
+  if (framesMissing > 0) html += `Не найдено кадров из assets/hero/ (проверьте точное имя папки и файлов, регистр букв!).\n`;
+  missing.forEach(m => {
+    html += `<b>${m.label}</b> — пробовал: ${m.tried.join('  →  ')}\n`;
+  });
+  el.innerHTML = html;
+  el.style.display = 'block';
+}
 </script>
+
 </body>
 </html>
