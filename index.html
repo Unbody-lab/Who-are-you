@@ -14,8 +14,16 @@
     filter: brightness(var(--brightness)); transition: filter 0.3s;
   }
 
-  #mainMenu { position: fixed; inset: 0; z-index: 400; background: #050202;
-    display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  /* ===== ОБНОВЛЁННЫЙ ГЛАВНЫЙ МЕЮ (с поддержкой фона) ===== */
+  #mainMenu { 
+    position: fixed; inset: 0; z-index: 400; 
+    /* Сначала градиент затемнения, потом картинка. Если картинки нет, будет просто градиент и цвет #050202 */
+    background: linear-gradient(rgba(5, 2, 2, 0.75), rgba(5, 2, 2, 0.9)), url('menu_bg.png');
+    background-size: cover;
+    background-position: center;
+    background-color: #050202;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; 
+  }
   #mainMenu h1 { font-size: 64px; color: #8a3030; margin-bottom: 50px; letter-spacing: 4px;
     text-shadow: 0 0 20px rgba(138,48,48,0.5); }
   .menu-btn { background: transparent; border: 2px solid #3a1010; color: #a08080;
@@ -222,14 +230,16 @@
 <script>
 /* ==========================================================================
    ИНСТРУКЦИЯ ПО ДОБАВЛЕНИЮ ВАШИХ КАРТИНОК:
-   1. Для интро (9 картинок): положите в папку с файлом HTML изображения:
-      intro_1.png, intro_2.png, ..., intro_9.png
-      (Поддерживаются также .jpg, но лучше использовать .png для пиксель-арта)
-   2. Для иконок взаимодействия: положите в папку:
-      icon_inspect.png (иконка глаза / осмотра)
-      icon_pickup.png  (иконка руки / подбора)
-   Если файлы не будут найдены, игра автоматически покажет красивые градиенты 
-   и эмодзи (👁️ / ✋) в качестве запасного варианта.
+   Положите эти файлы в ту же папку, где лежит этот HTML-файл 
+   (или в подпапку assets/, код найдёт их автоматически):
+
+   1. menu_bg.png (или .jpg) — Фоновая картинка для ГЛАВНОГО МЕНЮ.
+   2. intro_1.png ... intro_9.png — 9 картинок для ИНТРО-КАТЦЕНЫ.
+   3. icon_inspect.png — Иконка для кнопки "Осмотреть" (глаз, лупа и т.д.).
+   4. icon_pickup.png  — Иконка для кнопки "Подобрать" (рука и т.д.).
+   
+   Если каких-то файлов не будет, игра НЕ сломается: 
+   она покажет красивые градиенты и эмодзи (👁️ / ✋) в качестве замены.
    ========================================================================== */
 
 /* ============ АУДИО И НАСТРОЙКИ ============ */
@@ -469,10 +479,8 @@ function showCutscene() { csIndex = 0; renderCsSlide(); }
 function renderCsSlide() {
   const slide = cutsceneData[csIndex];
   
-  // Устанавливаем фоновый градиент как fallback
   csBg.style.background = slide.bg;
   
-  // Пытаемся установить картинку, если она есть в данных
   if (slide.img) {
     csBg.style.backgroundImage = `url('${slide.img}')`;
     csBg.style.backgroundSize = 'cover';
@@ -610,7 +618,6 @@ function prepSprite(img) {
   return img._prepped;
 }
 
-// Основные игровые ассеты
 const imgHero = loadImageWithFallbacks('hero.png', ['hero.png', './hero.png', 'assets/hero/hero.png']);
 const horaceFrames = [1,2,3,4,5].map(i => loadImageWithFallbacks(`horace_${String(i).padStart(2,'0')}.png`, [
   `assets/horace_${String(i).padStart(2,'0')}.png`, `horace_${String(i).padStart(2,'0')}.png`
@@ -619,7 +626,6 @@ const imgTree = loadImageWithFallbacks('tree.png', ['tree.png', './tree.png', 'a
 const imgGrass = loadImageWithFallbacks('grass.png', ['grass.png', './grass.png', 'assets/grass.png']);
 const imgPath = loadImageWithFallbacks('path.png', ['path.png', './path.png', 'assets/path.png']);
 
-// НОВЫЕ АССЕТЫ: Иконки взаимодействия
 const imgIconInspect = loadImageWithFallbacks('icon_inspect.png', ['icon_inspect.png', './icon_inspect.png', 'assets/ui/icon_inspect.png']);
 const imgIconPickup = loadImageWithFallbacks('icon_pickup.png', ['icon_pickup.png', './icon_pickup.png', 'assets/ui/icon_pickup.png']);
 
@@ -953,7 +959,6 @@ function createIcon(wx, wy, type, title, actions) {
   el.style.left = sx + 'px';
   el.style.top = sy + 'px';
   
-  // Логика выбора иконки: если картинка загрузилась (_ok === true), используем её, иначе эмодзи
   let iconHtml = '';
   if (type === 'pickup' && imgIconPickup._ok) {
     iconHtml = `<img src="${imgIconPickup.src}" alt="Подобрать">`;
