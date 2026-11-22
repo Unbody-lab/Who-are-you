@@ -1230,6 +1230,148 @@ function showAssetReport() {
   el.innerHTML = html;
   el.style.display = 'block';
 }
+ /* ============================================================
+   СЕКРЕТНЫЙ РЕДАКТОР УРОВНЕЙ (Код активации: 2143)
+   ============================================================ */
+let isEditorMode = false;
+let keyBuffer = [];
+const secretCode = ['2', '1', '4', '3'];
+let mouseWorldX = 0;
+let mouseWorldY = 0;
+
+// 1. Отслеживание секретного кода
+window.addEventListener('keydown', (e) => {
+  // Игнорируем модификаторы, чтобы не сбивать буфер
+  if (e.key.length === 1) {
+    keyBuffer.push(e.key);
+    if (keyBuffer.length > secretCode.length) {
+      keyBuffer.shift();
+    }
+    if (keyBuffer.join('') === secretCode.join('')) {
+      isEditorMode = !isEditorMode;
+      keyBuffer = []; // Сброс буфера
+      
+      if (isEditorMode) {
+        console.log('%c[EDITOR] Секретный режим активирован!', 'color: #0f0; font-weight: bold; font-size: 16px;');
+        say("🛠 Секретный редактор активирован. Кликните для создания кода объекта.");
+      } else {
+        console.log('%c[EDITOR] Секретный режим деактивирован.', 'color: #f00; font-weight: bold;');
+        say("Редактор выключен.");
+      }
+    }
+  }
+});
+
+// 2. Отслеживание мыши в мировых координатах
+gameCanvas.addEventListener('mousemove', (e) => {
+  const rect = gameCanvas.getBoundingClientRect();
+  const scaleX = gameCanvas.width / rect.width;
+  const scaleY = gameCanvas.height / rect.height;
+  mouseWorldX = Math.round((e.clientX - rect.left) * scaleX + cameraX);
+  mouseWorldY = Math.round((e.clientY - rect.top) * scaleY + cameraY);
+});
+
+// 3. Клик для генерации кода
+gameCanvas.addEventListener('click', (e) => {
+  if (!isEditorMode) return;
+  
+  // Предотвращаем срабатывание обычных кликов игры в режиме редактора
+  e.stopPropagation(); 
+  
+  const radius = 150; // Стандартный радиус взаимодействия
+  const codeSnippet = `
+    if (dist(heroX, heroY, ${mouseWorldX}, ${mouseWorldY}) < ${radius}) {
+      createIcon(${mouseWorldX}, ${mouseWorldY}, 'inspect', 'Новый объект', [
+        { label: 'Осмотреть', action: () => say("Описание нового объекта.") }
+      ]);
+    }`.trim();
+  
+  navigator.clipboard.writeText(codeSnippet).then(() => {
+    console.log('%c[EDITOR] Код скопирован в буфер обмена!', 'color: #0f0; font-weight: bold;');
+    say(`✅ Код для [X:${mouseWorldX}, Y:${mouseWorldY}] скопирован! Вставьте его в updateInteractionIcons()`);
+  }).catch(() => {
+    console.log('[EDITOR] Не удалось скопировать. Код:\n', codeSnippet);
+  });
+});
+
+// 4. Переопределение функции отрисовки для добавления UI редактора
+const originalDrawWorld = drawWorld;
+drawWorld = function() {
+  originalDrawWorld(); // Сначала рисуем обычный мир
+  
+  if (!isEditorMode) return;
+
+  ctx.save();
+  ctx.translate(-Math.floor(cameraX), -Math.floor(cameraY));
+  
+  // --- А. Рисуем сетку ---
+  ctx.strokeStyle = 'rgba(0, 255, 0, 0.15)';
+  ctx.lineWidth = 1;
+  const gridSize = 100;
+  const startX = Math.floor(cameraX / gridSize) * gridSize;
+  const startY = Math.floor(cameraY / gridSize) * gridSize;
+  
+  for (let x = startX; x < cameraX + gameCanvas.width + gridSize; x += gridSize) {
+    ctx.beginPath(); ctx.moveTo(x, cameraY); ctx.lineTo(x, cameraY + gameCanvas.height); ctx.stroke();
+    ctx.fillStyle = 'rgba(0,255,0,0.4)'; ctx.font = '14px VT323'; ctx.fillText(x, x + 4, cameraY + 16);
+  }
+  for (let y = startY; y < cameraY + gameCanvas.height + gridSize; y += gridSize) {
+    ctx.beginPath(); ctx.moveTo(cameraX, y); ctx.lineTo(cameraX + gameCanvas.width, y); ctx.stroke();
+    ctx.fillStyle = 'rgba(0,255,0,0.4)'; ctx.fillText(y, cameraX + 4, y - 4);
+  }
+
+  // --- Б. Рисуем зоны действия существующих объектов (для справки) ---
+  ctx.strokeStyle = 'rgba(255, 50, 50, 0.6)';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([6, 6]);
+  
+  const debugObjects = [
+    {x: 1000, y: 1200, r: 250, name: 'Лес'},
+    {x: 2950, y: 850, r: 250, name: 'КПП'},
+    {x: 3100, y: 820, r: 250, name: 'Шлагбаум'},
+    {x: 2400, y: 1000, r: 150, name: 'Ключ-карта'},
+    {x: 560, y: 1850, r: 150, name: 'Записка'},
+    {x: 500, y: 610, r: 150, name: 'Гораций (внутри)'}
+  ];
+  
+  debugObjects.forEach(obj => {
+    ctx.beginPath();
+    ctx.arc(obj.x, obj.y, obj.r, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(255, 100, 100, 0.9)';
+    ctx.font = '16px VT323';
+    ctx.fillText(`${obj.name} (r=${obj.r})`, obj.x - 40, obj.y - obj.r - 8);
+  });
+  ctx.setLineDash([]);
+
+  // --- В. Прицел мыши и координаты ---
+  ctx.strokeStyle = '#0f0';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(mouseWorldX - 12, mouseWorldY); ctx.lineTo(mouseWorldX + 12, mouseWorldY);
+  ctx.moveTo(mouseWorldX, mouseWorldY - 12); ctx.lineTo(mouseWorldX, mouseWorldY + 12);
+  ctx.stroke();
+  
+  ctx.fillStyle = '#0f0';
+  ctx.font = 'bold 20px VT323';
+  ctx.fillText(`X: ${mouseWorldX}  Y: ${mouseWorldY}`, mouseWorldX + 18, mouseWorldY - 18);
+
+  // --- Г. Подсветка героя ---
+  ctx.strokeStyle = '#0ff';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(heroX, heroY, 20, 0, Math.PI * 2);
+  ctx.stroke();
+
+  ctx.restore();
+  
+  // --- Д. Верхняя панель редактора ---
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+  ctx.fillRect(0, 0, gameCanvas.width, 40);
+  ctx.fillStyle = '#0f0';
+  ctx.font = 'bold 24px VT323';
+  ctx.fillText('🛠 СЕКРЕТНЫЙ РЕДАКТОР | Кликните для генерации кода | Введите 2143 для выхода', 20, 28);
+};
 </script>
 
 </body>
