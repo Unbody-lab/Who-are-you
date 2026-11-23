@@ -14,6 +14,7 @@
     filter: brightness(var(--brightness)); transition: filter 0.3s;
   }
 
+  /* ===== ГЛАВНОЕ МЕНЮ (с поддержкой фона) ===== */
   #mainMenu { 
     position: fixed; inset: 0; z-index: 400; 
     background: linear-gradient(rgba(5, 2, 2, 0.75), rgba(5, 2, 2, 0.9)), url('menu.jpg');
@@ -99,6 +100,7 @@
     pointer-events: none; transition: opacity 0.8s; z-index: 200; }
   #fadeOverlay.active { opacity: 1; }
 
+  /* ===== НОВЫЕ ЭЛЕМЕНТЫ UI ===== */
   #questLog {
     position: fixed; right: 20px; top: 80px; z-index: 100;
     background: rgba(10,5,5,0.9); border: 2px solid #3a1010; border-radius: 8px;
@@ -116,22 +118,15 @@
   .icon-bubble {
     width: 64px; height: 64px; background: rgba(10, 5, 5, 0.9); border: 3px solid #8a3030;
     border-radius: 50%; display: flex; align-items: center; justify-content: center;
-    font-size: 32px; box-shadow: 0 0 18px rgba(138, 48, 48, 0.9);
+    font-size: 32px; box-shadow: 0 0 15px rgba(138, 48, 48, 0.8);
     animation: bounce 1.5s infinite ease-in-out;
-    transition: all 0.2s;
   }
-  .icon-bubble:hover { 
-    border-color: #ff5050; 
-    box-shadow: 0 0 28px rgba(255, 80, 80, 0.9);
-    transform: scale(1.1);
-  }
-  .icon-bubble img { width: 42px; height: 42px; object-fit: contain; image-rendering: pixelated; }
+  .icon-bubble img { width: 40px; height: 40px; object-fit: contain; image-rendering: pixelated; }
   .icon-label {
-    background: rgba(0,0,0,0.9); color: #c0a060; font-size: 22px; padding: 4px 12px;
-    border-radius: 4px; margin-top: 8px; white-space: nowrap; border: 1px solid #3a1010;
-    font-weight: bold;
+    background: rgba(0,0,0,0.85); color: #c0a060; font-size: 18px; padding: 3px 10px;
+    border-radius: 4px; margin-top: 6px; white-space: nowrap; border: 1px solid #3a1010;
   }
-  @keyframes bounce { 0%, 100% { transform: translate(-50%, -100%) translateY(0); } 50% { transform: translate(-50%, -100%) translateY(-10px); } }
+  @keyframes bounce { 0%, 100% { transform: translate(-50%, -100%) translateY(0); } 50% { transform: translate(-50%, -100%) translateY(-8px); } }
 
   #actionMenu {
     position: fixed; z-index: 1000; background: rgba(10, 5, 5, 0.95);
@@ -139,7 +134,7 @@
     display: none; flex-direction: column; align-items: center;
     box-shadow: 0 0 30px rgba(0,0,0,0.9); pointer-events: auto;
   }
-  #actionMenuTitle { color: #d08080; font-size: 26px; margin-bottom: 12px; border-bottom: 1px solid #3a1010; padding-bottom: 5px; width: 100%; text-align: center; }
+  #actionMenuTitle { color: #d08080; font-size: 24px; margin-bottom: 12px; border-bottom: 1px solid #3a1010; padding-bottom: 5px; width: 100%; text-align: center; }
   #actionMenuButtons { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
 
   #itemModal {
@@ -233,6 +228,21 @@
 <audio id="bgmForest" src="forest_ambient.mp3" loop></audio>
 
 <script>
+/* ==========================================================================
+   ИНСТРУКЦИЯ ПО ДОБАВЛЕНИЮ ВАШИХ КАРТИНОК:
+   Положите эти файлы в ту же папку, где лежит этот HTML-файл 
+   (или в подпапку assets/, код найдёт их автоматически):
+
+   1. menu.jpg (или .png) — Фоновая картинка для ГЛАВНОГО МЕНЮ.
+   2. intro_1.jpg ... intro_9.jpg — 9 картинок для ИНТРО-КАТЦЕНЫ.
+   3. icon_inspect.png (или .jpg) — Иконка для кнопки "Осмотреть".
+   4. icon_pickup.png (или .jpg)  — Иконка для кнопки "Подобрать".
+   
+   Если каких-то файлов не будет, игра НЕ сломается: 
+   она покажет красивые градиенты и крупные эмодзи (👁️ / ✋) в качестве замены.
+   ========================================================================== */
+
+/* ============ АУДИО И НАСТРОЙКИ ============ */
 const audioIntro = document.getElementById('bgmIntro');
 const audioForest = document.getElementById('bgmForest');
 audioIntro.volume = 0.6; audioForest.volume = 0.4;
@@ -254,6 +264,7 @@ slider.addEventListener('input', (e) => {
   document.documentElement.style.setProperty('--brightness', e.target.value);
 });
 
+/* ============ НАВИГАЦИЯ МЕНЮ ============ */
 document.getElementById('btnPlay').addEventListener('click', () => {
   document.getElementById('mainMenu').style.display = 'none';
   document.getElementById('chapterSelect').style.display = 'flex';
@@ -276,6 +287,7 @@ function hideSettings() {
   document.getElementById('mainMenu').style.display = 'flex';
 }
 
+/* ============ СПИСОК ГЛАВ ============ */
 const chaptersData = [
   { title: 'Пролог', locked: false, locations: [
     { title: 'Сумрачный лес', desc: 'Вы очутились в странном лесу, вы ничего не помните из прошлой жизни, ни имени, ни кем вы были, всё что вам остаётся это идти вперёд в надежде, что впереди что-то есть...', available: true, img: 'Prologue_Forest.jpg' },
@@ -383,6 +395,7 @@ function renderChapters() {
   });
 }
 
+/* ============ СОСТОЯНИЕ И ЗАДАНИЯ ============ */
 const state = { seen: {}, items: [], flags: {}, cutsceneDone: false, hero: { x: 500, y: 1000 } };
 const SAVE_KEY = 'kto_ty_pixel_dante_v6';
 function save() { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }
@@ -418,6 +431,7 @@ function renderQuests() {
   });
 }
 
+/* ============ ТЕКСТ ============ */
 let typeTimer = null, hidePanelTimer = null;
 function say(text, speaker) {
   const panel = document.getElementById('textPanel');
@@ -443,6 +457,7 @@ function typeInto(el, text, speed = 40, cb) {
   }, speed);
 }
 
+/* ============ КАТСЦЕНА (9 СЛАЙДОВ) ============ */
 const cutsceneData = [
   { img: 'intro_1.jpg', bg: 'radial-gradient(circle at 50% 40%, #1a1010 0%, #000 70%)', text: 'Ты не помнишь своего имени. Никто здесь его не помнит. Имени больше нет — есть только «ты».' },
   { img: 'intro_2.jpg', bg: 'radial-gradient(circle at 50% 30%, #2a1010 0%, #000 70%)', text: 'Ты жил. Как все: дышал, забывал, обещал. Кому-то — важное. Кому-то — пустое.' },
@@ -490,6 +505,7 @@ csNext.addEventListener('click', (e) => {
   }
 });
 
+/* ============ ИГРА / CANVAS ============ */
 const gameCanvas = document.getElementById('gameCanvas');
 const ctx = gameCanvas.getContext('2d');
 
@@ -509,6 +525,7 @@ let cameraX = 0, cameraY = 0;
 let lastTime = performance.now();
 const keys = { w: false, a: false, s: false, d: false, c: false };
 
+/* ============ ЗВЁЗДЫ ============ */
 const stars = [];
 function initStars() {
   stars.length = 0;
@@ -525,6 +542,7 @@ function initStars() {
 }
 initStars();
 
+/* ============ ДЕРЕВЬЯ ============ */
 const trees = [];
 function initTrees() {
   trees.length = 0;
@@ -548,6 +566,9 @@ function initTrees() {
 }
 initTrees();
 
+/* ============================================================
+   ЗАГРУЗКА АССЕТОВ
+   ============================================================ */
 const assetReport = [];
 function logAsset(label, ok, tried, used) {
   assetReport.push({ label, ok, tried, used });
@@ -608,6 +629,7 @@ const imgPath = loadImageWithFallbacks('path.png', ['path.png', './path.png', 'a
 const imgIconInspect = loadImageWithFallbacks('icon_inspect.png', ['icon_inspect.png', './icon_inspect.png', 'assets/ui/icon_inspect.png']);
 const imgIconPickup = loadImageWithFallbacks('icon_pickup.png', ['icon_pickup.png', './icon_pickup.png', 'assets/ui/icon_pickup.png']);
 
+/* ============ СПРАЙТЫ ГЕРОЯ ============ */
 const heroAnimations = {};
 const heroFrameCounts = { idle: 3, pickup_item_left: 2, pickup_item_right: 2,
   walk_down: 4, walk_up: 4, walk_left: 4, walk_right: 4,
@@ -779,6 +801,7 @@ function drawTreeAsset(tx, ty, scale = 1, seed = 0) {
   ctx.fill();
 }
 
+/* ============ ОТРИСОВКА МИРА ============ */
 function drawWorld() {
   const skyGrad = ctx.createLinearGradient(0, 0, 0, gameCanvas.height);
   skyGrad.addColorStop(0, '#04060a'); skyGrad.addColorStop(0.4, '#0a1018');
@@ -900,6 +923,7 @@ function drawWorld() {
   ctx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
 }
 
+/* ============ ИНТРО: ПРОБУЖДЕНИЕ В ЛЕСУ ============ */
 function startWakeUpIntro() {
   introActive = true;
   heroLying = true;
@@ -922,6 +946,7 @@ function startWakeUpIntro() {
   }, 5900);
 }
 
+/* ============ ВЗАИМОДЕЙСТВИЕ И ИКОНКИ ============ */
 function dist(ax, ay, bx, by) { return Math.hypot(ax - bx, ay - by); }
 
 function createIcon(wx, wy, type, title, actions) {
@@ -1075,6 +1100,7 @@ function updateInteractionIcons() {
   }
 }
 
+/* ============ ПЕРЕХОДЫ ============ */
 function enterBooth() {
   const fade = document.getElementById('fadeOverlay');
   fade.classList.add('active');
@@ -1099,6 +1125,7 @@ function exitBooth() {
   }, 800);
 }
 
+/* ============ ИНВЕНТАРЬ ============ */
 const allItems = {
   keycard: { icon: '🗝', title: 'Ключ-карта', desc: 'Собственность КПП. Потёртая пластиковая карта с магнитной полосой. На обратной стороне выгравировано: «Не терять».' },
   note:    { icon: '📜', title: 'Записка', desc: '«Что надеется на прощенье Божье...\nТот должен быть готов отдать всё.»\n\nС обратной стороны: печать Горация и пометка «Пропуск №44». Это и есть пропуск!' }
@@ -1124,6 +1151,7 @@ document.getElementById('closeItemModalBtn').addEventListener('click', () => {
   document.getElementById('itemModal').style.display = 'none';
 });
 
+/* ============ ЦИКЛ ============ */
 function tick(now) {
   const dt = Math.min(0.05, (now - lastTime) / 1000);
   lastTime = now;
@@ -1175,6 +1203,7 @@ function tick(now) {
   requestAnimationFrame(tick);
 }
 
+/* ============ ВВОД ============ */
 window.addEventListener('keydown', (e) => {
   const k = e.key.toLowerCase();
   if (k === 'w' || k === 'ц') keys.w = true;
@@ -1208,6 +1237,7 @@ window.addEventListener('keyup', (e) => {
   if (k === 'c' || k === 'с') keys.c = false;
 });
 
+/* ============ СТАРТ ИГРЫ ============ */
 function initGame() {
   load();
   heroX = state.hero?.x ?? 500;
