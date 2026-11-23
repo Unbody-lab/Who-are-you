@@ -237,6 +237,8 @@
    2. intro_1.jpg ... intro_9.jpg — 9 картинок для ИНТРО-КАТЦЕНЫ.
    3. icon_inspect.png (или .jpg) — Иконка для кнопки "Осмотреть".
    4. icon_pickup.png (или .jpg)  — Иконка для кнопки "Подобрать".
+   5. grass.png — тайл травы (укладывается с перекрытием, швов не будет).
+   6. path.png  — тайл земли тропинки (накладывается лентой).
    
    Если каких-то файлов не будет, игра НЕ сломается: 
    она покажет красивые градиенты и крупные эмодзи (👁️ / ✋) в качестве замены.
@@ -623,6 +625,8 @@ const horaceFrames = [1,2,3,4,5].map(i => loadImageWithFallbacks(`horace_${Strin
   `assets/horace_${String(i).padStart(2,'0')}.png`, `horace_${String(i).padStart(2,'0')}.png`
 ]));
 const imgTree = loadImageWithFallbacks('tree.png', ['tree.png', './tree.png', 'assets/tree.png']);
+// ВАЖНО: grass и path НЕ проходят через prepSprite (иначе вырезаются светлые
+// края тайлов и появляются щели-сетка на полу). Рисуем их напрямую.
 const imgGrass = loadImageWithFallbacks('grass.png', ['grass.png', './grass.png', 'assets/grass.png']);
 const imgPath = loadImageWithFallbacks('path.png', ['path.png', './path.png', 'assets/path.png']);
 
@@ -652,7 +656,8 @@ Object.keys(heroFrameCounts).forEach(name => {
   }
 });
 
-const HERO_W = 96, HERO_H = 126;
+/* ===== РАЗМЕР ГЕРОЯ (УМЕНЬШЕН) ===== */
+const HERO_W = 64, HERO_H = 84;
 const SIDE_FRAMES_FACE_LEFT = true;
 
 let heroAction = null, heroActionTimer = 0;
@@ -721,7 +726,7 @@ function drawHero(x, y) {
   if (heroAction === 'jump' && heroActionTimer > 0) {
     const dur = heroActionDuration('jump');
     const p = 1 - heroActionTimer / dur;
-    ctx.translate(0, -Math.sin(Math.PI * p) * 26);
+    ctx.translate(0, -Math.sin(Math.PI * p) * 18);
   }
 
   const flip = (dir) => {
@@ -737,7 +742,7 @@ function drawHero(x, y) {
     let drew = false;
     if (idleSprite && idleSprite._ok) {
       flip(-heroDirection);
-      const breath = Math.sin(Date.now() * 0.0025) * 1.2;
+      const breath = Math.sin(Date.now() * 0.0025) * 1.0;
       ctx.translate(0, breath);
       drew = drawSpriteInBox(idleSprite, HERO_W, HERO_H, true);
     }
@@ -745,7 +750,7 @@ function drawHero(x, y) {
       const fb = getIdleFallback();
       if (fb) { if (!fb.front) flip(-heroDirection); drew = drawSpriteInBox(fb.img, HERO_W, HERO_H, true); }
     }
-    if (!drew) { ctx.fillStyle = '#3a2a2a'; ctx.beginPath(); ctx.arc(0, -14, 14, 0, Math.PI * 2); ctx.fill(); }
+    if (!drew) { ctx.fillStyle = '#3a2a2a'; ctx.beginPath(); ctx.arc(0, -10, 10, 0, Math.PI * 2); ctx.fill(); }
     ctx.restore();
     return;
   }
@@ -762,7 +767,7 @@ function drawHero(x, y) {
     const fb = getIdleFallback();
     if (fb) drew = drawSpriteInBox(fb.img, HERO_W, HERO_H, true);
   }
-  if (!drew) { ctx.fillStyle = '#3a2a2a'; ctx.beginPath(); ctx.arc(0, -14, 14, 0, Math.PI * 2); ctx.fill(); }
+  if (!drew) { ctx.fillStyle = '#3a2a2a'; ctx.beginPath(); ctx.arc(0, -10, 10, 0, Math.PI * 2); ctx.fill(); }
 
   ctx.restore();
 }
@@ -776,7 +781,7 @@ function drawHorace(x, y, patrol = false) {
   const sprite = horaceFrames[frameIndex] || horaceFrames[0];
   ctx.shadowColor = 'rgba(35,255,90,0.28)';
   ctx.shadowBlur = 10 + Math.sin(t * 0.004) * 3;
-  if (sprite && sprite._ok) drawSpriteInBox(sprite, 68, 94, true);
+  if (sprite && sprite._ok) drawSpriteInBox(sprite, 56, 78, true);
   ctx.restore();
 }
 
@@ -801,6 +806,99 @@ function drawTreeAsset(tx, ty, scale = 1, seed = 0) {
   ctx.fill();
 }
 
+/* ============ ТРАВЯНОЙ ПОЛ + ТРОПИНОЧНАЯ ЛЕНТА ============ */
+// Детерминированный псевдослучайный шум по координатам (чтобы крап не мерцал)
+function noise2(x, y) {
+  let n = Math.sin(x * 127.1 + y * 311.7) * 43758.5453;
+  return n - Math.floor(n);
+}
+
+function drawGrassFloor() {
+  const TILE = 64, OVERLAP = 10;      // шаг меньше тайла → соседние перекрывают швы
+  const step = TILE - OVERLAP;
+  const baseY = WORLD.outside.minY - TILE;
+
+  // 1) Сплошная база пола — цвет травы. Даже если тайлы кончатся/будут щели —
+  //    под ними уже "единый пол", а не чёрный canvas.
+  ctx.fillStyle = '#1b2a1e';
+  ctx.fillRect(cameraX - step, baseY, gameCanvas.width + step * 2, gameCanvas.height + TILE);
+
+  // 2) Тайлы травы поверх базы, с перекрытием.
+  if (imgGrass._ok && imgGrass.complete && imgGrass.naturalWidth > 0) {
+    const startX = Math.floor((cameraX - TILE) / step) * step;
+    const startY = Math.floor(baseY / step) * step;
+    for (let x = startX; x < cameraX + gameCanvas.width + TILE; x += step) {
+      for (let y = startY; y < cameraY + gameCanvas.height + TILE; y += step) {
+        // рисуем напрямую (без prepSprite) — никаких прозрачных вырезанных краёв
+        ctx.drawImage(imgGrass, x, y, TILE, TILE);
+      }
+    }
+  } else {
+    // Fallback без спрайта: сплошной цвет + мягкий процедурный крап-текстура
+    const startX = Math.floor((cameraX - TILE) / TILE) * TILE;
+    const startY = Math.floor(baseY / TILE) * TILE;
+    for (let x = startX; x < cameraX + gameCanvas.width + TILE; x += TILE) {
+      for (let y = startY; y < cameraY + gameCanvas.height + TILE; y += TILE) {
+        const h = noise2(x * 0.01, y * 0.01);
+        ctx.fillStyle = h < 0.33 ? '#18261b' : (h < 0.66 ? '#1e2f21' : '#16241a');
+        ctx.fillRect(x, y, TILE, TILE);
+        // редкие "травинки"
+        if (noise2(x * 0.7, y * 0.3) > 0.82) {
+          ctx.fillStyle = 'rgba(70,110,70,0.25)';
+          ctx.fillRect(x + 20, y + 30, 2, 8);
+          ctx.fillRect(x + 42, y + 14, 2, 7);
+        }
+      }
+    }
+  }
+}
+
+// Центральная ось тропинки (по ней рисуется лента stroke'ом)
+function trailPath() {
+  ctx.beginPath();
+  ctx.moveTo(360, 1915);
+  ctx.quadraticCurveTo(1625, 1550, 2925, 1245);
+  ctx.quadraticCurveTo(3425, 1140, 3750, 935);
+}
+
+function drawTrail() {
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  // 1) Тёмный ободок-граница: "выделяет место" тропинки на траве
+  trailPath();
+  ctx.strokeStyle = '#120c07';
+  ctx.lineWidth = 208;
+  ctx.stroke();
+
+  // 2) Сама земля
+  trailPath();
+  let pattern = null;
+  if (imgPath._ok && imgPath.complete && imgPath.naturalWidth > 0) {
+    try { pattern = ctx.createPattern(imgPath, 'repeat'); } catch (e) { pattern = null; }
+  }
+  ctx.strokeStyle = pattern || '#4a3a26';
+  ctx.lineWidth = 184;
+  ctx.stroke();
+
+  // 3) Лёгкая светлая "протоптанная" середина + крап для пиксельной текстуры
+  trailPath();
+  ctx.strokeStyle = pattern ? 'rgba(120,95,60,0.18)' : '#55442c';
+  ctx.lineWidth = 120;
+  ctx.stroke();
+
+  if (!pattern) {
+    // процедурный крап только в зоне тропинки (грубая проверка по x)
+    for (let i = 0; i < 260; i++) {
+      const t = noise2(i * 0.13, 7.7);
+      const px = 360 + t * 3390;
+      const py = 1915 - t * 980 + (noise2(i * 0.31, 2.2) - 0.5) * 150;
+      ctx.fillStyle = noise2(i, i) > 0.5 ? 'rgba(30,22,12,0.5)' : 'rgba(110,88,55,0.35)';
+      ctx.fillRect(px, py, 3, 3);
+    }
+  }
+}
+
 /* ============ ОТРИСОВКА МИРА ============ */
 function drawWorld() {
   const skyGrad = ctx.createLinearGradient(0, 0, 0, gameCanvas.height);
@@ -822,56 +920,9 @@ function drawWorld() {
   ctx.translate(-Math.floor(cameraX), -Math.floor(cameraY));
 
   if (currentZone === 'outside') {
-    if (imgGrass._ok && imgGrass.complete && imgGrass.naturalWidth > 0) {
-      const tileSize = 64;
-      const startX = Math.floor(cameraX / tileSize) * tileSize;
-      const startY = Math.floor(cameraY / tileSize) * tileSize;
-      for (let x = startX; x < cameraX + gameCanvas.width + tileSize; x += tileSize) {
-        for (let y = startY; y < cameraY + gameCanvas.height + tileSize; y += tileSize) {
-          if (y > WORLD.outside.minY - 64) {
-            ctx.drawImage(imgGrass, x, y, tileSize, tileSize);
-          }
-        }
-      }
-    } else {
-      ctx.fillStyle = '#1e2e1e';
-      ctx.fillRect(0, WORLD.outside.minY, WORLD.outside.width, WORLD.outside.height);
-    }
-
-    if (imgPath._ok && imgPath.complete && imgPath.naturalWidth > 0) {
-      try {
-        const pathPattern = ctx.createPattern(imgPath, 'repeat');
-        ctx.fillStyle = pathPattern;
-        ctx.beginPath();
-        ctx.moveTo(300, 1950);
-        ctx.quadraticCurveTo(1600, 1500, 2900, 1200);
-        ctx.quadraticCurveTo(3400, 1100, 3700, 900);
-        ctx.lineTo(3800, 980);
-        ctx.quadraticCurveTo(3450, 1180, 2950, 1290);
-        ctx.quadraticCurveTo(1650, 1600, 420, 1980);
-        ctx.fill();
-      } catch(e) {
-        ctx.fillStyle = '#2a2a2a';
-        ctx.beginPath();
-        ctx.moveTo(300, 1950);
-        ctx.quadraticCurveTo(1600, 1500, 2900, 1200);
-        ctx.quadraticCurveTo(3400, 1100, 3700, 900);
-        ctx.lineTo(3800, 980);
-        ctx.quadraticCurveTo(3450, 1180, 2950, 1290);
-        ctx.quadraticCurveTo(1650, 1600, 420, 1980);
-        ctx.fill();
-      }
-    } else {
-      ctx.fillStyle = '#2a2a2a';
-      ctx.beginPath();
-      ctx.moveTo(300, 1950);
-      ctx.quadraticCurveTo(1600, 1500, 2900, 1200);
-      ctx.quadraticCurveTo(3400, 1100, 3700, 900);
-      ctx.lineTo(3800, 980);
-      ctx.quadraticCurveTo(3450, 1180, 2950, 1290);
-      ctx.quadraticCurveTo(1650, 1600, 420, 1980);
-      ctx.fill();
-    }
+    // Единый травяной пол → поверх него выделенная лента тропинки
+    drawGrassFloor();
+    drawTrail();
 
     ctx.fillStyle = '#1e1e1e'; ctx.fillRect(2900, 700, 150, 250);
     ctx.fillStyle = '#141414'; ctx.fillRect(2880, 680, 190, 20);
@@ -884,6 +935,18 @@ function drawWorld() {
       ctx.fillStyle = i % 2 === 0 ? '#552222' : '#555';
       if (state.flags.barrierOpen) ctx.fillRect(3085, 780 - i * 15, 12, 15);
       else ctx.fillRect(3100 + i * 30, 820, 30, 12);
+    }
+
+    // Предметы на земле (мелкие пиксельные метки)
+    if (!state.items.includes('keycard')) {
+      ctx.fillStyle = '#4a7a5a'; ctx.fillRect(2400, 1000, 20, 12);
+      ctx.shadowColor = '#4a7a5a'; ctx.shadowBlur = 10;
+      ctx.strokeRect(2400, 1000, 20, 12); ctx.shadowBlur = 0;
+    }
+    if (!state.items.includes('note')) {
+      ctx.fillStyle = '#c0c8c4'; ctx.fillRect(560, 1850, 15, 20);
+      ctx.shadowColor = '#c0c8c4'; ctx.shadowBlur = 10;
+      ctx.strokeRect(560, 1850, 15, 20); ctx.shadowBlur = 0;
     }
 
     trees.forEach(tree => drawTreeAsset(tree.x, tree.y, tree.scale, tree.seed));
