@@ -826,24 +826,26 @@ function noise2(x, y) {
 }
 
 function drawGrassFloor() {
-  const TILE = 64, STEP = 56;   // перекрытие 8px: швы физически закрыты
-  const baseY = WORLD.outside.minY - TILE;
+  const STEP = 56, DRAW = 84;   // рисуем 84px при шаге 56px → соседи перекрывают края текстуры
+  const baseY = WORLD.outside.minY - DRAW;
+  ctx.imageSmoothingEnabled = false; // чёткие пиксели
 
   // Сплошная база — «единый пол», ничего не просвечивает
   ctx.fillStyle = '#1b2a1e';
-  ctx.fillRect(cameraX - STEP, baseY, gameCanvas.width + STEP * 2, gameCanvas.height + TILE);
+  ctx.fillRect(cameraX - STEP, baseY, gameCanvas.width + STEP * 2, gameCanvas.height + DRAW);
 
   const tile = makeCleanTile(imgGrass);
   if (tile) {
-    const startX = Math.floor((cameraX - TILE) / STEP) * STEP;
+    const startX = Math.floor((cameraX - DRAW) / STEP) * STEP;
     const startY = Math.floor(baseY / STEP) * STEP;
-    for (let x = startX; x < cameraX + gameCanvas.width + TILE; x += STEP) {
-      for (let y = startY; y < cameraY + gameCanvas.height + TILE; y += STEP) {
-        ctx.drawImage(tile, x, y, TILE, TILE);
+    for (let x = startX; x < cameraX + gameCanvas.width + DRAW; x += STEP) {
+      for (let y = startY; y < cameraY + gameCanvas.height + DRAW; y += STEP) {
+        ctx.drawImage(tile, x, y, DRAW, DRAW);
       }
     }
   } else {
-    // Fallback: процедурный бесшовный крап
+    // Fallback: процедурный бесшовный крап (если grass.png ещё не добавлен)
+    const TILE = 64;
     const startX = Math.floor((cameraX - TILE) / TILE) * TILE;
     const startY = Math.floor(baseY / TILE) * TILE;
     for (let x = startX; x < cameraX + gameCanvas.width + TILE; x += TILE) {
@@ -860,7 +862,6 @@ function drawGrassFloor() {
     }
   }
 }
-
 /* ============ ТРОПИНКА (ВЫДЕЛЕННАЯ ЛЕНТА) ============ */
 function trailPath() {
   ctx.beginPath();
