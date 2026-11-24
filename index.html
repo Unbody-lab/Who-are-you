@@ -826,38 +826,31 @@ function noise2(x, y) {
 }
 
 function drawGrassFloor() {
-  const STEP = 56, DRAW = 84;   // рисуем 84px при шаге 56px → соседи перекрывают края текстуры
-  const baseY = WORLD.outside.minY - DRAW;
-  ctx.imageSmoothingEnabled = false; // чёткие пиксели
-
-  // Сплошная база — «единый пол», ничего не просвечивает
+  const baseY = WORLD.outside.minY;
+  
+  // 1. Сплошная база (на случай если картинка не загрузится)
   ctx.fillStyle = '#1b2a1e';
-  ctx.fillRect(cameraX - STEP, baseY, gameCanvas.width + STEP * 2, gameCanvas.height + DRAW);
+  ctx.fillRect(cameraX - 100, baseY, gameCanvas.width + 200, gameCanvas.height);
 
-  const tile = makeCleanTile(imgGrass);
-  if (tile) {
-    const startX = Math.floor((cameraX - DRAW) / STEP) * STEP;
-    const startY = Math.floor(baseY / STEP) * STEP;
-    for (let x = startX; x < cameraX + gameCanvas.width + DRAW; x += STEP) {
-      for (let y = startY; y < cameraY + gameCanvas.height + DRAW; y += STEP) {
-        ctx.drawImage(tile, x, y, DRAW, DRAW);
-      }
-    }
+  // 2. Рисуем ОДНУ большую текстуру пола
+  if (imgGrass._ok && imgGrass.complete && imgGrass.naturalWidth > 0) {
+    ctx.imageSmoothingEnabled = false; // Сохраняем пиксельный стиль при масштабировании
+    
+    // Растягиваем текстуру на всю ширину мира и нужную высоту
+    // Можно настроить размеры под вашу картинку, например 2048x1024
+    ctx.drawImage(
+      imgGrass, 
+      0, baseY, 
+      WORLD.outside.width, WORLD.outside.height - baseY
+    );
   } else {
-    // Fallback: процедурный бесшовный крап (если grass.png ещё не добавлен)
+    // Fallback: процедурный шум, если картинки нет
     const TILE = 64;
-    const startX = Math.floor((cameraX - TILE) / TILE) * TILE;
-    const startY = Math.floor(baseY / TILE) * TILE;
-    for (let x = startX; x < cameraX + gameCanvas.width + TILE; x += TILE) {
-      for (let y = startY; y < cameraY + gameCanvas.height + TILE; y += TILE) {
+    for (let x = Math.floor(cameraX / TILE) * TILE; x < cameraX + gameCanvas.width + TILE; x += TILE) {
+      for (let y = baseY; y < cameraY + gameCanvas.height + TILE; y += TILE) {
         const h = noise2(x * 0.01, y * 0.01);
-        ctx.fillStyle = h < 0.33 ? '#18261b' : (h < 0.66 ? '#1e2f21' : '#16241a');
+        ctx.fillStyle = h < 0.5 ? '#18261b' : '#1e2f21';
         ctx.fillRect(x, y, TILE, TILE);
-        if (noise2(x * 0.7, y * 0.3) > 0.82) {
-          ctx.fillStyle = 'rgba(70,110,70,0.25)';
-          ctx.fillRect(x + 20, y + 30, 2, 8);
-          ctx.fillRect(x + 42, y + 14, 2, 7);
-        }
       }
     }
   }
