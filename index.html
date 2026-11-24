@@ -14,13 +14,10 @@
     filter: brightness(var(--brightness)); transition: filter 0.3s;
   }
 
-  /* ===== ГЛАВНОЕ МЕНЮ (с поддержкой фона) ===== */
   #mainMenu { 
     position: fixed; inset: 0; z-index: 400; 
     background: linear-gradient(rgba(5, 2, 2, 0.75), rgba(5, 2, 2, 0.9)), url('menu.jpg');
-    background-size: cover;
-    background-position: center;
-    background-color: #050202;
+    background-size: cover; background-position: center; background-color: #050202;
     display: flex; flex-direction: column; align-items: center; justify-content: center; 
   }
   #mainMenu h1 { font-size: 64px; color: #8a3030; margin-bottom: 50px; letter-spacing: 4px;
@@ -65,7 +62,7 @@
     background-size: cover; background-position: center; background: #0a0a0a; }
   #csText { position: absolute; bottom: 0; left: 0; right: 0; min-height: 200px;
     background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.95) 40%);
-    padding: 50px 80px; font-size: 32px; line-height: 1.4; color: #a0a0a0;
+    padding: 50px 80px; font-size: 32px; line-height: 1.4; color: #a08080;
     display: flex; align-items: flex-end; z-index: 2; }
   #csText span { max-width: 900px; }
   #csNext { position: absolute; bottom: 30px; right: 60px; color: #5a2020; font-size: 24px;
@@ -100,7 +97,6 @@
     pointer-events: none; transition: opacity 0.8s; z-index: 200; }
   #fadeOverlay.active { opacity: 1; }
 
-  /* ===== НОВЫЕ ЭЛЕМЕНТЫ UI ===== */
   #questLog {
     position: fixed; right: 20px; top: 80px; z-index: 100;
     background: rgba(10,5,5,0.9); border: 2px solid #3a1010; border-radius: 8px;
@@ -114,7 +110,6 @@
     position: absolute; transform: translate(-50%, -100%); cursor: pointer;
     display: flex; flex-direction: column; align-items: center; pointer-events: auto;
   }
-  /* ===== УВЕЛИЧЕННЫЕ ИКОНКИ ===== */
   .icon-bubble {
     width: 64px; height: 64px; background: rgba(10, 5, 5, 0.9); border: 3px solid #8a3030;
     border-radius: 50%; display: flex; align-items: center; justify-content: center;
@@ -228,22 +223,6 @@
 <audio id="bgmForest" src="forest_ambient.mp3" loop></audio>
 
 <script>
-/* ==========================================================================
-   ИНСТРУКЦИЯ ПО ДОБАВЛЕНИЮ ВАШИХ КАРТИНОК:
-   Положите эти файлы в ту же папку, где лежит этот HTML-файл 
-   (или в подпапку assets/, код найдёт их автоматически):
-
-   1. menu.jpg (или .png) — Фоновая картинка для ГЛАВНОГО МЕНЮ.
-   2. intro_1.jpg ... intro_9.jpg — 9 картинок для ИНТРО-КАТЦЕНЫ.
-   3. icon_inspect.png (или .jpg) — Иконка для кнопки "Осмотреть".
-   4. icon_pickup.png (или .jpg)  — Иконка для кнопки "Подобрать".
-   5. grass.png — тайл травы (укладывается с перекрытием, швов не будет).
-   6. path.png  — тайл земли тропинки (накладывается лентой).
-   
-   Если каких-то файлов не будет, игра НЕ сломается: 
-   она покажет красивые градиенты и крупные эмодзи (👁️ / ✋) в качестве замены.
-   ========================================================================== */
-
 /* ============ АУДИО И НАСТРОЙКИ ============ */
 const audioIntro = document.getElementById('bgmIntro');
 const audioForest = document.getElementById('bgmForest');
@@ -399,7 +378,7 @@ function renderChapters() {
 
 /* ============ СОСТОЯНИЕ И ЗАДАНИЯ ============ */
 const state = { seen: {}, items: [], flags: {}, cutsceneDone: false, hero: { x: 500, y: 1000 } };
-const SAVE_KEY = 'kto_ty_pixel_dante_v6';
+const SAVE_KEY = 'kto_ty_pixel_dante_v7';
 function save() { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }
 function load() {
   const raw = localStorage.getItem(SAVE_KEY);
@@ -480,9 +459,7 @@ const csNext = document.getElementById('csNext');
 function showCutscene() { csIndex = 0; renderCsSlide(); }
 function renderCsSlide() {
   const slide = cutsceneData[csIndex];
-  
   csBg.style.background = slide.bg;
-  
   if (slide.img) {
     csBg.style.backgroundImage = `url('${slide.img}')`;
     csBg.style.backgroundSize = 'cover';
@@ -490,7 +467,6 @@ function renderCsSlide() {
   } else {
     csBg.style.backgroundImage = 'none';
   }
-  
   csNext.style.display = 'none';
   typeInto(csTextContent, slide.text, 40, () => { csNext.style.display = 'block'; });
 }
@@ -620,13 +596,51 @@ function prepSprite(img) {
   return img._prepped;
 }
 
+/* ============================================================
+   АВТО-ОБРЕЗКА РАМКИ ТАЙЛА (лечит «сетку из блоков»)
+   На многих тайлах по краям встроена тёмная/прозрачная рамка.
+   Мы находим границу непрозрачных пикселей, срезаем её +3% запаса,
+   и укладываем чистую текстуру с перекрытием — швов не видно.
+   ============================================================ */
+function makeCleanTile(img) {
+  if (!img || !img._ok || !img.complete || !img.naturalWidth) return null;
+  if (img._clean !== undefined) return img._clean;
+  const iw = img.naturalWidth, ih = img.naturalHeight;
+  let bx = 0, by = 0, bw = iw, bh = ih;
+  try {
+    const c = document.createElement('canvas'); c.width = iw; c.height = ih;
+    const cx = c.getContext('2d'); cx.drawImage(img, 0, 0);
+    const d = cx.getImageData(0, 0, iw, ih).data;
+    let minX = iw, minY = ih, maxX = -1, maxY = -1;
+    for (let y = 0; y < ih; y++) {
+      for (let x = 0; x < iw; x++) {
+        if (d[(y * iw + x) * 4 + 3] > 16) {
+          if (x < minX) minX = x; if (x > maxX) maxX = x;
+          if (y < minY) minY = y; if (y > maxY) maxY = y;
+        }
+      }
+    }
+    if (maxX >= 0) { bx = minX; by = minY; bw = maxX - minX + 1; bh = maxY - minY + 1; }
+  } catch (e) {
+    // file:// блокирует getImageData — срезаем фиксированные 12% по краям
+    const m = Math.round(Math.min(iw, ih) * 0.12);
+    bx = m; by = m; bw = iw - 2 * m; bh = ih - 2 * m;
+  }
+  // дополнительный запас, чтобы срезать тонкие тёмные обводки
+  const shave = Math.max(1, Math.round(Math.min(bw, bh) * 0.03));
+  bx += shave; by += shave; bw -= 2 * shave; bh -= 2 * shave;
+  if (bw < 4 || bh < 4) { img._clean = null; return null; }
+  const out = document.createElement('canvas'); out.width = bw; out.height = bh;
+  out.getContext('2d').drawImage(img, bx, by, bw, bh, 0, 0, bw, bh);
+  img._clean = out;
+  return out;
+}
+
 const imgHero = loadImageWithFallbacks('hero.png', ['hero.png', './hero.png', 'assets/hero/hero.png']);
 const horaceFrames = [1,2,3,4,5].map(i => loadImageWithFallbacks(`horace_${String(i).padStart(2,'0')}.png`, [
   `assets/horace_${String(i).padStart(2,'0')}.png`, `horace_${String(i).padStart(2,'0')}.png`
 ]));
 const imgTree = loadImageWithFallbacks('tree.png', ['tree.png', './tree.png', 'assets/tree.png']);
-// ВАЖНО: grass и path НЕ проходят через prepSprite (иначе вырезаются светлые
-// края тайлов и появляются щели-сетка на полу). Рисуем их напрямую.
 const imgGrass = loadImageWithFallbacks('grass.png', ['grass.png', './grass.png', 'assets/grass.png']);
 const imgPath = loadImageWithFallbacks('path.png', ['path.png', './path.png', 'assets/path.png']);
 
@@ -656,7 +670,6 @@ Object.keys(heroFrameCounts).forEach(name => {
   }
 });
 
-/* ===== РАЗМЕР ГЕРОЯ (УМЕНЬШЕН) ===== */
 const HERO_W = 64, HERO_H = 84;
 const SIDE_FRAMES_FACE_LEFT = true;
 
@@ -806,35 +819,31 @@ function drawTreeAsset(tx, ty, scale = 1, seed = 0) {
   ctx.fill();
 }
 
-/* ============ ТРАВЯНОЙ ПОЛ + ТРОПИНОЧНАЯ ЛЕНТА ============ */
-// Детерминированный псевдослучайный шум по координатам (чтобы крап не мерцал)
+/* ============ ТРАВЯНОЙ ПОЛ (БЕЗ СЕТКИ) ============ */
 function noise2(x, y) {
   let n = Math.sin(x * 127.1 + y * 311.7) * 43758.5453;
   return n - Math.floor(n);
 }
 
 function drawGrassFloor() {
-  const TILE = 64, OVERLAP = 10;      // шаг меньше тайла → соседние перекрывают швы
-  const step = TILE - OVERLAP;
+  const TILE = 64, STEP = 56;   // перекрытие 8px: швы физически закрыты
   const baseY = WORLD.outside.minY - TILE;
 
-  // 1) Сплошная база пола — цвет травы. Даже если тайлы кончатся/будут щели —
-  //    под ними уже "единый пол", а не чёрный canvas.
+  // Сплошная база — «единый пол», ничего не просвечивает
   ctx.fillStyle = '#1b2a1e';
-  ctx.fillRect(cameraX - step, baseY, gameCanvas.width + step * 2, gameCanvas.height + TILE);
+  ctx.fillRect(cameraX - STEP, baseY, gameCanvas.width + STEP * 2, gameCanvas.height + TILE);
 
-  // 2) Тайлы травы поверх базы, с перекрытием.
-  if (imgGrass._ok && imgGrass.complete && imgGrass.naturalWidth > 0) {
-    const startX = Math.floor((cameraX - TILE) / step) * step;
-    const startY = Math.floor(baseY / step) * step;
-    for (let x = startX; x < cameraX + gameCanvas.width + TILE; x += step) {
-      for (let y = startY; y < cameraY + gameCanvas.height + TILE; y += step) {
-        // рисуем напрямую (без prepSprite) — никаких прозрачных вырезанных краёв
-        ctx.drawImage(imgGrass, x, y, TILE, TILE);
+  const tile = makeCleanTile(imgGrass);
+  if (tile) {
+    const startX = Math.floor((cameraX - TILE) / STEP) * STEP;
+    const startY = Math.floor(baseY / STEP) * STEP;
+    for (let x = startX; x < cameraX + gameCanvas.width + TILE; x += STEP) {
+      for (let y = startY; y < cameraY + gameCanvas.height + TILE; y += STEP) {
+        ctx.drawImage(tile, x, y, TILE, TILE);
       }
     }
   } else {
-    // Fallback без спрайта: сплошной цвет + мягкий процедурный крап-текстура
+    // Fallback: процедурный бесшовный крап
     const startX = Math.floor((cameraX - TILE) / TILE) * TILE;
     const startY = Math.floor(baseY / TILE) * TILE;
     for (let x = startX; x < cameraX + gameCanvas.width + TILE; x += TILE) {
@@ -842,7 +851,6 @@ function drawGrassFloor() {
         const h = noise2(x * 0.01, y * 0.01);
         ctx.fillStyle = h < 0.33 ? '#18261b' : (h < 0.66 ? '#1e2f21' : '#16241a');
         ctx.fillRect(x, y, TILE, TILE);
-        // редкие "травинки"
         if (noise2(x * 0.7, y * 0.3) > 0.82) {
           ctx.fillStyle = 'rgba(70,110,70,0.25)';
           ctx.fillRect(x + 20, y + 30, 2, 8);
@@ -853,7 +861,7 @@ function drawGrassFloor() {
   }
 }
 
-// Центральная ось тропинки (по ней рисуется лента stroke'ом)
+/* ============ ТРОПИНКА (ВЫДЕЛЕННАЯ ЛЕНТА) ============ */
 function trailPath() {
   ctx.beginPath();
   ctx.moveTo(360, 1915);
@@ -865,30 +873,30 @@ function drawTrail() {
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
 
-  // 1) Тёмный ободок-граница: "выделяет место" тропинки на траве
+  // Тёмная граница — выделяет место тропы на траве
   trailPath();
   ctx.strokeStyle = '#120c07';
   ctx.lineWidth = 208;
   ctx.stroke();
 
-  // 2) Сама земля
+  // Земля: паттерн из ОБРЕЗАННОГО тайла path (без рамок)
   trailPath();
   let pattern = null;
-  if (imgPath._ok && imgPath.complete && imgPath.naturalWidth > 0) {
-    try { pattern = ctx.createPattern(imgPath, 'repeat'); } catch (e) { pattern = null; }
+  const cleanPath = makeCleanTile(imgPath);
+  if (cleanPath) {
+    try { pattern = ctx.createPattern(cleanPath, 'repeat'); } catch (e) { pattern = null; }
   }
   ctx.strokeStyle = pattern || '#4a3a26';
   ctx.lineWidth = 184;
   ctx.stroke();
 
-  // 3) Лёгкая светлая "протоптанная" середина + крап для пиксельной текстуры
+  // Протоптанная середина
   trailPath();
   ctx.strokeStyle = pattern ? 'rgba(120,95,60,0.18)' : '#55442c';
   ctx.lineWidth = 120;
   ctx.stroke();
 
   if (!pattern) {
-    // процедурный крап только в зоне тропинки (грубая проверка по x)
     for (let i = 0; i < 260; i++) {
       const t = noise2(i * 0.13, 7.7);
       const px = 360 + t * 3390;
@@ -920,7 +928,6 @@ function drawWorld() {
   ctx.translate(-Math.floor(cameraX), -Math.floor(cameraY));
 
   if (currentZone === 'outside') {
-    // Единый травяной пол → поверх него выделенная лента тропинки
     drawGrassFloor();
     drawTrail();
 
@@ -937,7 +944,6 @@ function drawWorld() {
       else ctx.fillRect(3100 + i * 30, 820, 30, 12);
     }
 
-    // Предметы на земле (мелкие пиксельные метки)
     if (!state.items.includes('keycard')) {
       ctx.fillStyle = '#4a7a5a'; ctx.fillRect(2400, 1000, 20, 12);
       ctx.shadowColor = '#4a7a5a'; ctx.shadowBlur = 10;
@@ -1044,7 +1050,6 @@ function createIcon(wx, wy, type, title, actions) {
 function showActionMenu(title, actions, cx, cy) {
   const menu = document.getElementById('actionMenu');
   menu.style.display = 'flex';
-  
   menu.style.left = cx + 'px';
   menu.style.top = (cy - 80) + 'px';
   
