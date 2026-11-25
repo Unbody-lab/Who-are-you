@@ -26,8 +26,6 @@
     padding: 15px 40px; font-size: 32px; font-family: 'VT323', monospace;
     cursor: pointer; margin: 10px; width: 300px; transition: all 0.2s; }
   .menu-btn:hover { background: #3a1010; color: #fff; box-shadow: 0 0 15px #8a3030; }
-  .menu-btn.small { width: auto; padding: 8px 16px; font-size: 22px; margin: 4px; }
-  .menu-btn.active { background: #3a1010; color: #fff; }
 
   #chapterSelect { position: fixed; inset: 0; z-index: 350; background: #050202;
     display: none; flex-direction: column; align-items: center; padding: 40px; overflow-y: auto; }
@@ -147,7 +145,6 @@
   }
   #assetReport b { color: #ff8080; }
 
-  /* ===== РЕДАКТОР КАРТ ===== */
   #mapEditor {
     position: fixed; inset: 0; z-index: 450; background: #0a0a0a;
     display: none; flex-direction: column;
@@ -272,7 +269,6 @@
   <div id="fadeOverlay"></div>
 </div>
 
-<!-- РЕДАКТОР КАРТ -->
 <div id="mapEditor">
   <div id="editorToolbar">
     <h3>🗺 Редактор карты</h3>
@@ -295,7 +291,7 @@
     <div id="objList"></div>
   </div>
   <div id="editorCoords">X: 0, Y: 0</div>
-  <div id="editorHelp">WASD/Стрелки — камера · ЛКМ — действие · Колёсико — масштаб · Shift+ЛКМ — быстрое удаление</div>
+  <div id="editorHelp">WASD/Стрелки — камера · ЛКМ — действие · Колёсико — масштаб · ПКМ/Shift+ЛКМ — удалить</div>
 </div>
 
 <audio id="bgmIntro" src="intro.mp3" loop></audio>
@@ -365,17 +361,61 @@ function hideSettings() {
   document.getElementById('mainMenu').style.display = 'flex';
 }
 
-/* ============ СПИСОК ГЛАВ ============ */
+/* ============ СПИСОК ГЛАВ (ПОЛНЫЙ) ============ */
 const chaptersData = [
   { title: 'Пролог', locked: false, locations: [
-    { title: 'Сумрачный лес', desc: 'Вы очутились в странном лесу...', available: true, img: 'Prologue_Forest.jpg' },
+    { title: 'Сумрачный лес', desc: 'Вы очутились в странном лесу, вы ничего не помните из прошлой жизни, ни имени, ни кем вы были, всё что вам остаётся это идти вперёд в надежде, что впереди что-то есть...', available: true, img: 'Prologue_Forest.jpg' },
     { title: '???', desc: 'В разработке', available: false, img: null }
   ]},
   { title: '1 Круг · Лимб', locked: true, locations: [
+    { title: '???', desc: 'В разработке', available: false, img: null },
+    { title: '???', desc: 'В разработке', available: false, img: null },
+    { title: '???', desc: 'В разработке', available: false, img: null },
+    { title: '???', desc: 'В разработке', available: false, img: null }
+  ]},
+  { title: '2 Круг · Похоть', locked: true, locations: [
+    { title: '???', desc: 'В разработке', available: false, img: null },
+    { title: '???', desc: 'В разработке', available: false, img: null },
+    { title: '???', desc: 'В разработке', available: false, img: null },
+    { title: '???', desc: 'В разработке', available: false, img: null }
+  ]},
+  { title: '3 Круг · Чревоугодие', locked: true, locations: [
+    { title: '???', desc: 'В разработке', available: false, img: null },
+    { title: '???', desc: 'В разработке', available: false, img: null },
+    { title: '???', desc: 'В разработке', available: false, img: null }
+  ]},
+  { title: '4 Круг · Жадность', locked: true, locations: [
+    { title: '???', desc: 'В разработке', available: false, img: null },
+    { title: '???', desc: 'В разработке', available: false, img: null },
+    { title: '???', desc: 'В разработке', available: false, img: null },
+    { title: '???', desc: 'В разработке', available: false, img: null }
+  ]},
+  { title: '5 Круг · Гнев', locked: true, locations: [
+    { title: '???', desc: 'В разработке', available: false, img: null },
+    { title: '???', desc: 'В разработке', available: false, img: null },
+    { title: '???', desc: 'В разработке', available: false, img: null }
+  ]},
+  { title: '6 Круг · Ересь', locked: true, locations: [
+    { title: '???', desc: 'В разработке', available: false, img: null },
+    { title: '???', desc: 'В разработке', available: false, img: null },
+    { title: '???', desc: 'В разработке', available: false, img: null }
+  ]},
+  { title: '7 Круг · Насилие', locked: true, locations: [
+    { title: '???', desc: 'В разработке', available: false, img: null },
+    { title: '???', desc: 'В разработке', available: false, img: null },
+    { title: '???', desc: 'В разработке', available: false, img: null }
+  ]},
+  { title: '8 Круг · Обман', locked: true, locations: [
+    { title: '???', desc: 'В разработке', available: false, img: null },
+    { title: '???', desc: 'В разработке', available: false, img: null },
     { title: '???', desc: 'В разработке', available: false, img: null }
   ]},
   { title: '9 Круг · Предательство', locked: true, locations: [
-    { title: '???', desc: 'Замороженное озеро.', available: false, img: null }
+    { title: '???', desc: 'Замороженное озеро.', available: false, img: null },
+    { title: '???', desc: 'В разработке', available: false, img: null },
+    { title: '???', desc: 'В разработке', available: false, img: null },
+    { title: '???', desc: 'В разработке', available: false, img: null },
+    { title: '???', desc: 'В разработке', available: false, img: null }
   ]}
 ];
 
@@ -431,7 +471,7 @@ function renderChapters() {
 
 /* ============ СОСТОЯНИЕ И ЗАДАНИЯ ============ */
 const state = { seen: {}, items: [], flags: {}, cutsceneDone: false, hero: { x: 500, y: 1000 } };
-const SAVE_KEY = 'kto_ty_pixel_dante_v7';
+const SAVE_KEY = 'kto_ty_pixel_dante_v8';
 const MAP_SAVE_KEY = 'kto_ty_custom_map_v1';
 function save() { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }
 function load() {
@@ -492,9 +532,16 @@ function typeInto(el, text, speed = 40, cb) {
   }, speed);
 }
 
-/* ============ КАТСЦЕНА ============ */
+/* ============ КАТСЦЕНА (9 СЛАЙДОВ) ============ */
 const cutsceneData = [
-  { img: 'intro_1.jpg', bg: 'radial-gradient(circle at 50% 40%, #1a1010 0%, #000 70%)', text: 'Ты не помнишь своего имени.' },
+  { img: 'intro_1.jpg', bg: 'radial-gradient(circle at 50% 40%, #1a1010 0%, #000 70%)', text: 'Ты не помнишь своего имени. Никто здесь его не помнит. Имени больше нет — есть только «ты».' },
+  { img: 'intro_2.jpg', bg: 'radial-gradient(circle at 50% 30%, #2a1010 0%, #000 70%)', text: 'Ты жил. Как все: дышал, забывал, обещал. Кому-то — важное. Кому-то — пустое.' },
+  { img: 'intro_3.jpg', bg: 'radial-gradient(circle at 50% 50%, #3a0505 0%, #000 70%)', text: 'А потом — тишина. Не тьма, не свет. Просто тишина, в которой ты перестал быть.' },
+  { img: 'intro_4.jpg', bg: 'radial-gradient(circle at 50% 60%, #2a0505 0%, #000 70%)', text: 'И вот ты здесь. Внизу. Там, где начинается всё, что ты откладывал.' },
+  { img: 'intro_5.jpg', bg: 'radial-gradient(circle at 50% 50%, #1a0a0a 0%, #000 70%)', text: 'Холод пробирает до костей. Земля пахнет прелой листвой и старой кровью.' },
+  { img: 'intro_6.jpg', bg: 'radial-gradient(circle at 50% 40%, #0f1a0f 0%, #000 70%)', text: 'Ветви деревьев сплетаются, как пальцы мёртвых, закрывая небо.' },
+  { img: 'intro_7.jpg', bg: 'radial-gradient(circle at 50% 50%, #1a1510 0%, #000 70%)', text: 'Вдали виднеется тусклый свет. Единственный ориентир в этой глуши.' },
+  { img: 'intro_8.jpg', bg: 'radial-gradient(circle at 50% 60%, #2a1515 0%, #000 70%)', text: 'Контрольно-пропускной пункт. Последний рубеж перед тем, что ждёт дальше.' },
   { img: 'intro_9.jpg', bg: 'radial-gradient(circle at 50% 50%, #0a0a0a 0%, #000 70%)', text: 'Сумрачный лес. КПП. Начало.' }
 ];
 
@@ -510,6 +557,7 @@ function renderCsSlide() {
   if (slide.img) {
     csBg.style.backgroundImage = `url('${slide.img}')`;
     csBg.style.backgroundSize = 'cover';
+    csBg.style.backgroundPosition = 'center';
   } else {
     csBg.style.backgroundImage = 'none';
   }
@@ -801,7 +849,8 @@ function drawWorld() {
     ctx.fillStyle = '#1b2a1e';
     ctx.fillRect(0, WORLD.outside.minY, WORLD.outside.width, WORLD.outside.height);
 
-    if (imgGrass._ok && imgGrass.complete) {
+    if (imgGrass._ok && imgGrass.complete && imgGrass.naturalWidth > 0) {
+      ctx.imageSmoothingEnabled = false;
       ctx.drawImage(imgGrass, 0, WORLD.outside.minY, WORLD.outside.width, WORLD.outside.height - WORLD.outside.minY);
     }
 
@@ -819,14 +868,11 @@ function drawWorld() {
 
     trees.forEach(tree => drawTreeAsset(tree.x, tree.y, tree.scale, tree.seed));
 
-    // Рисуем кастомные объекты из редактора
     customMapObjects.forEach(obj => {
       if (obj.type === 'tree') drawTreeAsset(obj.x, obj.y, obj.scale || 0.6, obj.seed || 0);
-      else if (obj.type === 'keycard') {
-        ctx.fillStyle = '#4a7a5a'; ctx.fillRect(obj.x-10, obj.y-6, 20, 12);
-      } else if (obj.type === 'note') {
-        ctx.fillStyle = '#c0c8c4'; ctx.fillRect(obj.x-7, obj.y-10, 15, 20);
-      } else if (obj.type === 'horace') {
+      else if (obj.type === 'keycard') { ctx.fillStyle = '#4a7a5a'; ctx.fillRect(obj.x-10, obj.y-6, 20, 12); }
+      else if (obj.type === 'note') { ctx.fillStyle = '#c0c8c4'; ctx.fillRect(obj.x-7, obj.y-10, 15, 20); }
+      else if (obj.type === 'horace') {
         ctx.fillStyle = '#2a4a2a'; ctx.fillRect(obj.x-20, obj.y-60, 40, 60);
         ctx.fillStyle = '#3a6a3a'; ctx.beginPath(); ctx.arc(obj.x, obj.y-70, 15, 0, Math.PI*2); ctx.fill();
       } else if (obj.type === 'booth') {
@@ -835,9 +881,6 @@ function drawWorld() {
       } else if (obj.type === 'barrier') {
         ctx.fillStyle = '#1e1e1e'; ctx.fillRect(obj.x-7, obj.y-85, 15, 85);
         ctx.fillStyle = '#552222'; ctx.fillRect(obj.x, obj.y-80, 120, 12);
-      } else if (obj.type === 'player_spawn') {
-        ctx.fillStyle = 'rgba(138,48,48,0.3)'; ctx.beginPath(); ctx.arc(obj.x, obj.y, 30, 0, Math.PI*2); ctx.fill();
-        ctx.strokeStyle = '#8a3030'; ctx.lineWidth = 2; ctx.stroke();
       }
     });
 
@@ -875,7 +918,7 @@ const EDITABLE_ASSETS = [
 ];
 
 let customMapObjects = [];
-let editorMode = 'place'; // place, move, delete
+let editorMode = 'place';
 let selectedAsset = 'tree';
 let editorCamera = { x: 0, y: 0 };
 let editorScale = 1;
@@ -968,7 +1011,6 @@ function loadCustomMap() {
 }
 
 function applyCustomMapToGame() {
-  // Применяем кастомные объекты к текущей сессии
   trees.length = 0;
   customMapObjects.forEach(obj => {
     if (obj.type === 'tree') {
@@ -976,10 +1018,6 @@ function applyCustomMapToGame() {
     } else if (obj.type === 'player_spawn') {
       heroX = obj.x;
       heroY = obj.y;
-    } else if (obj.type === 'keycard') {
-      if (!state.items.includes('keycard')) {
-        // Позиция ключ-карты будет использована при рендере
-      }
     }
   });
   trees.sort((a, b) => a.y - b.y);
@@ -1015,17 +1053,7 @@ function renderObjList() {
 }
 
 function editorScreenToWorld(sx, sy) {
-  return {
-    x: (sx / editorScale) + editorCamera.x,
-    y: (sy / editorScale) + editorCamera.y
-  };
-}
-
-function editorWorldToScreen(wx, wy) {
-  return {
-    x: (wx - editorCamera.x) * editorScale,
-    y: (wy - editorCamera.y) * editorScale
-  };
+  return { x: (sx / editorScale) + editorCamera.x, y: (sy / editorScale) + editorCamera.y };
 }
 
 editorCanvas.addEventListener('mousedown', (e) => {
@@ -1035,7 +1063,6 @@ editorCanvas.addEventListener('mousedown', (e) => {
   const world = editorScreenToWorld(sx, sy);
 
   if (e.shiftKey || editorMode === 'delete') {
-    // Удаление
     for (let i = customMapObjects.length - 1; i >= 0; i--) {
       const obj = customMapObjects[i];
       const asset = EDITABLE_ASSETS.find(a => a.type === obj.type);
@@ -1099,9 +1126,7 @@ editorCanvas.addEventListener('mousemove', (e) => {
   }
 });
 
-editorCanvas.addEventListener('mouseup', () => {
-  editorDragging = null;
-});
+editorCanvas.addEventListener('mouseup', () => { editorDragging = null; });
 
 editorCanvas.addEventListener('wheel', (e) => {
   e.preventDefault();
@@ -1145,7 +1170,6 @@ function editorTick() {
   editorCtx.scale(editorScale, editorScale);
   editorCtx.translate(-editorCamera.x, -editorCamera.y);
 
-  // Сетка
   editorCtx.strokeStyle = 'rgba(58, 16, 16, 0.3)';
   editorCtx.lineWidth = 1 / editorScale;
   const gridSize = 100;
@@ -1164,60 +1188,37 @@ function editorTick() {
     editorCtx.stroke();
   }
 
-  // Границы мира
   editorCtx.strokeStyle = '#8a3030';
   editorCtx.lineWidth = 3 / editorScale;
   editorCtx.strokeRect(0, WORLD.outside.minY, WORLD.outside.width, WORLD.outside.height - WORLD.outside.minY);
 
-  // Трава (база)
   editorCtx.fillStyle = '#1b2a1e';
   editorCtx.fillRect(0, WORLD.outside.minY, WORLD.outside.width, WORLD.outside.height - WORLD.outside.minY);
 
-  // Объекты
   customMapObjects.forEach((obj, idx) => {
     const asset = EDITABLE_ASSETS.find(a => a.type === obj.type);
     const isSelected = editorSelectedObj === idx;
 
-    if (obj.type === 'tree') {
-      drawTreeAsset(obj.x, obj.y, obj.scale || 0.6, obj.seed || 0);
-    } else if (obj.type === 'keycard') {
-      editorCtx.fillStyle = '#4a7a5a';
-      editorCtx.fillRect(obj.x - 10, obj.y - 6, 20, 12);
-    } else if (obj.type === 'note') {
-      editorCtx.fillStyle = '#c0c8c4';
-      editorCtx.fillRect(obj.x - 7, obj.y - 10, 15, 20);
-    } else if (obj.type === 'horace') {
-      editorCtx.fillStyle = '#2a4a2a';
-      editorCtx.fillRect(obj.x - 20, obj.y - 60, 40, 60);
-      editorCtx.fillStyle = '#3a6a3a';
-      editorCtx.beginPath();
-      editorCtx.arc(obj.x, obj.y - 70, 15, 0, Math.PI * 2);
-      editorCtx.fill();
+    if (obj.type === 'tree') drawTreeAsset(obj.x, obj.y, obj.scale || 0.6, obj.seed || 0);
+    else if (obj.type === 'keycard') { editorCtx.fillStyle = '#4a7a5a'; editorCtx.fillRect(obj.x - 10, obj.y - 6, 20, 12); }
+    else if (obj.type === 'note') { editorCtx.fillStyle = '#c0c8c4'; editorCtx.fillRect(obj.x - 7, obj.y - 10, 15, 20); }
+    else if (obj.type === 'horace') {
+      editorCtx.fillStyle = '#2a4a2a'; editorCtx.fillRect(obj.x - 20, obj.y - 60, 40, 60);
+      editorCtx.fillStyle = '#3a6a3a'; editorCtx.beginPath(); editorCtx.arc(obj.x, obj.y - 70, 15, 0, Math.PI * 2); editorCtx.fill();
     } else if (obj.type === 'booth') {
-      editorCtx.fillStyle = '#1e1e1e';
-      editorCtx.fillRect(obj.x - 75, obj.y - 125, 150, 125);
-      editorCtx.fillStyle = '#5a5030';
-      editorCtx.fillRect(obj.x - 45, obj.y - 90, 90, 70);
+      editorCtx.fillStyle = '#1e1e1e'; editorCtx.fillRect(obj.x - 75, obj.y - 125, 150, 125);
+      editorCtx.fillStyle = '#5a5030'; editorCtx.fillRect(obj.x - 45, obj.y - 90, 90, 70);
     } else if (obj.type === 'barrier') {
-      editorCtx.fillStyle = '#1e1e1e';
-      editorCtx.fillRect(obj.x - 7, obj.y - 85, 15, 85);
-      editorCtx.fillStyle = '#552222';
-      editorCtx.fillRect(obj.x, obj.y - 80, 120, 12);
+      editorCtx.fillStyle = '#1e1e1e'; editorCtx.fillRect(obj.x - 7, obj.y - 85, 15, 85);
+      editorCtx.fillStyle = '#552222'; editorCtx.fillRect(obj.x, obj.y - 80, 120, 12);
     } else if (obj.type === 'player_spawn') {
       editorCtx.fillStyle = 'rgba(138,48,48,0.3)';
-      editorCtx.beginPath();
-      editorCtx.arc(obj.x, obj.y, 30, 0, Math.PI * 2);
-      editorCtx.fill();
-      editorCtx.strokeStyle = '#8a3030';
-      editorCtx.lineWidth = 2 / editorScale;
-      editorCtx.stroke();
-      editorCtx.fillStyle = '#d08080';
-      editorCtx.font = `${14/editorScale}px VT323`;
-      editorCtx.textAlign = 'center';
+      editorCtx.beginPath(); editorCtx.arc(obj.x, obj.y, 30, 0, Math.PI * 2); editorCtx.fill();
+      editorCtx.strokeStyle = '#8a3030'; editorCtx.lineWidth = 2 / editorScale; editorCtx.stroke();
+      editorCtx.fillStyle = '#d08080'; editorCtx.font = `${14/editorScale}px VT323`; editorCtx.textAlign = 'center';
       editorCtx.fillText('СПАВН', obj.x, obj.y + 50);
     }
 
-    // Выделение
     if (isSelected) {
       const hw = (asset ? asset.w : 40) / 2 + 5;
       const hh = (asset ? asset.h : 40) / 2 + 5;
@@ -1229,7 +1230,6 @@ function editorTick() {
     }
   });
 
-  // Превью размещения
   if (editorMode === 'place') {
     const asset = EDITABLE_ASSETS.find(a => a.type === selectedAsset);
     if (asset) {
@@ -1241,7 +1241,6 @@ function editorTick() {
   }
 
   editorCtx.restore();
-
   requestAnimationFrame(editorTick);
 }
 
@@ -1249,11 +1248,8 @@ function editorTick() {
 window.addEventListener('keydown', (e) => {
   const k = e.key.toLowerCase();
   
-  // Секретный код в главном меню
   if (document.getElementById('mainMenu').style.display !== 'none') {
-    if (k >= '0' && k <= '9') {
-      checkSecretCode(k);
-    }
+    if (k >= '0' && k <= '9') checkSecretCode(k);
   }
 
   if (k === 'w' || k === 'ц') { keys.w = true; editorKeys.w = true; }
@@ -1325,11 +1321,14 @@ function startWakeUpIntro() {
 function renderInventory() {
   const inv = document.getElementById('inventory');
   inv.innerHTML = '';
+  const allItems = {
+    keycard: { icon: '🗝', title: 'Ключ-карта', desc: 'Собственность КПП. Потёртая пластиковая карта с магнитной полосой. На обратной стороне выгравировано: «Не терять».' },
+    note: { icon: '📜', title: 'Записка', desc: '«Что надеется на прощенье Божье...\nТот должен быть готов отдать всё.»\n\nС обратной стороны: печать Горация и пометка «Пропуск №44». Это и есть пропуск!' }
+  };
   state.items.forEach(id => {
-    const item = { keycard: { icon: '🗝', title: 'Ключ-карта', desc: 'Собственность КПП.' }, note: { icon: '📜', title: 'Записка', desc: 'Печать Горация.' } }[id];
-    if (!item) return;
+    const item = allItems[id]; if (!item) return;
     const el = document.createElement('div');
-    el.className = 'item-icon'; el.textContent = item.icon; el.title = item.title;
+    el.className = 'item-icon'; el.textContent = item.icon; el.title = 'Нажмите, чтобы прочитать';
     el.addEventListener('click', () => {
       document.getElementById('itemModal').style.display = 'flex';
       document.getElementById('itemModalTitle').textContent = item.title;
